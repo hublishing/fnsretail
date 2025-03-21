@@ -1,8 +1,10 @@
+"use client";
+
 import { useState } from "react";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../lib/firebase";
 
-export default function Login() {
+export default function Home() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -11,7 +13,6 @@ export default function Login() {
     e.preventDefault();
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      // 로그인 성공 시 홈 페이지로 이동
       window.location.href = "/";
     } catch (error) {
       setError("로그인 실패");
