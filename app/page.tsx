@@ -1,43 +1,10 @@
-"use client";
+import { LoginForm } from '../components/login-form'
 
-import { useState } from "react";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../lib/firebase";
-
-export default function Home() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-      window.location.href = "/";
-    } catch (error) {
-      setError("로그인 실패");
-    }
-  };
-
+export default function LoginPage() {
   return (
-    <div>
-      <h1>로그인</h1>
-      <form onSubmit={handleLogin}>
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="이메일"
-        />
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="비밀번호"
-        />
-        {error && <p>{error}</p>}
-        <button type="submit">로그인</button>
-      </form>
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <LoginForm />
     </div>
-  );
+  )
 }
+
