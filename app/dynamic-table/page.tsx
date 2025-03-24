@@ -20,7 +20,6 @@ interface Product {
   weight: string
   org_price: number
   shop_price: number
-  cost_ratio: number
   img_desc1: string
   product_desc: string
   category: string
@@ -28,6 +27,12 @@ interface Product {
   extra_column2: string
   options_product_id: string
   options_options: string
+}
+
+interface Column {
+  key: keyof Product;
+  label: string;
+  format?: (value: any) => React.ReactNode;
 }
 
 export default function DynamicTable() {
@@ -69,14 +74,28 @@ export default function DynamicTable() {
     fetchData()
   }
 
-  const columns = [
+  const columns: Column[] = [
     { key: "product_id", label: "이지어드민상품코드" },
     { key: "name", label: "이지어드민상품명" },
     { key: "origin", label: "원산지" },
     { key: "weight", label: "상품무게" },
     { key: "org_price", label: "원가", format: (value: number) => `${value.toLocaleString()}원` },
     { key: "shop_price", label: "판매가", format: (value: number) => `${value.toLocaleString()}원` },
-    { key: "img_desc1", label: "상품이미지" },
+    { 
+      key: "img_desc1", 
+      label: "상품이미지",
+      format: (value: string) => value ? (
+        <img 
+          src={value} 
+          alt="상품 이미지" 
+          className="w-20 h-20 object-contain"
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.src = '/placeholder.png'; // 이미지 로드 실패시 대체 이미지
+          }}
+        />
+      ) : '이미지 없음'
+    },
     { key: "product_desc", label: "상품URL(자사)" },
     { key: "category", label: "카테고리" },
     { key: "extra_column1", label: "영문상품명" },
