@@ -141,22 +141,28 @@ export async function GET(request: Request) {
     }
 
     // BigQuery 응답에서 데이터 추출
-    const rows = data.rows?.map((row: any) => ({
-      product_id: row.f[0].v,
-      name: row.f[1].v,
-      origin: row.f[2].v,
-      weight: row.f[3].v,
-      org_price: Number(row.f[4].v),
-      shop_price: Number(row.f[5].v),
-      cost_ratio: Number(row.f[6].v),
-      img_desc1: row.f[7].v,
-      product_desc: row.f[8].v,
-      category: row.f[9].v,
-      extra_column1: row.f[10].v,
-      extra_column2: row.f[11].v,
-      options_product_id: row.f[12].v,
-      options_options: row.f[13].v,
-    })) || [];
+    const rows = data.rows?.map((row: any) => {
+      try {
+        return {
+          product_id: row.f[0]?.v || '',
+          name: row.f[1]?.v || '',
+          origin: row.f[2]?.v || '',
+          weight: row.f[3]?.v || '',
+          org_price: Number(row.f[4]?.v || 0),
+          shop_price: Number(row.f[5]?.v || 0),
+          img_desc1: row.f[6]?.v || '',
+          product_desc: row.f[7]?.v || '',
+          category: row.f[8]?.v || '',
+          extra_column1: row.f[9]?.v || '',
+          extra_column2: row.f[10]?.v || '',
+          options_product_id: row.f[11]?.v || '',
+          options_options: row.f[12]?.v || '',
+        }
+      } catch (error) {
+        console.error('행 데이터 매핑 오류:', error, row)
+        return null
+      }
+    }).filter(Boolean) || [];
 
     return NextResponse.json(rows);
   } catch (error) {
