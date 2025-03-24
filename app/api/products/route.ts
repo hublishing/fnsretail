@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
+import { createPrivateKey } from 'crypto';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -26,7 +27,11 @@ export async function GET(request: Request) {
 
     // JWT 토큰 생성
     const now = Math.floor(Date.now() / 1000);
-    const privateKey = process.env.GOOGLE_CLOUD_PRIVATE_KEY?.replace(/\\n/g, '\n') || '';
+    const privateKeyString = process.env.GOOGLE_CLOUD_PRIVATE_KEY?.replace(/\\n/g, '\n') || '';
+    const privateKey = createPrivateKey({
+      key: privateKeyString,
+      format: 'pem',
+    });
     
     const token = jwt.sign(
       {
