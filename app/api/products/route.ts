@@ -17,7 +17,7 @@ export async function GET(request: Request) {
     
     // BigQuery 쿼리
     const query = `
-      SELECT 
+      SELECT DISTINCT
         product_id,
         options_product_id,
         name,
