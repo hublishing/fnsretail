@@ -34,16 +34,16 @@ export async function GET(request: Request) {
     // 페이징된 데이터를 가져오는 쿼리
     const dataQuery = `
       SELECT DISTINCT
-        product_id,
-        options_product_id,
-        name,
-        options_options,
-        org_price,
-        shop_price,
-        category
+        상품코드 as product_id,
+        옵션상품코드 as options_product_id,
+        상품명 as name,
+        옵션 as options_options,
+        원가 as org_price,
+        판매가 as shop_price,
+        카테고리 as category
       FROM \`third-current-410914.001_ezadmin.001_ezadmin_product_*\`
-      WHERE name LIKE '%${searchTerm}%'
-      ORDER BY product_id DESC
+      WHERE 상품명 LIKE '%${searchTerm}%'
+      ORDER BY 상품코드 DESC
       LIMIT ${pageSize}
       OFFSET ${offset}
     `;
