@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+import { SignJWT } from 'jose';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -28,20 +28,19 @@ export async function GET(request: Request) {
     const now = Math.floor(Date.now() / 1000);
     const privateKey = process.env.GOOGLE_CLOUD_PRIVATE_KEY?.replace(/\\n/g, '\n') || '';
     
-    const token = jwt.sign(
-      {
-        iss: process.env.GOOGLE_CLOUD_CLIENT_EMAIL,
-        scope: 'https://www.googleapis.com/auth/bigquery',
-        aud: 'https://oauth2.googleapis.com/token',
-        exp: now + 3600,
-        iat: now,
-      },
-      privateKey,
-      {
-        algorithm: 'RS256',
-        keyid: process.env.GOOGLE_CLOUD_PRIVATE_KEY_ID,
-      }
-    );
+    const token = await new SignJWT({})
+      .setProtectedHeader({ 
+        alg: 'RS256',
+        typ: 'JWT',
+        kid: process.env.GOOGLE_CLOUD_PRIVATE_KEY_ID
+      })
+      .setIssuedAt(now)
+      .setExpirationTime(now + 3600)
+      .setIssuer(process.env.GOOGLE_CLOUD_CLIENT_EMAIL || '')
+      .setAudience('https://oauth2.googleapis.com/token')
+      .setSubject(process.env.GOOGLE_CLOUD_CLIENT_EMAIL || '')
+      .setJti(Math.random().toString())
+      .sign(new TextEncoder().encode(privateKey));
 
     // API 요청
     const response = await fetch(url, {
