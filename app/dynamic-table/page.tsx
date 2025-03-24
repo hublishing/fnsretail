@@ -76,7 +76,6 @@ export default function DynamicTable() {
     { key: "weight", label: "상품무게" },
     { key: "org_price", label: "원가", format: (value: number) => `${value.toLocaleString()}원` },
     { key: "shop_price", label: "판매가", format: (value: number) => `${value.toLocaleString()}원` },
-    { key: "cost_ratio", label: "원가율", format: (value: number) => `${value}%` },
     { key: "img_desc1", label: "상품이미지" },
     { key: "product_desc", label: "상품URL(자사)" },
     { key: "category", label: "카테고리" },

@@ -32,7 +32,7 @@ export async function GET(request: Request) {
           extra_column2,
           options_product_id,
           options_options,
-          ROW_NUMBER() OVER (PARTITION BY options_product_id ORDER BY product_id DESC) as rn
+          ROW_NUMBER() OVER (PARTITION BY product_id ORDER BY product_id DESC) as rn
         FROM \`third-current-410914.001_ezadmin.001_ezadmin_product_*\`
         WHERE name LIKE '%${searchTerm}%'
       )
