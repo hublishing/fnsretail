@@ -27,7 +27,7 @@ export async function GET(request: Request) {
 
     // JWT 토큰 생성
     const now = Math.floor(Date.now() / 1000);
-    const privateKeyString = process.env.GOOGLE_CLOUD_PRIVATE_KEY?.replace(/\\n/g, '\n') || '';
+    const privateKeyString = process.env.GOOGLE_CLOUD_PRIVATE_KEY || '';
     const privateKey = createPrivateKey({
       key: privateKeyString,
       format: 'pem',
