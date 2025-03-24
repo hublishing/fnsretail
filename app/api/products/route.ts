@@ -40,7 +40,7 @@ export async function GET(request: Request) {
           options_product_id,
           options_options,
           ROW_NUMBER() OVER (PARTITION BY product_id ORDER BY product_id DESC) as rn
-        FROM \`third-current-410914.001_ezadmin.\` || (SELECT table_id FROM LatestTable)
+        FROM \`third-current-410914.001_ezadmin.001_ezadmin_product_20240319\`
         WHERE name LIKE '%${searchTerm}%'
       )
       SELECT 
@@ -60,6 +60,15 @@ export async function GET(request: Request) {
       FROM RankedProducts
       WHERE rn = 1
       ORDER BY product_id DESC
+    `;
+
+    // 먼저 최신 테이블 ID를 가져옵니다
+    const latestTableQuery = `
+      SELECT table_id
+      FROM \`third-current-410914.001_ezadmin.__TABLES__\`
+      WHERE table_id LIKE '001_ezadmin_product_%'
+      ORDER BY table_id DESC
+      LIMIT 1
     `;
 
     // JWT 토큰 생성
@@ -120,6 +129,49 @@ export async function GET(request: Request) {
 
     const { access_token } = tokenData;
 
+    // 먼저 최신 테이블 ID를 가져옵니다
+    const latestTableResponse = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        query: latestTableQuery,
+        useLegacySql: false,
+      }),
+    });
+
+    const latestTableData = await latestTableResponse.json();
+    const latestTableId = latestTableData.rows?.[0]?.f?.[0]?.v;
+
+    if (!latestTableId) {
+      throw new Error('최신 테이블을 찾을 수 없습니다.');
+    }
+
+    // 실제 데이터를 가져오는 쿼리
+    const dataQuery = `
+      SELECT 
+        product_id,
+        name,
+        origin,
+        weight,
+        org_price,
+        shop_price,
+        img_desc1,
+        product_desc,
+        category,
+        extra_column1,
+        extra_column2,
+        options_product_id,
+        options_options,
+        ROW_NUMBER() OVER (PARTITION BY product_id ORDER BY product_id DESC) as rn
+      FROM \`third-current-410914.001_ezadmin.${latestTableId}\`
+      WHERE name LIKE '%${searchTerm}%'
+      AND rn = 1
+      ORDER BY product_id DESC
+    `;
+
     // BigQuery API 요청
     const response = await fetch(url, {
       method: 'POST',
@@ -128,7 +180,7 @@ export async function GET(request: Request) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        query,
+        query: dataQuery,
         useLegacySql: false,
       }),
     });
