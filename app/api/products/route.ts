@@ -17,14 +17,41 @@ export async function GET(request: Request) {
     
     // BigQuery 쿼리
     const query = `
-      SELECT DISTINCT
+      WITH RankedProducts AS (
+        SELECT 
+          product_id,
+          name,
+          origin,
+          weight,
+          org_price,
+          shop_price,
+          img_desc1,
+          product_desc,
+          category,
+          extra_column1,
+          extra_column2,
+          options_product_id,
+          options_options,
+          ROW_NUMBER() OVER (PARTITION BY options_product_id ORDER BY product_id DESC) as rn
+        FROM \`third-current-410914.001_ezadmin.001_ezadmin_product_*\`
+        WHERE name LIKE '%${searchTerm}%'
+      )
+      SELECT 
         product_id,
         name,
+        origin,
+        weight,
         org_price,
         shop_price,
-        category
-      FROM \`third-current-410914.001_ezadmin.001_ezadmin_product_*\`
-      WHERE name LIKE '%${searchTerm}%'
+        img_desc1,
+        product_desc,
+        category,
+        extra_column1,
+        extra_column2,
+        options_product_id,
+        options_options
+      FROM RankedProducts
+      WHERE rn = 1
       ORDER BY product_id DESC
     `;
 
@@ -117,9 +144,18 @@ export async function GET(request: Request) {
     const rows = data.rows?.map((row: any) => ({
       product_id: row.f[0].v,
       name: row.f[1].v,
-      org_price: Number(row.f[2].v),
-      shop_price: Number(row.f[3].v),
-      category: row.f[4].v,
+      origin: row.f[2].v,
+      weight: row.f[3].v,
+      org_price: Number(row.f[4].v),
+      shop_price: Number(row.f[5].v),
+      cost_ratio: Number(row.f[6].v),
+      img_desc1: row.f[7].v,
+      product_desc: row.f[8].v,
+      category: row.f[9].v,
+      extra_column1: row.f[10].v,
+      extra_column2: row.f[11].v,
+      options_product_id: row.f[12].v,
+      options_options: row.f[13].v,
     })) || [];
 
     return NextResponse.json(rows);

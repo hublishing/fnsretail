@@ -15,12 +15,19 @@ import { Search } from "lucide-react"
 
 interface Product {
   product_id: string
-  options_product_id: string
   name: string
-  options_options: string
+  origin: string
+  weight: string
   org_price: number
   shop_price: number
+  cost_ratio: number
+  img_desc1: string
+  product_desc: string
   category: string
+  extra_column1: string
+  extra_column2: string
+  options_product_id: string
+  options_options: string
 }
 
 export default function DynamicTable() {
@@ -63,13 +70,20 @@ export default function DynamicTable() {
   }
 
   const columns = [
-    { key: "product_id", label: "상품 ID" },
-    { key: "options_product_id", label: "품목상품코드" },
-    { key: "name", label: "상품명" },
-    { key: "options_options", label: "옵션" },
+    { key: "product_id", label: "이지어드민상품코드" },
+    { key: "name", label: "이지어드민상품명" },
+    { key: "origin", label: "원산지" },
+    { key: "weight", label: "상품무게" },
     { key: "org_price", label: "원가", format: (value: number) => `${value.toLocaleString()}원` },
     { key: "shop_price", label: "판매가", format: (value: number) => `${value.toLocaleString()}원` },
+    { key: "cost_ratio", label: "원가율", format: (value: number) => `${value}%` },
+    { key: "img_desc1", label: "상품이미지" },
+    { key: "product_desc", label: "상품URL(자사)" },
     { key: "category", label: "카테고리" },
+    { key: "extra_column1", label: "영문상품명" },
+    { key: "extra_column2", label: "출시시즌" },
+    { key: "options_product_id", label: "이지어드민옵션코드" },
+    { key: "options_options", label: "이지어드민옵션명" },
   ]
 
   return (
@@ -100,7 +114,7 @@ export default function DynamicTable() {
         </div>
       )}
 
-      <div className="rounded-md border">
+      <div className="rounded-md border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
