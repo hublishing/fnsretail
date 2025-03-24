@@ -1,60 +1,46 @@
 'use client'
 
-import { useState } from 'react'
-import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { AlertCircle } from 'lucide-react'
+import { Button } from "@/components/ui/button"
 
 interface LoginFormProps {
   formAction: (formData: FormData) => void
 }
 
 export function LoginForm({ formAction }: LoginFormProps) {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader>
-        <CardTitle>로그인</CardTitle>
-        <CardDescription>이메일과 비밀번호를 입력하여 계정에 접속하세요.</CardDescription>
-      </CardHeader>
-      <form action={formAction}>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">이메일</Label>
-            <Input 
-              id="email" 
-              name="email" 
-              type="email" 
-              required 
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="이메일을 입력하세요"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">비밀번호</Label>
-            <Input 
-              id="password" 
-              name="password" 
-              type="password" 
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="비밀번호를 입력하세요"
-            />
-          </div>
-        </CardContent>
-        <CardFooter>
-          <Button className="w-full" type="submit">
-            로그인
-          </Button>
-        </CardFooter>
+    <div className="w-full max-w-sm p-6 bg-white rounded-lg shadow-md">
+      <h2 className="text-2xl font-bold text-center mb-6">로그인</h2>
+      <form action={formAction} className="space-y-4">
+        <div className="space-y-2">
+          <label htmlFor="email" className="text-sm font-medium">
+            이메일
+          </label>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            placeholder="이메일을 입력하세요"
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <label htmlFor="password" className="text-sm font-medium">
+            비밀번호
+          </label>
+          <Input
+            id="password"
+            name="password"
+            type="password"
+            placeholder="비밀번호를 입력하세요"
+            required
+          />
+        </div>
+        <Button type="submit" className="w-full">
+          로그인
+        </Button>
       </form>
-    </Card>
+    </div>
   )
 }
 

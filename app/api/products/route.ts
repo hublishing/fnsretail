@@ -40,15 +40,30 @@ export async function GET(request: Request) {
       }),
     });
 
+    const data = await response.json();
+
     if (!response.ok) {
-      throw new Error('BigQuery API 요청 실패');
+      throw new Error(data.error?.message || 'BigQuery API 요청 실패');
     }
 
-    const data = await response.json();
-    return NextResponse.json(data.rows || []);
+    // BigQuery 응답에서 데이터 추출
+    const rows = data.rows?.map((row: any) => ({
+      product_id: row.f[0].v,
+      options_product_id: row.f[1].v,
+      name: row.f[2].v,
+      options_options: row.f[3].v,
+      org_price: Number(row.f[4].v),
+      shop_price: Number(row.f[5].v),
+      category: row.f[6].v,
+    })) || [];
+
+    return NextResponse.json(rows);
   } catch (error) {
     console.error('BigQuery 쿼리 오류:', error);
-    return NextResponse.json({ error: '데이터 조회 중 오류가 발생했습니다.' }, { status: 500 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : '데이터 조회 중 오류가 발생했습니다.' },
+      { status: 500 }
+    );
   }
 }
 

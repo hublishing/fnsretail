@@ -34,13 +34,21 @@ export default function DynamicTable() {
       setLoading(true)
       setError(null)
       const response = await fetch(`/api/products?search=${encodeURIComponent(searchTerm)}`)
-      if (!response.ok) {
-        throw new Error('데이터를 불러오는데 실패했습니다.')
-      }
       const result = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(result.error || '데이터를 불러오는데 실패했습니다.')
+      }
+
+      if (!Array.isArray(result)) {
+        throw new Error('잘못된 데이터 형식입니다.')
+      }
+
       setData(result)
     } catch (err) {
+      console.error('데이터 로딩 오류:', err)
       setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.')
+      setData([])
     } finally {
       setLoading(false)
     }
@@ -81,11 +89,13 @@ export default function DynamicTable() {
             }}
           />
         </div>
-        <Button onClick={handleSearch}>검색</Button>
+        <Button onClick={handleSearch} disabled={loading}>
+          {loading ? '검색 중...' : '검색'}
+        </Button>
       </div>
 
       {error && (
-        <div className="bg-red-50 text-red-500 p-4 rounded-md mb-4">
+        <div className="p-3 text-sm text-red-500 bg-red-50 rounded-md mb-4">
           {error}
         </div>
       )}
