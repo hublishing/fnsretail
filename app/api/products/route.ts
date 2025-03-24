@@ -33,7 +33,7 @@ export async function GET(request: Request) {
       format: 'pem',
     });
     
-    const token = jwt.sign(
+    const jwtToken = jwt.sign(
       {
         iss: process.env.GOOGLE_CLOUD_CLIENT_EMAIL,
         sub: process.env.GOOGLE_CLOUD_CLIENT_EMAIL,
@@ -49,11 +49,30 @@ export async function GET(request: Request) {
       }
     );
 
-    // API 요청
+    // OAuth 2.0 액세스 토큰 얻기
+    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+        assertion: jwtToken,
+      }),
+    });
+
+    if (!tokenResponse.ok) {
+      const errorData = await tokenResponse.json();
+      throw new Error(`액세스 토큰 획득 실패: ${errorData.error_description || errorData.error}`);
+    }
+
+    const { access_token } = await tokenResponse.json();
+
+    // BigQuery API 요청
     const response = await fetch(url, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}`,
+        'Authorization': `Bearer ${access_token}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
