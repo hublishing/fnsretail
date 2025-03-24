@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { Sidebar } from "./components/sidebar";
-import { usePathname } from 'next/navigation'
+import { SidebarWrapper } from "./components/sidebar-wrapper";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -28,17 +27,4 @@ export default function RootLayout({
       </body>
     </html>
   );
-}
-
-// 클라이언트 컴포넌트로 사이드바 래퍼 생성
-'use client'
-function SidebarWrapper() {
-  const pathname = usePathname()
-  const isLoginPage = pathname === '/login'
-
-  if (isLoginPage) {
-    return null
-  }
-
-  return <Sidebar />
 }
