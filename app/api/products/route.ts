@@ -41,6 +41,7 @@ export async function GET(request: Request) {
         iat: now,
         exp: now + 3600,
         jti: Math.random().toString(),
+        scope: 'https://www.googleapis.com/auth/bigquery',
       },
       privateKey,
       {
