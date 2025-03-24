@@ -6,6 +6,11 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const searchTerm = searchParams.get('search');
 
+  // 검색어가 없으면 빈 배열 반환
+  if (!searchTerm) {
+    return NextResponse.json([]);
+  }
+
   try {
     // Google Cloud API 엔드포인트
     const url = `https://bigquery.googleapis.com/bigquery/v2/projects/${process.env.GOOGLE_CLOUD_PROJECT_ID}/queries`;
@@ -21,7 +26,7 @@ export async function GET(request: Request) {
         shop_price,
         category
       FROM \`third-current-410914.001_ezadmin.001_ezadmin_product_*\`
-      ${searchTerm ? `WHERE name LIKE '%${searchTerm}%'` : ''}
+      WHERE name LIKE '%${searchTerm}%'
       ORDER BY product_id DESC
     `;
 
@@ -63,11 +68,13 @@ export async function GET(request: Request) {
     });
 
     if (!tokenResponse.ok) {
-      const errorData = await tokenResponse.json();
-      throw new Error(`액세스 토큰 획득 실패: ${errorData.error_description || errorData.error}`);
+      const errorText = await tokenResponse.text();
+      console.error('토큰 응답:', errorText);
+      throw new Error(`액세스 토큰 획득 실패: ${errorText}`);
     }
 
-    const { access_token } = await tokenResponse.json();
+    const tokenData = await tokenResponse.json();
+    const { access_token } = tokenData;
 
     // BigQuery API 요청
     const response = await fetch(url, {
@@ -82,11 +89,13 @@ export async function GET(request: Request) {
       }),
     });
 
-    const data = await response.json();
-
     if (!response.ok) {
-      throw new Error(data.error?.message || 'BigQuery API 요청 실패');
+      const errorText = await response.text();
+      console.error('BigQuery 응답:', errorText);
+      throw new Error(`BigQuery API 요청 실패: ${errorText}`);
     }
+
+    const data = await response.json();
 
     // BigQuery 응답에서 데이터 추출
     const rows = data.rows?.map((row: any) => ({
