@@ -57,7 +57,7 @@ export function Sidebar() {
         <div className="flex h-full flex-col">
           <div className="flex h-14 items-center border-b px-4">
             <Link href="/" className="flex items-center space-x-2">
-              <span className="font-bold">FNS Retail</span>
+              <span className="font-bold">Project M</span>
             </Link>
           </div>
           <ScrollArea className="flex-1">
