@@ -1,27 +1,26 @@
 'use server'
 
 import { redirect } from 'next/navigation'
+import { auth } from '@/lib/firebase'
+import { signInWithEmailAndPassword } from 'firebase/auth'
 
 export async function login(prevState: any, formData: FormData) {
-  const email = formData.get('email')
-  const password = formData.get('password')
+  const email = formData.get('email') as string
+  const password = formData.get('password') as string
 
-  // Here you would typically validate the user credentials
-  // For this example, we'll just check if the email and password are not empty
   if (!email || !password) {
-    return { error: 'Email and password are required' }
+    return { error: '이메일과 비밀번호를 입력해주세요' }
   }
 
-  // Simulate a delay as if we're checking the credentials
-  await new Promise(resolve => setTimeout(resolve, 1000))
-
-  // For demonstration, let's consider the login successful if the email contains '@'
-  // In a real application, you'd check against your user database
-  if (email.toString().includes('@')) {
-    // Redirect to a dashboard or home page after successful login
+  try {
+    const userCredential = await signInWithEmailAndPassword(auth, email, password)
+    const user = userCredential.user
+    
+    // 로그인 성공 시 대시보드로 리다이렉트
     redirect('/dashboard')
-  } else {
-    return { error: 'Invalid email or password' }
+  } catch (error: any) {
+    console.error('로그인 오류:', error)
+    return { error: '이메일 또는 비밀번호가 올바르지 않습니다' }
   }
 }
 
