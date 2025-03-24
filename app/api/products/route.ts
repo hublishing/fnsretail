@@ -151,6 +151,25 @@ export async function GET(request: Request) {
 
     // 실제 데이터를 가져오는 쿼리
     const dataQuery = `
+      WITH RankedProducts AS (
+        SELECT 
+          product_id,
+          name,
+          origin,
+          weight,
+          org_price,
+          shop_price,
+          img_desc1,
+          product_desc,
+          category,
+          extra_column1,
+          extra_column2,
+          options_product_id,
+          options_options,
+          ROW_NUMBER() OVER (PARTITION BY product_id ORDER BY product_id DESC) as rn
+        FROM \`third-current-410914.001_ezadmin.${latestTableId}\`
+        WHERE name LIKE '%${searchTerm}%'
+      )
       SELECT 
         product_id,
         name,
@@ -164,11 +183,9 @@ export async function GET(request: Request) {
         extra_column1,
         extra_column2,
         options_product_id,
-        options_options,
-        ROW_NUMBER() OVER (PARTITION BY product_id ORDER BY product_id DESC) as rn
-      FROM \`third-current-410914.001_ezadmin.${latestTableId}\`
-      WHERE name LIKE '%${searchTerm}%'
-      AND rn = 1
+        options_options
+      FROM RankedProducts
+      WHERE rn = 1
       ORDER BY product_id DESC
     `;
 
