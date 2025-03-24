@@ -5,17 +5,14 @@ import { createPrivateKey } from 'crypto';
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const searchTerm = searchParams.get('search');
-  const page = parseInt(searchParams.get('page') || '1');
-  const pageSize = 50;
-  const offset = (page - 1) * pageSize;
 
   // 검색어가 없으면 빈 배열 반환
   if (!searchTerm) {
     return NextResponse.json({
       items: [],
       total: 0,
-      page,
-      pageSize,
+      page: 1,
+      pageSize: 50,
       totalPages: 0
     });
   }
@@ -24,26 +21,17 @@ export async function GET(request: Request) {
     // Google Cloud API 엔드포인트
     const url = `https://bigquery.googleapis.com/bigquery/v2/projects/${process.env.GOOGLE_CLOUD_PROJECT_ID}/queries`;
     
-    // 전체 데이터 수를 가져오는 쿼리
-    const countQuery = `
-      SELECT COUNT(DISTINCT product_id) as total
-      FROM \`third-current-410914.001_ezadmin.001_ezadmin_product_*\`
-      WHERE name LIKE '%${searchTerm}%'
-    `;
-
-    // 페이징된 데이터를 가져오는 쿼리
+    // 데이터를 가져오는 쿼리
     const dataQuery = `
       SELECT DISTINCT
-        product_id,
-        name,
-        org_price,
-        shop_price,
-        category
+        상품코드 as product_id,
+        상품명 as name,
+        원가 as org_price,
+        판매가 as shop_price,
+        카테고리 as category
       FROM \`third-current-410914.001_ezadmin.001_ezadmin_product_*\`
-      WHERE name LIKE '%${searchTerm}%'
-      ORDER BY product_id DESC
-      LIMIT ${pageSize}
-      OFFSET ${offset}
+      WHERE 상품명 LIKE '%${searchTerm}%'
+      ORDER BY 상품코드 DESC
     `;
 
     // JWT 토큰 생성
@@ -102,31 +90,7 @@ export async function GET(request: Request) {
     const tokenData = await tokenResponse.json();
     const { access_token } = tokenData;
 
-    // 전체 데이터 수 조회
-    const countResponse = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${access_token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        query: countQuery,
-        useLegacySql: false,
-      }),
-    });
-
-    if (!countResponse.ok) {
-      const errorText = await countResponse.text();
-      return NextResponse.json(
-        { error: `전체 데이터 수 조회 실패: ${errorText}` },
-        { status: 500 }
-      );
-    }
-
-    const countData = await countResponse.json();
-    const total = parseInt(countData.rows[0].f[0].v);
-
-    // 페이징된 데이터 조회
+    // 데이터 조회
     const dataResponse = await fetch(url, {
       method: 'POST',
       headers: {
@@ -150,7 +114,7 @@ export async function GET(request: Request) {
     const data = await dataResponse.json();
 
     // BigQuery 응답에서 데이터 추출
-    const items = data.rows?.map((row: any) => ({
+    const allItems = data.rows?.map((row: any) => ({
       product_id: row.f[0].v,
       name: row.f[1].v,
       org_price: Number(row.f[2].v),
@@ -159,11 +123,11 @@ export async function GET(request: Request) {
     })) || [];
 
     return NextResponse.json({
-      items,
-      total,
-      page,
-      pageSize,
-      totalPages: Math.ceil(total / pageSize)
+      items: allItems,
+      total: allItems.length,
+      page: 1,
+      pageSize: 50,
+      totalPages: Math.ceil(allItems.length / 50)
     });
   } catch (error) {
     console.error('BigQuery 쿼리 오류:', error);

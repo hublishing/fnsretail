@@ -2,14 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { Input } from "@/components/ui/input"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { useDebounce } from '@/hooks/use-debounce'
 
@@ -35,18 +27,19 @@ interface ApiError {
 
 export function DynamicTable() {
   const [searchTerm, setSearchTerm] = useState('')
-  const [products, setProducts] = useState<Product[]>([])
+  const [allProducts, setAllProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(0)
   const [totalItems, setTotalItems] = useState(0)
+  const pageSize = 50
   const debouncedSearchTerm = useDebounce(searchTerm, 500)
 
   useEffect(() => {
     const fetchProducts = async () => {
       if (!debouncedSearchTerm) {
-        setProducts([])
+        setAllProducts([])
         setTotalPages(0)
         setTotalItems(0)
         return
@@ -56,19 +49,20 @@ export function DynamicTable() {
       setError(null)
 
       try {
-        const response = await fetch(`/api/products?search=${encodeURIComponent(debouncedSearchTerm)}&page=${currentPage}`)
-        const data = await response.json()
-
+        const response = await fetch(`/api/products?search=${encodeURIComponent(debouncedSearchTerm)}`)
+        
         if (!response.ok) {
-          const errorData = data as ApiError
-          throw new Error(errorData.error || '데이터를 불러오는데 실패했습니다.')
+          const errorText = await response.text()
+          throw new Error(errorText || '데이터를 불러오는데 실패했습니다.')
         }
 
+        const data = await response.json()
         const paginatedData = data as PaginatedResponse
-        setProducts(paginatedData.items)
+        setAllProducts(paginatedData.items)
         setTotalPages(paginatedData.totalPages)
         setTotalItems(paginatedData.total)
       } catch (err) {
+        console.error('데이터 로드 오류:', err)
         setError(err instanceof Error ? err.message : '데이터를 불러오는데 실패했습니다.')
       } finally {
         setLoading(false)
@@ -76,7 +70,7 @@ export function DynamicTable() {
     }
 
     fetchProducts()
-  }, [debouncedSearchTerm, currentPage])
+  }, [debouncedSearchTerm])
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value)
@@ -86,6 +80,11 @@ export function DynamicTable() {
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage)
   }
+
+  // 현재 페이지의 데이터만 표시
+  const startIndex = (currentPage - 1) * pageSize
+  const endIndex = startIndex + pageSize
+  const currentPageProducts = allProducts.slice(startIndex, endIndex)
 
   return (
     <div className="space-y-4">
@@ -130,7 +129,7 @@ export function DynamicTable() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {products.map((product, index) => (
+                {currentPageProducts.map((product, index) => (
                   <tr key={index} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {product.product_id}
@@ -156,7 +155,7 @@ export function DynamicTable() {
           {totalPages > 1 && (
             <div className="flex items-center justify-between">
               <div className="text-sm text-gray-500">
-                총 {totalItems}개 중 {(currentPage - 1) * 50 + 1}~{Math.min(currentPage * 50, totalItems)}개 표시
+                총 {totalItems}개 중 {startIndex + 1}~{Math.min(endIndex, totalItems)}개 표시
               </div>
               <div className="flex items-center space-x-2">
                 <Button
