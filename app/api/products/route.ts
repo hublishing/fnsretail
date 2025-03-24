@@ -28,7 +28,7 @@ export async function GET(request: Request) {
     const countQuery = `
       SELECT COUNT(*) as total
       FROM \`third-current-410914.001_ezadmin.001_ezadmin_product_*\`
-      WHERE name LIKE '%${searchTerm}%'
+      WHERE 상품명 LIKE '%${searchTerm}%'
     `;
 
     // 페이징된 데이터를 가져오는 쿼리
