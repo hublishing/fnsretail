@@ -1,17 +1,17 @@
 'use client'
 
 import { useState } from 'react'
-import { useActionState } from 'react'
-import { login } from '../actions/auth'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { AlertCircle } from 'lucide-react'
-import type { LoginResult } from '../actions/auth'
 
-export function LoginForm() {
-  const [state, formAction, isPending] = useActionState<LoginResult, FormData>(login, { success: false, error: '' })
+interface LoginFormProps {
+  formAction: (formData: FormData) => void
+}
+
+export function LoginForm({ formAction }: LoginFormProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
 
@@ -47,16 +47,10 @@ export function LoginForm() {
               placeholder="비밀번호를 입력하세요"
             />
           </div>
-          {state.error && (
-            <div className="flex items-center space-x-2 text-red-500">
-              <AlertCircle size={16} />
-              <span className="text-sm">{state.error}</span>
-            </div>
-          )}
         </CardContent>
         <CardFooter>
-          <Button className="w-full" type="submit" disabled={isPending}>
-            {isPending ? '로그인 중...' : '로그인'}
+          <Button className="w-full" type="submit">
+            로그인
           </Button>
         </CardFooter>
       </form>
