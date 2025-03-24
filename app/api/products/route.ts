@@ -19,9 +19,7 @@ export async function GET(request: Request) {
     const query = `
       SELECT DISTINCT
         product_id,
-        options_product_id,
         name,
-        options_options,
         org_price,
         shop_price,
         category
@@ -118,12 +116,10 @@ export async function GET(request: Request) {
     // BigQuery 응답에서 데이터 추출
     const rows = data.rows?.map((row: any) => ({
       product_id: row.f[0].v,
-      options_product_id: row.f[1].v,
-      name: row.f[2].v,
-      options_options: row.f[3].v,
-      org_price: Number(row.f[4].v),
-      shop_price: Number(row.f[5].v),
-      category: row.f[6].v,
+      name: row.f[1].v,
+      org_price: Number(row.f[2].v),
+      shop_price: Number(row.f[3].v),
+      category: row.f[4].v,
     })) || [];
 
     return NextResponse.json(rows);
