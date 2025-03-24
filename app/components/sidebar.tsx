@@ -10,11 +10,6 @@ import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 
-interface SidebarProps {
-  isOpen: boolean;
-  onToggle: () => void;
-}
-
 const menuItems = [
   {
     title: "상품 관리",
@@ -38,7 +33,7 @@ const menuItems = [
   },
 ]
 
-export function Sidebar({ isOpen, onToggle }: SidebarProps) {
+export function Sidebar() {
   const pathname = usePathname()
   const [open, setOpen] = React.useState(false)
 

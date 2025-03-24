@@ -6,7 +6,6 @@ import { Sidebar } from './sidebar'
 import { signOut, getSession } from '../actions/auth'
 
 export function SidebarWrapper() {
-  const [isOpen, setIsOpen] = useState(true)
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const router = useRouter()
 
@@ -31,7 +30,7 @@ export function SidebarWrapper() {
 
   return (
     <div className="flex h-screen">
-      <Sidebar isOpen={isOpen} onToggle={() => setIsOpen(!isOpen)} />
+      <Sidebar />
       <div className="flex-1 overflow-auto">
         <div className="p-4">
           {/* 메인 컨텐츠 */}
@@ -45,7 +44,7 @@ export function SidebarWrapper() {
         )}
         <button
           onClick={handleLogout}
-          className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition-colors"
+          className="bg-black-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition-colors"
         >
           로그아웃
         </button>
