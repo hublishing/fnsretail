@@ -5,18 +5,34 @@ import { createPrivateKey } from 'crypto';
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const searchTerm = searchParams.get('search');
+  const page = parseInt(searchParams.get('page') || '1');
+  const pageSize = 50;
+  const offset = (page - 1) * pageSize;
 
   // 검색어가 없으면 빈 배열 반환
   if (!searchTerm) {
-    return NextResponse.json([]);
+    return NextResponse.json({
+      items: [],
+      total: 0,
+      page,
+      pageSize,
+      totalPages: 0
+    });
   }
 
   try {
     // Google Cloud API 엔드포인트
     const url = `https://bigquery.googleapis.com/bigquery/v2/projects/${process.env.GOOGLE_CLOUD_PROJECT_ID}/queries`;
     
-    // BigQuery 쿼리
-    const query = `
+    // 전체 데이터 수를 가져오는 쿼리
+    const countQuery = `
+      SELECT COUNT(*) as total
+      FROM \`third-current-410914.001_ezadmin.001_ezadmin_product_*\`
+      WHERE name LIKE '%${searchTerm}%'
+    `;
+
+    // 페이징된 데이터를 가져오는 쿼리
+    const dataQuery = `
       SELECT DISTINCT
         product_id,
         options_product_id,
@@ -28,6 +44,8 @@ export async function GET(request: Request) {
       FROM \`third-current-410914.001_ezadmin.001_ezadmin_product_*\`
       WHERE name LIKE '%${searchTerm}%'
       ORDER BY product_id DESC
+      LIMIT ${pageSize}
+      OFFSET ${offset}
     `;
 
     // JWT 토큰 생성
@@ -88,35 +106,51 @@ export async function GET(request: Request) {
 
     const { access_token } = tokenData;
 
-    // BigQuery API 요청
-    const response = await fetch(url, {
+    // 전체 데이터 수 조회
+    const countResponse = await fetch(url, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${access_token}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        query,
+        query: countQuery,
         useLegacySql: false,
       }),
     });
 
-    const responseText = await response.text();
-    console.log('BigQuery 응답:', responseText);
+    const countData = await countResponse.json();
+    const total = parseInt(countData.rows[0].f[0].v);
 
-    if (!response.ok) {
-      throw new Error(`BigQuery API 요청 실패: ${responseText}`);
+    // 페이징된 데이터 조회
+    const dataResponse = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        query: dataQuery,
+        useLegacySql: false,
+      }),
+    });
+
+    const dataResponseText = await dataResponse.text();
+    console.log('BigQuery 응답:', dataResponseText);
+
+    if (!dataResponse.ok) {
+      throw new Error(`BigQuery API 요청 실패: ${dataResponseText}`);
     }
 
     let data;
     try {
-      data = JSON.parse(responseText);
+      data = JSON.parse(dataResponseText);
     } catch (e) {
-      throw new Error(`BigQuery 응답 파싱 실패: ${responseText}`);
+      throw new Error(`BigQuery 응답 파싱 실패: ${dataResponseText}`);
     }
 
     // BigQuery 응답에서 데이터 추출
-    const rows = data.rows?.map((row: any) => ({
+    const items = data.rows?.map((row: any) => ({
       product_id: row.f[0].v,
       options_product_id: row.f[1].v,
       name: row.f[2].v,
@@ -126,7 +160,13 @@ export async function GET(request: Request) {
       category: row.f[6].v,
     })) || [];
 
-    return NextResponse.json(rows);
+    return NextResponse.json({
+      items,
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize)
+    });
   } catch (error) {
     console.error('BigQuery 쿼리 오류:', error);
     return NextResponse.json(
