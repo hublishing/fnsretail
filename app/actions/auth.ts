@@ -24,7 +24,24 @@ export async function login(prevState: LoginResult, formData: FormData): Promise
       }
     }
 
-    await signInWithEmailAndPassword(auth, email as string, password as string)
+    const userCredential = await signInWithEmailAndPassword(auth, email as string, password as string)
+    const idToken = await userCredential.user.getIdToken()
+    
+    // 서버에서 토큰 검증
+    const decodedToken = await firebaseAdminAuth.verifyIdToken(idToken)
+    
+    // 쿠키에 세션 저장
+    const expiresIn = 60 * 60 * 24 * 5 * 1000 // 5일
+    const sessionCookie = await firebaseAdminAuth.createSessionCookie(idToken, { expiresIn })
+    
+    const cookieStore = await cookies()
+    cookieStore.set('session', sessionCookie, {
+      maxAge: expiresIn,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+    })
+
     return { success: true, error: '' }
   } catch (error: any) {
     console.error('로그인 오류:', error)
@@ -83,6 +100,7 @@ export async function getSession() {
     const decodedClaims = await firebaseAdminAuth.verifySessionCookie(sessionCookie, true)
     return decodedClaims
   } catch (error) {
+    console.error('세션 검증 오류:', error)
     return null
   }
 } 
