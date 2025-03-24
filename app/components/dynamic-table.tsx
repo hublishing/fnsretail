@@ -15,9 +15,7 @@ import { useDebounce } from '@/hooks/use-debounce'
 
 interface Product {
   product_id: string
-  options_product_id: string
   name: string
-  options_options: string
   org_price: number
   shop_price: number
   category: string
