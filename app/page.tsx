@@ -2,24 +2,25 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { LoginForm } from './components/login-form'
-import { useActionState } from 'react'
-import { login } from './actions/auth'
-import type { LoginResult } from './actions/auth'
+import { getSession } from './actions/auth'
 
-export default function LoginPage() {
+export default function HomePage() {
   const router = useRouter()
-  const [state, formAction] = useActionState<LoginResult, FormData>(login, { success: false, error: '' })
 
   useEffect(() => {
-    if (state.success) {
-      router.push('/dynamic-table')
+    const checkAuth = async () => {
+      const session = await getSession()
+      if (!session) {
+        router.push('/login')
+      }
     }
-  }, [state.success, router])
+    checkAuth()
+  }, [router])
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <LoginForm formAction={formAction} error={state.error} />
+    <div className="p-8">
+      <h1 className="text-2xl font-bold">FNS Retail</h1>
+      <p className="mt-4">환영합니다!</p>
     </div>
   )
 }
