@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { usePathname } from "next/navigation"
 import { Menu, Package, Users, Settings, LogOut } from "lucide-react"
 
@@ -9,6 +10,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { signOut, getSession } from "@/app/actions/auth"
 
 const menuItems = [
   {
@@ -35,7 +37,28 @@ const menuItems = [
 
 export function Sidebar() {
   const pathname = usePathname()
+  const router = useRouter()
   const [open, setOpen] = React.useState(false)
+  const [userEmail, setUserEmail] = React.useState<string | null>(null)
+
+  React.useEffect(() => {
+    const fetchUserEmail = async () => {
+      const session = await getSession()
+      if (session?.email) {
+        setUserEmail(session.email)
+      }
+    }
+    fetchUserEmail()
+  }, [])
+
+  const handleLogout = async () => {
+    try {
+      await signOut()
+      router.push('/login')
+    } catch (error) {
+      console.error('로그아웃 오류:', error)
+    }
+  }
 
   return (
     <>
@@ -80,6 +103,23 @@ export function Sidebar() {
               })}
             </nav>
           </ScrollArea>
+          <div className="border-t p-4">
+            <div className="flex flex-col gap-2">
+              {userEmail && (
+                <div className="text-sm text-muted-foreground">
+                  {userEmail}
+                </div>
+              )}
+              <Button
+                variant="ghost"
+                className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50"
+                onClick={handleLogout}
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                로그아웃
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
     </>
