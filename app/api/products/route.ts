@@ -1,3 +1,4 @@
+import { NextResponse } from 'next/server';
 import { BigQuery } from '@google-cloud/bigquery';
 
 const bigquery = new BigQuery({
@@ -8,7 +9,10 @@ const bigquery = new BigQuery({
   }
 });
 
-export async function queryProducts(searchTerm?: string) {
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const searchTerm = searchParams.get('search');
+
   const query = `
     SELECT 
       product_id,
@@ -25,9 +29,9 @@ export async function queryProducts(searchTerm?: string) {
 
   try {
     const [rows] = await bigquery.query({ query });
-    return rows;
+    return NextResponse.json(rows);
   } catch (error) {
     console.error('BigQuery 쿼리 오류:', error);
-    throw error;
+    return NextResponse.json({ error: '데이터 조회 중 오류가 발생했습니다.' }, { status: 500 });
   }
 } 

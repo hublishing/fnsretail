@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Search } from "lucide-react"
 import { useState, useEffect } from "react"
-import { queryProducts } from "@/lib/bigquery"
 
 // 컬럼 설정
 const columns: ColumnConfig[] = [
@@ -46,7 +45,7 @@ const columns: ColumnConfig[] = [
     key: "category",
     label: "카테고리",
     type: "string" as DataType,
-  }, 
+  },
 ]
 
 export default function DynamicTablePage() {
@@ -57,7 +56,11 @@ export default function DynamicTablePage() {
   const fetchData = async (search?: string) => {
     try {
       setLoading(true)
-      const products = await queryProducts(search)
+      const response = await fetch(`/api/products${search ? `?search=${encodeURIComponent(search)}` : ''}`)
+      if (!response.ok) {
+        throw new Error('데이터 조회 실패')
+      }
+      const products = await response.json()
       setData(products)
     } catch (error) {
       console.error('데이터 로딩 오류:', error)
