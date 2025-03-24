@@ -17,7 +17,14 @@ export async function GET(request: Request) {
     
     // BigQuery 쿼리
     const query = `
-      WITH RankedProducts AS (
+      WITH LatestTable AS (
+        SELECT table_id
+        FROM \`third-current-410914.001_ezadmin.__TABLES__\`
+        WHERE table_id LIKE '001_ezadmin_product_%'
+        ORDER BY table_id DESC
+        LIMIT 1
+      ),
+      RankedProducts AS (
         SELECT 
           product_id,
           name,
@@ -33,7 +40,7 @@ export async function GET(request: Request) {
           options_product_id,
           options_options,
           ROW_NUMBER() OVER (PARTITION BY product_id ORDER BY product_id DESC) as rn
-        FROM \`third-current-410914.001_ezadmin.001_ezadmin_product\`
+        FROM \`third-current-410914.001_ezadmin.\` || (SELECT table_id FROM LatestTable)
         WHERE name LIKE '%${searchTerm}%'
       )
       SELECT 
