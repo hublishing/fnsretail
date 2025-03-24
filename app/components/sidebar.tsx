@@ -53,7 +53,7 @@ export function Sidebar() {
           <MobileNav items={menuItems} pathname={pathname} />
         </SheetContent>
       </Sheet>
-      <div className="[&:not(:has(+main))]:hidden border-r bg-background md:block">
+      <div className="hidden md:block w-64 border-r bg-background">
         <div className="flex h-full flex-col">
           <div className="flex h-14 items-center border-b px-4">
             <Link href="/" className="flex items-center space-x-2">
