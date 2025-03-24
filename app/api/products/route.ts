@@ -33,6 +33,11 @@ export async function GET(request: Request) {
     // JWT 토큰 생성
     const now = Math.floor(Date.now() / 1000);
     const privateKeyString = process.env.GOOGLE_CLOUD_PRIVATE_KEY || '';
+    
+    if (!privateKeyString) {
+      throw new Error('GOOGLE_CLOUD_PRIVATE_KEY 환경 변수가 설정되지 않았습니다.');
+    }
+
     const privateKey = createPrivateKey({
       key: privateKeyString,
       format: 'pem',
@@ -67,13 +72,20 @@ export async function GET(request: Request) {
       }),
     });
 
+    const tokenResponseText = await tokenResponse.text();
+    console.log('토큰 응답:', tokenResponseText);
+
     if (!tokenResponse.ok) {
-      const errorText = await tokenResponse.text();
-      console.error('토큰 응답:', errorText);
-      throw new Error(`액세스 토큰 획득 실패: ${errorText}`);
+      throw new Error(`액세스 토큰 획득 실패: ${tokenResponseText}`);
     }
 
-    const tokenData = await tokenResponse.json();
+    let tokenData;
+    try {
+      tokenData = JSON.parse(tokenResponseText);
+    } catch (e) {
+      throw new Error(`토큰 응답 파싱 실패: ${tokenResponseText}`);
+    }
+
     const { access_token } = tokenData;
 
     // BigQuery API 요청
@@ -89,13 +101,19 @@ export async function GET(request: Request) {
       }),
     });
 
+    const responseText = await response.text();
+    console.log('BigQuery 응답:', responseText);
+
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('BigQuery 응답:', errorText);
-      throw new Error(`BigQuery API 요청 실패: ${errorText}`);
+      throw new Error(`BigQuery API 요청 실패: ${responseText}`);
     }
 
-    const data = await response.json();
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      throw new Error(`BigQuery 응답 파싱 실패: ${responseText}`);
+    }
 
     // BigQuery 응답에서 데이터 추출
     const rows = data.rows?.map((row: any) => ({
