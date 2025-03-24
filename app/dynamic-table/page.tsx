@@ -79,15 +79,24 @@ export default function DynamicTable() {
       key: "img_desc1", 
       label: "상품이미지",
       format: (value: string) => value ? (
-        <img 
-          src={value} 
-          alt="상품 이미지" 
-          className="w-20 h-20 object-contain"
-          onError={(e) => {
-            const target = e.target as HTMLImageElement;
-            target.src = '/placeholder.png';
-          }}
-        />
+        <div className="relative w-20 h-20">
+          <img 
+            src={value} 
+            alt="상품 이미지" 
+            className="w-20 h-20 object-contain"
+            loading="lazy"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+              target.parentElement?.classList.add('flex', 'items-center', 'justify-center', 'bg-gray-100');
+              target.parentElement!.innerHTML = '이미지 없음';
+            }}
+            onLoad={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'block';
+            }}
+          />
+        </div>
       ) : '이미지 없음'
     },
     { key: "name", label: "이지어드민상품명" },

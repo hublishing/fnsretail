@@ -12,7 +12,9 @@ export default function HomePage() {
     const checkAuth = async () => {
       try {
         const session = await getSession()
-        if (!session) {
+        if (session) {
+          router.push('/dynamic-table')
+        } else {
           router.push('/login')
         }
       } catch (error) {
@@ -27,14 +29,9 @@ export default function HomePage() {
   }, [router])
 
   if (isLoading) {
-    return null // 로딩 중에는 아무것도 표시하지 않음
+    return null
   }
 
-  return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-4">
-      <h1 className="text-4xl font-bold mb-8">FNS Retail에 오신 것을 환영합니다</h1>
-      <p className="text-xl text-gray-600">시스템을 이용하시려면 사이드바의 메뉴를 선택해주세요.</p>
-    </div>
-  )
+  return null
 }
 
