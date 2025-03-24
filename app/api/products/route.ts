@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { SignJWT } from 'jose';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -25,7 +26,20 @@ export async function GET(request: Request) {
 
     // JWT 토큰 생성
     const now = Math.floor(Date.now() / 1000);
-    const token = await generateJWT(now);
+    const privateKey = process.env.GOOGLE_CLOUD_PRIVATE_KEY?.replace(/\\n/g, '\n') || '';
+    
+    const token = await new SignJWT({})
+      .setProtectedHeader({ 
+        alg: 'RS256',
+        typ: 'JWT',
+        kid: process.env.GOOGLE_CLOUD_PRIVATE_KEY_ID
+      })
+      .setIssuedAt(now)
+      .setExpirationTime(now + 3600)
+      .setIssuer(process.env.GOOGLE_CLOUD_CLIENT_EMAIL || '')
+      .setAudience('https://oauth2.googleapis.com/token')
+      .setSubject(process.env.GOOGLE_CLOUD_CLIENT_EMAIL || '')
+      .sign(new TextEncoder().encode(privateKey));
 
     // API 요청
     const response = await fetch(url, {
@@ -65,55 +79,4 @@ export async function GET(request: Request) {
       { status: 500 }
     );
   }
-}
-
-async function generateJWT(now: number) {
-  const header = {
-    alg: 'RS256',
-    typ: 'JWT',
-    kid: process.env.GOOGLE_CLOUD_PRIVATE_KEY_ID,
-  };
-
-  const payload = {
-    iss: process.env.GOOGLE_CLOUD_CLIENT_EMAIL,
-    scope: 'https://www.googleapis.com/auth/bigquery',
-    aud: 'https://oauth2.googleapis.com/token',
-    exp: now + 3600,
-    iat: now,
-  };
-
-  const headerBase64 = Buffer.from(JSON.stringify(header)).toString('base64');
-  const payloadBase64 = Buffer.from(JSON.stringify(payload)).toString('base64');
-  const signatureInput = `${headerBase64}.${payloadBase64}`;
-
-  // RS256 서명 생성
-  const privateKey = process.env.GOOGLE_CLOUD_PRIVATE_KEY?.replace(/\\n/g, '\n');
-  const signature = await signRS256(signatureInput, privateKey || '');
-
-  return `${headerBase64}.${payloadBase64}.${signature}`;
-}
-
-async function signRS256(input: string, privateKey: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const keyData = encoder.encode(privateKey);
-  const messageData = encoder.encode(input);
-
-  const cryptoKey = await crypto.subtle.importKey(
-    'pkcs8',
-    keyData,
-    {
-      name: 'RSASSA-PKCS1-v1_5',
-      hash: 'SHA-256',
-    },
-    false,
-    ['sign']
-  );
-
-  const signature = await crypto.subtle.sign(
-    'RSASSA-PKCS1-v1_5',
-    cryptoKey,
-    messageData
-  );
-
-  return Buffer.from(signature).toString('base64');
 } 
