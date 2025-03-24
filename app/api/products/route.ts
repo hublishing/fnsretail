@@ -8,24 +8,20 @@ export async function GET(request: Request) {
 
   // 검색어가 없으면 빈 배열 반환
   if (!searchTerm) {
-    return NextResponse.json({
-      items: [],
-      total: 0,
-      page: 1,
-      pageSize: 50,
-      totalPages: 0
-    });
+    return NextResponse.json([]);
   }
 
   try {
     // Google Cloud API 엔드포인트
     const url = `https://bigquery.googleapis.com/bigquery/v2/projects/${process.env.GOOGLE_CLOUD_PROJECT_ID}/queries`;
     
-    // 데이터를 가져오는 쿼리
-    const dataQuery = `
+    // BigQuery 쿼리
+    const query = `
       SELECT DISTINCT
         product_id,
+        options_product_id,
         name,
+        options_options,
         org_price,
         shop_price,
         category
@@ -39,10 +35,7 @@ export async function GET(request: Request) {
     const privateKeyString = process.env.GOOGLE_CLOUD_PRIVATE_KEY || '';
     
     if (!privateKeyString) {
-      return NextResponse.json(
-        { error: 'GOOGLE_CLOUD_PRIVATE_KEY 환경 변수가 설정되지 않았습니다.' },
-        { status: 500 }
-      );
+      throw new Error('GOOGLE_CLOUD_PRIVATE_KEY 환경 변수가 설정되지 않았습니다.');
     }
 
     const privateKey = createPrivateKey({
@@ -79,56 +72,61 @@ export async function GET(request: Request) {
       }),
     });
 
+    const tokenResponseText = await tokenResponse.text();
+    console.log('토큰 응답:', tokenResponseText);
+
     if (!tokenResponse.ok) {
-      const errorText = await tokenResponse.text();
-      return NextResponse.json(
-        { error: `액세스 토큰 획득 실패: ${errorText}` },
-        { status: 500 }
-      );
+      throw new Error(`액세스 토큰 획득 실패: ${tokenResponseText}`);
     }
 
-    const tokenData = await tokenResponse.json();
+    let tokenData;
+    try {
+      tokenData = JSON.parse(tokenResponseText);
+    } catch (e) {
+      throw new Error(`토큰 응답 파싱 실패: ${tokenResponseText}`);
+    }
+
     const { access_token } = tokenData;
 
-    // 데이터 조회
-    const dataResponse = await fetch(url, {
+    // BigQuery API 요청
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${access_token}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        query: dataQuery,
+        query,
         useLegacySql: false,
       }),
     });
 
-    if (!dataResponse.ok) {
-      const errorText = await dataResponse.text();
-      return NextResponse.json(
-        { error: `데이터 조회 실패: ${errorText}` },
-        { status: 500 }
-      );
+    const responseText = await response.text();
+    console.log('BigQuery 응답:', responseText);
+
+    if (!response.ok) {
+      throw new Error(`BigQuery API 요청 실패: ${responseText}`);
     }
 
-    const data = await dataResponse.json();
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      throw new Error(`BigQuery 응답 파싱 실패: ${responseText}`);
+    }
 
     // BigQuery 응답에서 데이터 추출
-    const allItems = data.rows?.map((row: any) => ({
+    const rows = data.rows?.map((row: any) => ({
       product_id: row.f[0].v,
-      name: row.f[1].v,
-      org_price: Number(row.f[2].v),
-      shop_price: Number(row.f[3].v),
-      category: row.f[4].v,
+      options_product_id: row.f[1].v,
+      name: row.f[2].v,
+      options_options: row.f[3].v,
+      org_price: Number(row.f[4].v),
+      shop_price: Number(row.f[5].v),
+      category: row.f[6].v,
     })) || [];
 
-    return NextResponse.json({
-      items: allItems,
-      total: allItems.length,
-      page: 1,
-      pageSize: 50,
-      totalPages: Math.ceil(allItems.length / 50)
-    });
+    return NextResponse.json(rows);
   } catch (error) {
     console.error('BigQuery 쿼리 오류:', error);
     return NextResponse.json(
