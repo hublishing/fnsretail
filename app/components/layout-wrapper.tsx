@@ -10,7 +10,7 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen">
       {!isLoginPage && <SidebarWrapper />}
-      <main className={`flex-1 overflow-y-auto ${!isLoginPage ? 'ml-64' : ''}`}>
+      <main className="flex-1 overflow-y-auto">
         {children}
       </main>
     </div>
