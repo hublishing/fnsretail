@@ -24,14 +24,14 @@ export async function GET(request: Request) {
     // 데이터를 가져오는 쿼리
     const dataQuery = `
       SELECT DISTINCT
-        상품코드 as product_id,
-        상품명 as name,
-        원가 as org_price,
-        판매가 as shop_price,
-        카테고리 as category
+        product_id,
+        name,
+        org_price,
+        shop_price,
+        category
       FROM \`third-current-410914.001_ezadmin.001_ezadmin_product_*\`
-      WHERE 상품명 LIKE '%${searchTerm}%'
-      ORDER BY 상품코드 DESC
+      WHERE name LIKE '%${searchTerm}%'
+      ORDER BY product_id DESC
     `;
 
     // JWT 토큰 생성
