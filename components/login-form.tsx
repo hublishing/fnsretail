@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { AlertCircle } from 'lucide-react'
 
 export function LoginForm() {
-  const [state, formAction, isPending] = useActionState(login)
+  const [state, formAction, isPending] = useActionState(login, { error: '' })
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
 
