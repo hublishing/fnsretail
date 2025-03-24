@@ -3,11 +3,22 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Sidebar } from './sidebar'
-import { signOut } from '../actions/auth'
+import { signOut, getSession } from '../actions/auth'
 
 export function SidebarWrapper() {
   const [isOpen, setIsOpen] = useState(true)
+  const [userEmail, setUserEmail] = useState<string | null>(null)
   const router = useRouter()
+
+  useEffect(() => {
+    const fetchUserEmail = async () => {
+      const session = await getSession()
+      if (session?.email) {
+        setUserEmail(session.email)
+      }
+    }
+    fetchUserEmail()
+  }, [])
 
   const handleLogout = async () => {
     try {
@@ -26,12 +37,19 @@ export function SidebarWrapper() {
           {/* 메인 컨텐츠 */}
         </div>
       </div>
-      <button
-        onClick={handleLogout}
-        className="fixed bottom-4 left-4 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition-colors"
-      >
-        로그아웃
-      </button>
+      <div className="fixed bottom-4 left-4 flex flex-col items-start gap-2">
+        {userEmail && (
+          <div className="text-sm text-gray-600">
+            {userEmail}
+          </div>
+        )}
+        <button
+          onClick={handleLogout}
+          className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition-colors"
+        >
+          로그아웃
+        </button>
+      </div>
     </div>
   )
 } 

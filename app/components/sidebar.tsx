@@ -4,7 +4,6 @@ import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Menu, Package, Users, Settings, LogOut } from "lucide-react"
-import { useState } from 'react'
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -41,50 +40,54 @@ const menuItems = [
 
 export function Sidebar({ isOpen, onToggle }: SidebarProps) {
   const pathname = usePathname()
-  const [activeItem, setActiveItem] = useState('')
+  const [open, setOpen] = React.useState(false)
 
   return (
-    <div className={`bg-gray-800 text-white w-64 min-h-screen transition-all duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-      <div className="p-4">
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-xl font-bold">FNS Retail</h1>
-          <button
-            onClick={onToggle}
-            className="p-2 hover:bg-gray-700 rounded"
+    <>
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetTrigger asChild>
+          <Button
+            variant="ghost"
+            className="mr-2 px-0 text-base hover:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 md:hidden"
           >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
-        </div>
-        <nav>
-          {menuItems.map((item) => (
-            <Link
-              key={item.title}
-              href={item.href}
-              className={`block py-2 px-4 rounded mb-1 ${
-                pathname === item.href
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-300 hover:bg-gray-700'
-              }`}
-              onClick={() => setActiveItem(item.title)}
-            >
-              {item.title}
+            <Menu className="h-6 w-6" />
+            <span className="sr-only">메뉴 열기</span>
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="left" className="pr-0">
+          <MobileNav items={menuItems} pathname={pathname} />
+        </SheetContent>
+      </Sheet>
+      <div className="[&:not(:has(+main))]:hidden border-r bg-background md:block">
+        <div className="flex h-full flex-col">
+          <div className="flex h-14 items-center border-b px-4">
+            <Link href="/" className="flex items-center space-x-2">
+              <span className="font-bold">FNS Retail</span>
             </Link>
-          ))}
-        </nav>
+          </div>
+          <ScrollArea className="flex-1">
+            <nav className="grid items-start gap-2 p-4">
+              {menuItems.map((item) => {
+                const Icon = item.icon
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                      "group flex items-center rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
+                      pathname === item.href ? "bg-accent" : "transparent"
+                    )}
+                  >
+                    <Icon className="mr-2 h-4 w-4" />
+                    <span>{item.title}</span>
+                  </Link>
+                )
+              })}
+            </nav>
+          </ScrollArea>
+        </div>
       </div>
-    </div>
+    </>
   )
 }
 
