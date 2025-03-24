@@ -51,7 +51,10 @@ export async function GET(request: Request) {
     const privateKeyString = process.env.GOOGLE_CLOUD_PRIVATE_KEY || '';
     
     if (!privateKeyString) {
-      throw new Error('GOOGLE_CLOUD_PRIVATE_KEY 환경 변수가 설정되지 않았습니다.');
+      return NextResponse.json(
+        { error: 'GOOGLE_CLOUD_PRIVATE_KEY 환경 변수가 설정되지 않았습니다.' },
+        { status: 500 }
+      );
     }
 
     const privateKey = createPrivateKey({
@@ -88,20 +91,15 @@ export async function GET(request: Request) {
       }),
     });
 
-    const tokenResponseText = await tokenResponse.text();
-    console.log('토큰 응답:', tokenResponseText);
-
     if (!tokenResponse.ok) {
-      throw new Error(`액세스 토큰 획득 실패: ${tokenResponseText}`);
+      const errorText = await tokenResponse.text();
+      return NextResponse.json(
+        { error: `액세스 토큰 획득 실패: ${errorText}` },
+        { status: 500 }
+      );
     }
 
-    let tokenData;
-    try {
-      tokenData = JSON.parse(tokenResponseText);
-    } catch (e) {
-      throw new Error(`토큰 응답 파싱 실패: ${tokenResponseText}`);
-    }
-
+    const tokenData = await tokenResponse.json();
     const { access_token } = tokenData;
 
     // 전체 데이터 수 조회
@@ -116,6 +114,14 @@ export async function GET(request: Request) {
         useLegacySql: false,
       }),
     });
+
+    if (!countResponse.ok) {
+      const errorText = await countResponse.text();
+      return NextResponse.json(
+        { error: `전체 데이터 수 조회 실패: ${errorText}` },
+        { status: 500 }
+      );
+    }
 
     const countData = await countResponse.json();
     const total = parseInt(countData.rows[0].f[0].v);
@@ -133,19 +139,15 @@ export async function GET(request: Request) {
       }),
     });
 
-    const dataResponseText = await dataResponse.text();
-    console.log('BigQuery 응답:', dataResponseText);
-
     if (!dataResponse.ok) {
-      throw new Error(`BigQuery API 요청 실패: ${dataResponseText}`);
+      const errorText = await dataResponse.text();
+      return NextResponse.json(
+        { error: `데이터 조회 실패: ${errorText}` },
+        { status: 500 }
+      );
     }
 
-    let data;
-    try {
-      data = JSON.parse(dataResponseText);
-    } catch (e) {
-      throw new Error(`BigQuery 응답 파싱 실패: ${dataResponseText}`);
-    }
+    const data = await dataResponse.json();
 
     // BigQuery 응답에서 데이터 추출
     const items = data.rows?.map((row: any) => ({
