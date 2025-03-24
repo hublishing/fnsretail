@@ -110,33 +110,49 @@ export function DynamicTable() {
         <div>로딩 중...</div>
       ) : (
         <>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>상품코드</TableHead>
-                  <TableHead>옵션상품코드</TableHead>
-                  <TableHead>상품명</TableHead>
-                  <TableHead>옵션</TableHead>
-                  <TableHead>원가</TableHead>
-                  <TableHead>판매가</TableHead>
-                  <TableHead>카테고리</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {products.map((product) => (
-                  <TableRow key={`${product.product_id}-${product.options_product_id}`}>
-                    <TableCell>{product.product_id}</TableCell>
-                    <TableCell>{product.options_product_id}</TableCell>
-                    <TableCell>{product.name}</TableCell>
-                    <TableCell>{product.options_options}</TableCell>
-                    <TableCell>{product.org_price.toLocaleString()}</TableCell>
-                    <TableCell>{product.shop_price.toLocaleString()}</TableCell>
-                    <TableCell>{product.category}</TableCell>
-                  </TableRow>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    상품코드
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    상품명
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    원가
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    판매가
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    카테고리
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {products.map((product, index) => (
+                  <tr key={index} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {product.product_id}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {product.name}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {product.org_price.toLocaleString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {product.shop_price.toLocaleString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {product.category}
+                    </td>
+                  </tr>
                 ))}
-              </TableBody>
-            </Table>
+              </tbody>
+            </table>
           </div>
 
           {totalPages > 1 && (
