@@ -219,6 +219,10 @@ export async function GET(request: Request) {
     // BigQuery 응답에서 데이터 추출
     const rows = data.rows?.map((row: any) => {
       try {
+        const imgDesc1Value = row.f[6]?.v;
+        console.log('img_desc1 타입:', typeof imgDesc1Value);
+        console.log('img_desc1 값:', imgDesc1Value);
+        
         const mappedRow = {
           product_id: row.f[0]?.v || '',
           name: row.f[1]?.v || '',
@@ -226,7 +230,7 @@ export async function GET(request: Request) {
           weight: row.f[3]?.v || '',
           org_price: Number(row.f[4]?.v || 0),
           shop_price: Number(row.f[5]?.v || 0),
-          img_desc1: row.f[6]?.v || '',
+          img_desc1: imgDesc1Value || '',
           product_desc: row.f[7]?.v || '',
           category: row.f[8]?.v || '',
           extra_column1: row.f[9]?.v || '',
@@ -234,7 +238,6 @@ export async function GET(request: Request) {
           options_product_id: row.f[11]?.v || '',
           options_options: row.f[12]?.v || '',
         };
-        console.log('이미지 URL:', mappedRow.img_desc1);
         return mappedRow;
       } catch (error) {
         console.error('행 데이터 매핑 오류:', error, row)
