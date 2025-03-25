@@ -19,6 +19,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { useAuth } from '@/lib/auth';
+import { getSession } from '@/app/actions/auth';
 
 // 고정 필터 옵션
 const STATIC_FILTER_OPTIONS = {
@@ -63,7 +67,7 @@ interface Product {
 }
 
 interface Column {
-  key: keyof Product;
+  key: keyof Product | 'actions';
   label: string;
   format?: (value: any) => React.ReactNode;
 }
@@ -71,8 +75,9 @@ interface Column {
 type SearchType = 'name' | 'product_id';
 
 export default function DynamicTable() {
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [data, setData] = useState<Product[]>([])
-  const [loading, setLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [searchType, setSearchType] = useState<SearchType>('name')
   const [error, setError] = useState<string | null>(null)
@@ -90,6 +95,123 @@ export default function DynamicTable() {
     extra_column2: new Set<string>(),
     exclusive2: new Set<string>()
   })
+
+  // 초기화 함수
+  const resetState = async () => {
+    try {
+      if (user) {
+        // Firestore에서 사용자의 검색 상태 삭제
+        const docRef = doc(db, 'userSearchStates', user.uid);
+        await setDoc(docRef, {
+          searchTerm: '',
+          searchType: 'name',
+          filters: {
+            extra_column2: 'all',
+            category_3: 'all',
+            drop_yn: 'all',
+            supply_name: 'all',
+            exclusive2: 'all'
+          },
+          searchResults: [],
+          updatedAt: new Date().toISOString()
+        });
+      }
+      
+      // 상태 초기화
+      setData([]);
+      setSearchTerm("");
+      setSearchType('name');
+      setFilters({
+        extra_column2: 'all',
+        category_3: 'all',
+        drop_yn: 'all',
+        supply_name: 'all',
+        exclusive2: 'all'
+      });
+    } catch (error) {
+      console.error('상태 초기화 오류:', error);
+    }
+  };
+
+  // 사용자 세션 로드
+  useEffect(() => {
+    const loadSession = async () => {
+      try {
+        const session = await getSession();
+        console.log('세션 로드 결과:', session);
+        if (session) {
+          setUser(session);
+          console.log('사용자 세션 설정 완료:', {
+            uid: session.uid,
+            email: session.email
+          });
+        } else {
+          console.log('세션이 없습니다.');
+          await resetState();
+        }
+      } catch (error) {
+        console.error('세션 로드 오류:', error);
+        await resetState();
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadSession();
+  }, []);
+
+  // 저장된 검색 상태 불러오기
+  useEffect(() => {
+    const loadSearchState = async () => {
+      if (!user) {
+        console.log('사용자가 로그인되지 않았습니다.');
+        return;
+      }
+      
+      try {
+        console.log('검색 상태 불러오기 시작:', {
+          userId: user.uid,
+          userEmail: user.email
+        });
+        
+        const docRef = doc(db, 'userSearchStates', user.uid);
+        console.log('문서 참조 생성:', docRef.path);
+        
+        const docSnap = await getDoc(docRef);
+        console.log('문서 존재 여부:', docSnap.exists());
+        
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          console.log('저장된 데이터:', data);
+          setSearchTerm(data.searchTerm || '');
+          setSearchType(data.searchType || 'name');
+          setFilters(data.filters || {
+            extra_column2: 'all',
+            category_3: 'all',
+            drop_yn: 'all',
+            supply_name: 'all',
+            exclusive2: 'all'
+          });
+          if (data.searchResults) {
+            setData(data.searchResults);
+          }
+        } else {
+          console.log('저장된 데이터가 없습니다.');
+        }
+      } catch (error: any) {
+        console.error('검색 상태 불러오기 실패:', error);
+        console.error('오류 상세:', {
+          message: error.message,
+          code: error.code,
+          stack: error.stack
+        });
+      }
+    };
+
+    if (!loading) {
+      loadSearchState();
+    }
+  }, [user, loading]);
 
   // 필터 옵션 초기화
   useEffect(() => {
@@ -144,6 +266,36 @@ export default function DynamicTable() {
       }
 
       setData(result)
+      
+      // 검색 결과 저장
+      if (user) {
+        try {
+          console.log('검색 결과 저장 시도:', {
+            userId: user.uid,
+            searchTerm,
+            searchType,
+            filters,
+            resultCount: result.length
+          });
+          
+          const docRef = doc(db, 'userSearchStates', user.uid);
+          const searchState = {
+            searchTerm,
+            searchType,
+            filters,
+            searchResults: result,
+            updatedAt: new Date().toISOString()
+          };
+          
+          await setDoc(docRef, searchState, { merge: true });
+          console.log('검색 결과 저장 완료');
+        } catch (error) {
+          console.error('검색 결과 저장 실패:', error);
+          // 저장 실패해도 검색 결과는 표시
+        }
+      } else {
+        console.log('사용자가 로그인되지 않아 저장하지 않습니다.');
+      }
     } catch (err) {
       console.error('데이터 로딩 오류:', err)
       setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.')
@@ -220,8 +372,49 @@ export default function DynamicTable() {
     { key: "drop_yn", label: "드랍여부" },
     { key: "soldout_rate", label: "품절률", format: (value: number) => `${value}%` },
     { key: "supply_name", label: "공급처명" },
-    { key: "exclusive2", label: "단독여부" }
+    { key: "exclusive2", label: "단독여부" },
+    { key: 'actions', label: '담기' }
   ]
+
+  // 담기 기능
+  const handleAddToCart = async (product: Product) => {
+    try {
+      if (!user) {
+        alert('장바구니에 담으려면 로그인이 필요합니다.');
+        return;
+      }
+
+      // Firestore에서 현재 장바구니 데이터 가져오기
+      const docRef = doc(db, 'userCarts', user.uid);
+      const docSnap = await getDoc(docRef);
+      
+      let currentProducts: Product[] = [];
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        currentProducts = data.products || [];
+      }
+
+      // 이미 장바구니에 있는 상품인지 확인
+      if (currentProducts.some(p => p.product_id === product.product_id)) {
+        alert('이미 장바구니에 담긴 상품입니다.');
+        return;
+      }
+
+      // 상품 추가
+      currentProducts.push(product);
+      
+      // Firestore 업데이트
+      await setDoc(docRef, {
+        products: currentProducts,
+        updatedAt: new Date().toISOString()
+      });
+
+      alert('장바구니에 담았습니다.');
+    } catch (error) {
+      console.error('장바구니 담기 오류:', error);
+      alert('장바구니에 담는 중 오류가 발생했습니다.');
+    }
+  };
 
   return (
     <div className="container mx-auto py-10">
@@ -371,9 +564,18 @@ export default function DynamicTable() {
                 <TableRow key={item.product_id}>
                   {columns.map((column) => (
                     <TableCell key={column.key}>
-                      {column.format 
-                        ? column.format(item[column.key as keyof Product] as number)
-                        : item[column.key as keyof Product]}
+                      {column.key === 'actions' ? (
+                        <button
+                          onClick={() => handleAddToCart(item)}
+                          className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                        >
+                          담기
+                        </button>
+                      ) : column.format ? (
+                        column.format(item[column.key as keyof Product])
+                      ) : (
+                        item[column.key as keyof Product]
+                      )}
                     </TableCell>
                   ))}
                 </TableRow>
