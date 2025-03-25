@@ -84,7 +84,7 @@ export default function DynamicTable() {
           return (
             <div className="relative w-20 h-20">
               <img 
-                src={value} 
+                src={`"${value}"`}
                 alt="상품 이미지" 
                 className="w-20 h-20 object-contain"
                 loading="lazy"
