@@ -380,7 +380,18 @@ export default function DynamicTable() {
         />
       )
     },
-    { key: "name", label: "이지어드민상품명" },
+    { 
+      key: "name", 
+      label: "이지어드민상품명",
+      format: (value: string, product?: Product) => product ? (
+        <button 
+          onClick={() => router.push(`/product-detail?id=${product.product_id}`)}
+          className="text-gray-900 hover:underline text-left"
+        >
+          {value}
+        </button>
+      ) : value
+    },
     { key: "org_price", label: "원가", format: (value: number) => value.toLocaleString() },
     { key: "shop_price", label: "판매가", format: (value: number) => value.toLocaleString() },
     { 
@@ -400,19 +411,7 @@ export default function DynamicTable() {
     { key: "drop_yn", label: "드랍여부" },
     { key: "soldout_rate", label: "품절률", format: (value: number) => `${value}%` },
     { key: "supply_name", label: "공급처명" },
-    { key: "exclusive2", label: "단독여부" },
-    { 
-      key: "detail", 
-      label: "상세보기",
-      format: (value: any, product?: Product) => product ? (
-        <button 
-          onClick={() => router.push(`/product-detail?id=${product.product_id}`)}
-          className="w-8 h-8 flex items-center justify-center bg-white text-[hsl(var(--foreground))] border border-[hsl(var(--border))] hover:bg-gray-100 transition-colors rounded-[5px]"
-        >
-          +
-        </button>
-      ) : null
-    }
+    { key: "exclusive2", label: "단독여부" }
   ]
 
   // 장바구니에서 상품 제거
@@ -650,16 +649,16 @@ export default function DynamicTable() {
                         cartItems.has(item.product_id) ? (
                           <button
                             onClick={() => handleRemoveFromCart(item)}
-                            className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+                            className="w-8 h-8 flex items-center justify-center bg-white text-red-500 border border-red-500 hover:bg-red-50 transition-colors rounded-[5px]"
                           >
-                            제거
+                            -
                           </button>
                         ) : (
                           <button
                             onClick={() => handleAddToCart(item)}
-                            className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                            className="w-8 h-8 flex items-center justify-center bg-white text-blue-500 border border-blue-500 hover:bg-blue-50 transition-colors rounded-[5px]"
                           >
-                            담기
+                            +
                           </button>
                         )
                       ) : column.format ? (
