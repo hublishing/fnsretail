@@ -23,6 +23,7 @@ import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/auth';
 import { getSession } from '@/app/actions/auth';
+import { useRouter } from "next/navigation"
 
 // 고정 필터 옵션
 const STATIC_FILTER_OPTIONS = {
@@ -70,7 +71,7 @@ interface Product {
 interface Column {
   key: keyof Product | 'actions' | 'detail';
   label: string;
-  format?: (value: any) => React.ReactNode;
+  format?: (value: any, product?: Product) => React.ReactNode;
 }
 
 type SearchType = 'name' | 'product_id';
@@ -97,6 +98,8 @@ export default function DynamicTable() {
     extra_column2: new Set<string>(),
     exclusive2: new Set<string>()
   })
+
+  const router = useRouter()
 
   // 초기화 함수
   const resetState = async () => {
@@ -401,11 +404,14 @@ export default function DynamicTable() {
     { 
       key: "detail", 
       label: "상세보기",
-      format: () => (
-        <button className="w-8 h-8 flex items-center justify-center bg-white text-[hsl(var(--foreground))] border border-[hsl(var(--border))] hover:bg-gray-100 transition-colors rounded-[5px]">
+      format: (value: any, product?: Product) => product ? (
+        <button 
+          onClick={() => router.push(`/product-detail?id=${product.product_id}`)}
+          className="w-8 h-8 flex items-center justify-center bg-white text-[hsl(var(--foreground))] border border-[hsl(var(--border))] hover:bg-gray-100 transition-colors rounded-[5px]"
+        >
           +
         </button>
-      )
+      ) : null
     }
   ]
 
@@ -657,7 +663,7 @@ export default function DynamicTable() {
                           </button>
                         )
                       ) : column.format ? (
-                        column.format(item[column.key as keyof Product])
+                        column.format(item[column.key as keyof Product], item)
                       ) : (
                         item[column.key as keyof Product]
                       )}

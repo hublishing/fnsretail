@@ -69,6 +69,14 @@ export function Sidebar() {
       href: '/dynamic-table',
       label: '상품 검색',
     },
+    {
+      href: '/cart',
+      label: '담은 상품',
+    },
+    {
+      href: '/product-detail',
+      label: '상세보기',
+    },
   ]
 
   return (
@@ -104,16 +112,12 @@ export function Sidebar() {
                     'flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors',
                     pathname === route.href
                       ? 'bg-gray-900 text-white'
-                      : 'text-gray-300 hover:text-white hover:bg-gray-700'
+                      : 'text-[hsl(var(--primary)/.9)] hover:text-white hover:bg-gray-700'
                   )}
                 >
                   {route.label}
                 </Link>
               ))}
-              <Link href="/cart" className="flex items-center gap-2 text-gray-300 hover:text-white">
-                <ShoppingCartIcon className="w-5 h-5" />
-                <span>담은 상품</span>
-              </Link>
             </nav>
           </ScrollArea>
           <div className="border-t p-4">
