@@ -80,27 +80,9 @@ export default function DynamicTable() {
       label: "상품이미지",
       format: (value: string) => {
         if (value) {
-          console.log('이미지 로딩 시도:', value);
           return (
-            <div className="relative w-20 h-20">
-              <img 
-                src={`"${value}"`}
-                alt="상품 이미지" 
-                className="w-20 h-20 object-contain"
-                loading="lazy"
-                onError={(e) => {
-                  console.error('이미지 로딩 실패:', value);
-                  const target = e.target as HTMLImageElement;
-                  target.style.display = 'none';
-                  target.parentElement?.classList.add('flex', 'items-center', 'justify-center', 'bg-gray-100');
-                  target.parentElement!.innerHTML = '이미지 없음';
-                }}
-                onLoad={(e) => {
-                  console.log('이미지 로딩 성공:', value);
-                  const target = e.target as HTMLImageElement;
-                  target.style.display = 'block';
-                }}
-              />
+            <div className="text-xs break-all">
+              {value}
             </div>
           );
         }
