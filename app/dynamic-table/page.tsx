@@ -64,10 +64,11 @@ interface Product {
   soldout_rate: number
   supply_name: string
   exclusive2: string
+  detail?: never
 }
 
 interface Column {
-  key: keyof Product | 'actions';
+  key: keyof Product | 'actions' | 'detail';
   label: string;
   format?: (value: any) => React.ReactNode;
 }
@@ -81,6 +82,7 @@ export default function DynamicTable() {
   const [searchTerm, setSearchTerm] = useState("")
   const [searchType, setSearchType] = useState<SearchType>('name')
   const [error, setError] = useState<string | null>(null)
+  const [cartItems, setCartItems] = useState<Set<string>>(new Set())
   const [filters, setFilters] = useState({
     extra_column2: 'all',
     category_3: 'all',
@@ -237,6 +239,28 @@ export default function DynamicTable() {
     loadFilterOptions();
   }, []);
 
+  // 장바구니 데이터 로드
+  useEffect(() => {
+    const loadCartItems = async () => {
+      if (!user) return;
+      
+      try {
+        const docRef = doc(db, 'userCarts', user.uid);
+        const docSnap = await getDoc(docRef);
+        
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          const products = data.products || [];
+          setCartItems(new Set(products.map((p: Product) => p.product_id)));
+        }
+      } catch (error) {
+        console.error('장바구니 데이터 로드 오류:', error);
+      }
+    };
+
+    loadCartItems();
+  }, [user]);
+
   const fetchData = async () => {
     try {
       setLoading(true)
@@ -330,6 +354,7 @@ export default function DynamicTable() {
   }
 
   const columns: Column[] = [
+    { key: 'actions', label: '담기' },
     { key: "product_id", label: "이지어드민" },
     { 
       key: "img_desc1", 
@@ -373,10 +398,50 @@ export default function DynamicTable() {
     { key: "soldout_rate", label: "품절률", format: (value: number) => `${value}%` },
     { key: "supply_name", label: "공급처명" },
     { key: "exclusive2", label: "단독여부" },
-    { key: 'actions', label: '담기' }
+    { 
+      key: "detail", 
+      label: "상세보기",
+      format: () => (
+        <button className="w-8 h-8 flex items-center justify-center bg-white text-[hsl(var(--foreground))] border border-[hsl(var(--border))] hover:bg-gray-100 transition-colors rounded-[5px]">
+          +
+        </button>
+      )
+    }
   ]
 
-  // 담기 기능
+  // 장바구니에서 상품 제거
+  const handleRemoveFromCart = async (product: Product) => {
+    try {
+      if (!user) return;
+
+      const docRef = doc(db, 'userCarts', user.uid);
+      const docSnap = await getDoc(docRef);
+      
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        const products = data.products || [];
+        const updatedProducts = products.filter((p: Product) => p.product_id !== product.product_id);
+        
+        await setDoc(docRef, {
+          products: updatedProducts,
+          updatedAt: new Date().toISOString()
+        });
+
+        setCartItems(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(product.product_id);
+          return newSet;
+        });
+
+        alert('장바구니에서 제거되었습니다.');
+      }
+    } catch (error) {
+      console.error('장바구니 제거 오류:', error);
+      alert('장바구니에서 제거하는 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 담기 기능 수정
   const handleAddToCart = async (product: Product) => {
     try {
       if (!user) {
@@ -384,7 +449,6 @@ export default function DynamicTable() {
         return;
       }
 
-      // Firestore에서 현재 장바구니 데이터 가져오기
       const docRef = doc(db, 'userCarts', user.uid);
       const docSnap = await getDoc(docRef);
       
@@ -408,6 +472,9 @@ export default function DynamicTable() {
         products: currentProducts,
         updatedAt: new Date().toISOString()
       });
+
+      // 로컬 상태 업데이트
+      setCartItems(prev => new Set([...prev, product.product_id]));
 
       alert('장바구니에 담았습니다.');
     } catch (error) {
@@ -446,9 +513,18 @@ export default function DynamicTable() {
               }}
             />
           </div>
-          <Button onClick={handleSearch} disabled={loading}>
-            {loading ? '검색 중...' : '검색'}
-          </Button>
+          <div className="flex items-center gap-4">
+            <Button onClick={handleSearch} disabled={loading}>
+              {loading ? '검색 중...' : '검색'}
+            </Button>
+            <Button 
+              onClick={resetState} 
+              variant="outline"
+              className="border-[hsl(var(--border))] text-[hsl(var(--foreground))] hover:bg-gray-100"
+            >
+              초기화
+            </Button>
+          </div>
         </div>
 
         <div className="flex items-center gap-4">
@@ -565,12 +641,21 @@ export default function DynamicTable() {
                   {columns.map((column) => (
                     <TableCell key={column.key}>
                       {column.key === 'actions' ? (
-                        <button
-                          onClick={() => handleAddToCart(item)}
-                          className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-                        >
-                          담기
-                        </button>
+                        cartItems.has(item.product_id) ? (
+                          <button
+                            onClick={() => handleRemoveFromCart(item)}
+                            className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+                          >
+                            제거
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleAddToCart(item)}
+                            className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                          >
+                            담기
+                          </button>
+                        )
                       ) : column.format ? (
                         column.format(item[column.key as keyof Product])
                       ) : (
