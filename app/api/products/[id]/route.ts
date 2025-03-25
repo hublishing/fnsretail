@@ -1,16 +1,10 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, NextRequest } from 'next/server'
 import jwt from 'jsonwebtoken';
 import { createPrivateKey } from 'crypto';
 
-type Props = {
-  params: {
-    id: string
-  }
-}
-
 export async function GET(
-  request: Request,
-  { params }: Props
+  request: NextRequest,
+  { params }: { params: { id: string } }
 ) {
   try {
     const productId = params.id
