@@ -4,10 +4,19 @@ import { createPrivateKey } from 'crypto';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const searchTerm = searchParams.get('search');
+  const searchTerm = searchParams.get('search') || '';
+  const searchType = searchParams.get('type') || 'name';
+  const extra_column2 = searchParams.get('extra_column2');
+  const category_3 = searchParams.get('category_3');
+  const drop_yn = searchParams.get('drop_yn');
+  const supply_name = searchParams.get('supply_name');
+  const exclusive2 = searchParams.get('exclusive2');
 
-  // 검색어가 없으면 빈 배열 반환
-  if (!searchTerm) {
+  // 검색어나 필터 중 하나라도 있어야 검색 실행
+  const hasSearchTerm = searchTerm.trim().length > 0;
+  const hasFilter = [extra_column2, category_3, drop_yn, supply_name, exclusive2].some(filter => filter && filter !== 'all');
+
+  if (!hasSearchTerm && !hasFilter) {
     return NextResponse.json([]);
   }
 
@@ -15,14 +24,38 @@ export async function GET(request: Request) {
     // Google Cloud API 엔드포인트
     const url = `https://bigquery.googleapis.com/bigquery/v2/projects/${process.env.GOOGLE_CLOUD_PROJECT_ID}/queries`;
     
-    // BigQuery 쿼리
+    // WHERE 절 조건 생성
+    const conditions = [];
+    
+    // 검색어 조건 추가
+    if (searchTerm) {
+      if (searchType === 'name') {
+        conditions.push(`name LIKE '%${searchTerm}%'`);
+      } else {
+        const productIds = searchTerm.split(',').map(id => id.trim()).filter(Boolean);
+        if (productIds.length > 0) {
+          conditions.push(`product_id IN ('${productIds.join("','")}')`);
+        }
+      }
+    }
+
+    // 필터 조건 추가
+    if (extra_column2 && extra_column2 !== 'all') conditions.push(`extra_column2 = '${extra_column2}'`);
+    if (category_3 && category_3 !== 'all') conditions.push(`category_3 = '${category_3}'`);
+    if (drop_yn && drop_yn !== 'all') conditions.push(`drop_yn = '${drop_yn}'`);
+    if (supply_name && supply_name !== 'all') conditions.push(`supply_name = '${supply_name}'`);
+    if (exclusive2 && exclusive2 !== 'all') conditions.push(`exclusive2 = '${exclusive2}'`);
+
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    
+    // BigQuery 쿼리 (1000개로 제한)
     const query = `
       WITH RankedProducts AS (
         SELECT 
           *,
           ROW_NUMBER() OVER (PARTITION BY product_id ORDER BY product_id DESC) as rn
         FROM \`third-current-410914.project_m.product_db\`
-        WHERE name LIKE '%${searchTerm}%'
+        ${whereClause}
       )
       SELECT 
         product_id,
@@ -43,6 +76,7 @@ export async function GET(request: Request) {
       FROM RankedProducts
       WHERE rn = 1
       ORDER BY product_id DESC
+      LIMIT 1000
     `;
 
     // JWT 토큰 생성

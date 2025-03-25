@@ -12,6 +12,37 @@ import {
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Search } from "lucide-react"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+
+// 고정 필터 옵션
+const STATIC_FILTER_OPTIONS = {
+  drop_yn: [
+    { value: 'DROP', label: '드랍' }
+  ],
+  extra_column2: [
+    { value: '23SS', label: '23SS' },
+    { value: '23FW', label: '23FW' },
+    { value: '24SS', label: '24SS' }
+  ],
+  category_3: [
+    { value: '힐', label: '힐' },
+    { value: '플랫', label: '플랫' },
+    { value: '슬링백힐', label: '슬링백힐' },
+    { value: '샌들힐', label: '샌들힐' },
+    { value: '쪼리/슬리퍼', label: '쪼리/슬리퍼' },
+    { value: '샌들', label: '샌들' },
+    { value: '샌들뮬', label: '샌들뮬' },
+    { value: '로퍼', label: '로퍼' },
+    { value: '앵클부츠', label: '앵클부츠' },
+    { value: '힐뮬', label: '힐뮬' }
+  ]
+};
 
 interface Product {
   product_id: string
@@ -37,17 +68,71 @@ interface Column {
   format?: (value: any) => React.ReactNode;
 }
 
+type SearchType = 'name' | 'product_id';
+
 export default function DynamicTable() {
   const [data, setData] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
+  const [searchType, setSearchType] = useState<SearchType>('name')
   const [error, setError] = useState<string | null>(null)
+  const [filters, setFilters] = useState({
+    extra_column2: 'all',
+    category_3: 'all',
+    drop_yn: 'all',
+    supply_name: 'all',
+    exclusive2: 'all'
+  })
+
+  // 동적 필터 옵션
+  const [dynamicFilterOptions, setDynamicFilterOptions] = useState({
+    supply_name: new Set<string>(),
+    extra_column2: new Set<string>(),
+    exclusive2: new Set<string>()
+  })
+
+  // 필터 옵션 초기화
+  useEffect(() => {
+    const loadFilterOptions = async () => {
+      try {
+        const response = await fetch('/api/filter-options');
+        const result = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(result.error || '필터 옵션을 불러오는데 실패했습니다.');
+        }
+
+        setDynamicFilterOptions({
+          supply_name: new Set(result.supply_name || []),
+          extra_column2: new Set(result.extra_column2 || []),
+          exclusive2: new Set(result.exclusive2 || [])
+        });
+      } catch (err) {
+        console.error('필터 옵션 로딩 오류:', err);
+      }
+    };
+
+    loadFilterOptions();
+  }, []);
 
   const fetchData = async () => {
     try {
       setLoading(true)
       setError(null)
-      const response = await fetch(`/api/products?search=${encodeURIComponent(searchTerm)}`)
+
+      // URL 파라미터 생성
+      const params = new URLSearchParams();
+      if (searchTerm) params.append('search', searchTerm);
+      params.append('type', searchType);
+      
+      // 'all'이 아닌 필터만 추가
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== 'all') {
+          params.append(key, value);
+        }
+      });
+
+      const response = await fetch(`/api/products?${params.toString()}`)
       const result = await response.json()
       
       if (!response.ok) {
@@ -58,7 +143,6 @@ export default function DynamicTable() {
         throw new Error('잘못된 데이터 형식입니다.')
       }
 
-      console.log('API 응답 데이터:', JSON.stringify(result, null, 2))
       setData(result)
     } catch (err) {
       console.error('데이터 로딩 오류:', err)
@@ -69,12 +153,28 @@ export default function DynamicTable() {
     }
   }
 
-  useEffect(() => {
-    fetchData()
-  }, [])
+  // 필터 변경 핸들러
+  const handleFilterChange = (key: keyof typeof filters, value: string) => {
+    setFilters(prev => ({ ...prev, [key]: value }))
+  }
 
   const handleSearch = () => {
-    fetchData()
+    // 검색어나 필터 중 하나라도 있는 경우에만 검색 실행
+    const hasSearchTerm = searchTerm.trim().length > 0;
+    const hasFilter = Object.values(filters).some(value => value !== 'all');
+
+    if (!hasSearchTerm && !hasFilter) {
+      setError('검색어를 입력하거나 필터를 선택해주세요.');
+      return;
+    }
+
+    fetchData();
+  }
+
+  const getPlaceholder = () => {
+    return searchType === 'name' 
+      ? "상품명을 입력하세요" 
+      : "상품코드를 입력하세요 (여러 개인 경우 쉼표로 구분)"
   }
 
   const columns: Column[] = [
@@ -125,24 +225,117 @@ export default function DynamicTable() {
 
   return (
     <div className="container mx-auto py-10">
-      <div className="flex items-center gap-4 mb-6">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4" />
-          <Input
-            placeholder="상품명을 입력하세요"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                handleSearch()
-              }
-            }}
-          />
+      <div className="flex flex-col gap-4 mb-6">
+        <div className="flex items-center gap-4">
+          <Select
+            value={searchType}
+            onValueChange={(value: SearchType) => setSearchType(value)}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="검색 유형 선택" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="name">상품명</SelectItem>
+              <SelectItem value="product_id">상품코드</SelectItem>
+            </SelectContent>
+          </Select>
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4" />
+            <Input
+              placeholder={getPlaceholder()}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleSearch()
+                }
+              }}
+            />
+          </div>
+          <Button onClick={handleSearch} disabled={loading}>
+            {loading ? '검색 중...' : '검색'}
+          </Button>
         </div>
-        <Button onClick={handleSearch} disabled={loading}>
-          {loading ? '검색 중...' : '검색'}
-        </Button>
+
+        <div className="flex items-center gap-4">
+          <Select
+            value={filters.category_3}
+            onValueChange={(value) => handleFilterChange('category_3', value)}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="카테고리" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">카테고리</SelectItem>
+              {STATIC_FILTER_OPTIONS.category_3.map(({ value, label }) => (
+                <SelectItem key={value} value={value}>{label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={filters.extra_column2}
+            onValueChange={(value) => handleFilterChange('extra_column2', value)}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="출시시즌" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">시즌</SelectItem>
+              {Array.from(dynamicFilterOptions.extra_column2).map((option) => (
+                <SelectItem key={option} value={option}>{option}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={filters.drop_yn}
+            onValueChange={(value) => handleFilterChange('drop_yn', value)}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="드랍여부" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">드랍상태</SelectItem>
+              {STATIC_FILTER_OPTIONS.drop_yn.map(({ value, label }) => (
+                <SelectItem key={value} value={value}>{label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={filters.supply_name}
+            onValueChange={(value) => handleFilterChange('supply_name', value)}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="공급처명" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">공급처</SelectItem>
+              {Array.from(dynamicFilterOptions.supply_name).map((option) => (
+                <SelectItem key={option} value={option}>{option}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={filters.exclusive2}
+            onValueChange={(value) => handleFilterChange('exclusive2', value)}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="단독여부" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">단독상태</SelectItem>
+              {Array.from(dynamicFilterOptions.exclusive2).map((option) => (
+                <SelectItem key={option} value={option}>
+                  {option === 'Y' ? '단독' : option === 'N' ? '단독아님' : option}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {error && (
@@ -170,7 +363,7 @@ export default function DynamicTable() {
             ) : data.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={columns.length} className="text-center">
-                  데이터가 없습니다.
+                  검색어를 입력하거나 필터를 선택하여 검색해주세요.
                 </TableCell>
               </TableRow>
             ) : (
