@@ -12,23 +12,43 @@ const bigquery = new BigQuery({
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url)
-    const productId = url.pathname.split('/').pop()
-    console.log('Received productId:', productId)
+    const optionsProductId = url.pathname.split('/').pop()
+    console.log('Received optionsProductId:', optionsProductId)
 
-    if (!productId) {
+    if (!optionsProductId) {
       return NextResponse.json({ error: '상품 ID가 필요합니다.' }, { status: 400 })
     }
 
+    // 먼저 options_product_id로 product_id를 조회
+    const productIdQuery = `
+      SELECT product_id
+      FROM \`${process.env.GOOGLE_CLOUD_DATASET}.product_db\`
+      WHERE options_product_id = '${optionsProductId}'
+      LIMIT 1
+    `
+    console.log('Product ID query:', productIdQuery)
+
+    const [productIdRows] = await bigquery.query({ query: productIdQuery })
+    console.log('Product ID response:', productIdRows)
+
+    if (!productIdRows || productIdRows.length === 0) {
+      return NextResponse.json({ error: '상품을 찾을 수 없습니다.' }, { status: 404 })
+    }
+
+    const productId = productIdRows[0].product_id
+    console.log('Found product_id:', productId)
+
+    // product_id로 모든 옵션 상품 조회
     const query = `
       SELECT *
       FROM \`${process.env.GOOGLE_CLOUD_DATASET}.product_db\`
       WHERE product_id = '${productId}'
       ORDER BY product_id DESC
     `
-    console.log('BigQuery query:', query)
+    console.log('Main query:', query)
 
     const [rows] = await bigquery.query({ query })
-    console.log('BigQuery response:', rows)
+    console.log('Main query response:', rows)
 
     if (!rows || rows.length === 0) {
       return NextResponse.json({ error: '상품을 찾을 수 없습니다.' }, { status: 404 })
