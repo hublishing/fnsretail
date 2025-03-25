@@ -4,10 +4,10 @@ import { createPrivateKey } from 'crypto';
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
-    const productId = params.id
+    const productId = context.params.id
     console.log('상품 ID:', productId);
     
     const url = `https://bigquery.googleapis.com/bigquery/v2/projects/${process.env.GOOGLE_CLOUD_PROJECT_ID}/queries`;
