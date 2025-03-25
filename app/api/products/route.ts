@@ -203,7 +203,8 @@ export async function GET(request: Request) {
     });
 
     const responseText = await response.text();
-    console.log('BigQuery 응답:', responseText);
+    console.log('BigQuery 쿼리:', dataQuery);
+    console.log('BigQuery 응답 전체:', responseText);
 
     if (!response.ok) {
       throw new Error(`BigQuery API 요청 실패: ${responseText}`);
@@ -212,6 +213,10 @@ export async function GET(request: Request) {
     let data;
     try {
       data = JSON.parse(responseText);
+      console.log('BigQuery 파싱된 데이터 전체:', JSON.stringify(data, null, 2));
+      if (data.rows && data.rows.length > 0) {
+        console.log('첫 번째 행의 img_desc1:', data.rows[0]?.f[6]?.v);
+      }
     } catch (e) {
       throw new Error(`BigQuery 응답 파싱 실패: ${responseText}`);
     }
@@ -220,6 +225,7 @@ export async function GET(request: Request) {
     const rows = data.rows?.map((row: any) => {
       try {
         const imgDesc1Value = row.f[6]?.v;
+        console.log('전체 row 데이터:', JSON.stringify(row, null, 2));
         console.log('img_desc1 타입:', typeof imgDesc1Value);
         console.log('img_desc1 값:', imgDesc1Value);
         
