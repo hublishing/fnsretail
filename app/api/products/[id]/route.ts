@@ -4,7 +4,7 @@ import { createPrivateKey } from 'crypto';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params, searchParams }: { params: { id: string }, searchParams: { [key: string]: string | string[] | undefined } }
 ) {
   try {
     const productId = params.id
