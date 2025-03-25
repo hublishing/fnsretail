@@ -6,6 +6,8 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { auth as firebaseAdminAuth } from '@/lib/firebase-admin'
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth'
+import { doc, setDoc } from 'firebase/firestore'
+import { db } from '@/lib/firebase'
 
 export interface LoginResult {
   success: boolean
@@ -83,9 +85,40 @@ export async function signInWithGoogle() {
 }
 
 export async function signOut() {
-  const cookieStore = await cookies()
-  cookieStore.delete('session')
-  redirect('/login')
+  try {
+    // 현재 세션 가져오기
+    const session = await getSession();
+    
+    if (session) {
+      // Firestore에서 사용자의 검색 상태 초기화
+      const docRef = doc(db, 'userSearchStates', session.uid);
+      await setDoc(docRef, {
+        searchTerm: '',
+        searchType: 'name',
+        filters: {
+          extra_column2: 'all',
+          category_3: 'all',
+          drop_yn: 'all',
+          supply_name: 'all',
+          exclusive2: 'all'
+        },
+        searchResults: [],
+        updatedAt: new Date().toISOString()
+      });
+    }
+
+    // 세션 쿠키 삭제
+    const cookieStore = await cookies()
+    cookieStore.delete('session')
+    
+    redirect('/login')
+  } catch (error) {
+    console.error('로그아웃 오류:', error)
+    // 오류가 발생해도 로그아웃은 진행
+    const cookieStore = await cookies()
+    cookieStore.delete('session')
+    redirect('/login')
+  }
 }
 
 export async function getSession() {

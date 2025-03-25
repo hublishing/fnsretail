@@ -4,7 +4,7 @@ import * as React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { usePathname } from "next/navigation"
-import { Menu, Package, Users, Settings, LogOut } from "lucide-react"
+import { Menu, Package, Users, Settings, LogOut, TableIcon, ShoppingCartIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -110,6 +110,10 @@ export function Sidebar() {
                   {route.label}
                 </Link>
               ))}
+              <Link href="/cart" className="flex items-center gap-2 text-gray-300 hover:text-white">
+                <ShoppingCartIcon className="w-5 h-5" />
+                <span>담은 상품</span>
+              </Link>
             </nav>
           </ScrollArea>
           <div className="border-t p-4">
