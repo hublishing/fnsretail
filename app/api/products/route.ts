@@ -40,7 +40,7 @@ export async function GET(request: Request) {
           options_product_id,
           options_options,
           ROW_NUMBER() OVER (PARTITION BY product_id ORDER BY product_id DESC) as rn
-        FROM \`third-current-410914.001_ezadmin.001_ezadmin_product_20240319\`
+        FROM \`third-current-410914.001_ezadmin.\${(SELECT table_id FROM LatestTable)}\`
         WHERE name LIKE '%${searchTerm}%'
       )
       SELECT 
