@@ -66,7 +66,7 @@ export async function GET(request: Request) {
     const latestTableQuery = `
       SELECT table_id
       FROM \`third-current-410914.001_ezadmin.__TABLES__\`
-      WHERE table_id LIKE '001_ezadmin_product_%'
+      WHERE table_id LIKE '001_ezadmin_product_2%'
       ORDER BY table_id DESC
       LIMIT 1
     `;
