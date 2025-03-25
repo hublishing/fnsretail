@@ -66,6 +66,7 @@ interface Product {
   supply_name: string
   exclusive2: string
   detail?: never
+  options_product_id: string
 }
 
 interface Column {
@@ -385,7 +386,7 @@ export default function DynamicTable() {
       label: "이지어드민상품명",
       format: (value: string, product?: Product) => product ? (
         <button 
-          onClick={() => router.push(`/product-detail?id=${product.product_id}`)}
+          onClick={() => router.push(`/product-detail?id=${product.options_product_id}`)}
           className="text-gray-900 hover:underline text-left"
         >
           {value}

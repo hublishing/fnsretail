@@ -29,7 +29,6 @@ interface Product {
   category: string;
   extra_column1: string;
   extra_column2: string;
-  options_product_id: string;
   options_options: string;
   cost_ratio: number;
   category_1: string;
@@ -38,6 +37,16 @@ interface Product {
   global_price: number;
   category_group: string;
   amazon_shipping_cost: number;
+  tag: string;
+  drop_yn: string;
+  soldout_rate: number;
+  supply_name: string;
+  exclusive2: string;
+}
+
+interface OptionProduct {
+  options_product_id: string;
+  options_options: string;
   main_stock: number;
   add_wh_stock: number;
   production_stock: number;
@@ -45,15 +54,10 @@ interface Product {
   main_wh_available_stock: number;
   main_wh_available_stock_excl_production_stock: number;
   incoming_stock: number;
-  tag: string;
-  drop_yn: string;
   soldout: string;
-  soldout_rate: number;
-  supply_name: string;
   scheduled: string;
   last_shipping: string;
   exclusive: string;
-  exclusive2: string;
   fulfillment_stock_zalora: number;
   fulfillment_stock_shopee_sg: number;
   fulfillment_stock_shopee_my: number;
@@ -61,7 +65,8 @@ interface Product {
 
 function ProductDetailContent() {
   const router = useRouter();
-  const [product, setProduct] = useState<Product | null>(null)
+  const [mainProduct, setMainProduct] = useState<Product | null>(null)
+  const [optionProducts, setOptionProducts] = useState<OptionProduct[]>([])
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -98,22 +103,26 @@ function ProductDetailContent() {
       try {
         setLoading(true);
         setError(null);
+        console.log('Fetching product with ID:', productId);
         const response = await fetch(`/api/products/${productId}`);
         const data = await response.json();
+        console.log('API Response:', data);
         
         if (!response.ok) {
           throw new Error(data.error || '상품 정보를 불러오는데 실패했습니다.');
         }
 
-        if (!data || !data.product_id) {
+        if (!data || !data.mainProduct) {
           throw new Error('상품 정보가 올바르지 않습니다.');
         }
 
-        setProduct(data);
+        setMainProduct(data.mainProduct);
+        setOptionProducts(data.optionProducts || []);
       } catch (error) {
         console.error('상품 정보 로드 오류:', error);
         setError(error instanceof Error ? error.message : '상품 정보를 불러오는데 실패했습니다.');
-        setProduct(null);
+        setMainProduct(null);
+        setOptionProducts([]);
       } finally {
         setLoading(false);
       }
@@ -146,7 +155,7 @@ function ProductDetailContent() {
     );
   }
 
-  if (!product) {
+  if (!mainProduct) {
     return (
       <div className="container mx-auto py-10">
         <div className="text-center">
@@ -166,8 +175,9 @@ function ProductDetailContent() {
     <div className="container mx-auto py-10 px-4">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">{product.name}</h1>
-          <p className="text-gray-600 mt-2">상품코드: {product.product_id}</p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">{mainProduct.name}</h1>
+          <p className="text-sm text-gray-500 mb-2">{mainProduct.extra_column1}</p>
+          <p className="text-sm text-gray-500">브랜드 : {mainProduct.brand} 상품코드 : {mainProduct.product_id}</p>
         </div>
         <Button 
           onClick={() => router.push('/dynamic-table')}
@@ -176,164 +186,149 @@ function ProductDetailContent() {
           상품검색으로 돌아가기
         </Button>
       </div>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* 왼쪽: 상품 이미지 */}
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-lg shadow-lg p-4">
-            <h2 className="text-xl font-semibold mb-4 text-gray-800">상품 이미지</h2>
-            {product.product_desc ? (
-              <a 
-                href={product.product_desc}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block cursor-pointer hover:opacity-90 transition-opacity"
-              >
+
+      {/* 메인 상품 정보 */}
+      <div className="bg-white mb-8">
+        <div className="grid grid-cols-[400px_1fr] gap-20">
+          {/* 상품 이미지 섹션 */}
+          <div className="flex flex-col items-center">
+            <div className="relative w-full aspect-square mb-4">
+              <a href={mainProduct.product_desc} target="_blank" rel="noopener noreferrer">
                 <img 
-                  src={product.img_desc1 || '/no-image.png'} 
-                  alt={product.name}
-                  className="w-full h-auto rounded-lg shadow-md"
+                  src={mainProduct.img_desc1 || '/no-image.png'} 
+                  alt={mainProduct.name}
+                  className="w-full h-full object-contain cursor-pointer hover:opacity-90 transition-opacity"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     target.src = '/no-image.png';
                   }}
                 />
               </a>
-            ) : (
-              <img 
-                src={product.img_desc1 || '/no-image.png'} 
-                alt={product.name}
-                className="w-full h-auto rounded-lg shadow-md"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.src = '/no-image.png';
-                }}
-              />
-            )}
-          </div>
-        </div>
-
-        {/* 중앙: 주요 정보 */}
-        <div className="lg:col-span-2">
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <h2 className="text-xl font-semibold mb-6 text-gray-800">상품 정보</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-500">정상가</p>
-                  <p className="text-xl font-bold text-gray-900">{product.org_price.toLocaleString()}원</p>
-                </div>
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-500">판매가</p>
-                  <p className="text-xl font-bold text-gray-900">{product.shop_price.toLocaleString()}원</p>
-                </div>
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-500">글로벌가</p>
-                  <p className="text-xl font-bold text-gray-900">{product.global_price.toLocaleString()}원</p>
-                </div>
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-500">원가율</p>
-                  <p className="text-xl font-bold text-gray-900">{product.cost_ratio}%</p>
-                </div>
-              </div>
-              <div className="space-y-4">
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-500">브랜드</p>
-                  <p className="text-lg font-semibold text-gray-900">{product.brand}</p>
-                </div>
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-500">원산지</p>
-                  <p className="text-lg font-semibold text-gray-900">{product.origin}</p>
-                </div>
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-500">무게</p>
-                  <p className="text-lg font-semibold text-gray-900">{product.weight}</p>
-                </div>
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-500">카테고리</p>
-                  <p className="text-lg font-semibold text-gray-900">{product.category_3}</p>
-                </div>
-              </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* 재고 정보 섹션 */}
-      <div className="mt-8">
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <h2 className="text-xl font-semibold mb-6 text-gray-800">재고 정보</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <p className="text-sm text-gray-500">메인 재고</p>
-              <p className="text-lg font-semibold text-gray-900">{product.main_stock.toLocaleString()}개</p>
-            </div>
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <p className="text-sm text-gray-500">추가 창고 재고</p>
-              <p className="text-lg font-semibold text-gray-900">{product.add_wh_stock.toLocaleString()}개</p>
-            </div>
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <p className="text-sm text-gray-500">생산 재고</p>
-              <p className="text-lg font-semibold text-gray-900">{product.production_stock.toLocaleString()}개</p>
-            </div>
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <p className="text-sm text-gray-500">프리마 재고</p>
-              <p className="text-lg font-semibold text-gray-900">{product.prima_stock.toLocaleString()}개</p>
-            </div>
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <p className="text-sm text-gray-500">메인 창고 가용 재고</p>
-              <p className="text-lg font-semibold text-gray-900">{product.main_wh_available_stock.toLocaleString()}개</p>
-            </div>
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <p className="text-sm text-gray-500">입고 예정</p>
-              <p className="text-lg font-semibold text-gray-900">{product.incoming_stock.toLocaleString()}개</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 추가 정보 섹션 */}
-      <div className="mt-8">
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <h2 className="text-xl font-semibold mb-6 text-gray-800">추가 정보</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
+          {/* 상품 정보 섹션 */}
+          <div className="space-y-6">
+            {/* 가격 정보 */}
+            <div className="grid grid-cols-3 gap-4">
               <div>
-                <p className="text-sm text-gray-500">옵션 상품코드</p>
-                <p className="font-medium text-gray-900">{product.options_product_id}</p>
+                <p className="text-sm text-gray-500">원가</p>
+                <p className="text-base text-gray-900">{mainProduct.org_price?.toLocaleString()}원</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500">옵션</p>
-                <p className="font-medium text-gray-900">{product.options_options}</p>
+                <p className="text-sm text-gray-500">판매가</p>
+                <p className="text-base text-gray-900">{mainProduct.shop_price?.toLocaleString()}원</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">글로벌 가격</p>
+                <p className="text-base text-gray-900">{mainProduct.global_price?.toLocaleString()}원</p>
+              </div>
+            </div>
+
+            <div className="border-t border-gray-200 my-6"></div>
+
+            {/* 카테고리 정보 */}
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <p className="text-sm text-gray-500">카테고리</p>
+                <p className="text-base text-gray-900">{mainProduct.category_3}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">라인</p>
+                <p className="text-base text-gray-900">{mainProduct.category_1}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">출시 시즌</p>
+                <p className="text-base text-gray-900">{mainProduct.extra_column2}</p>
+              </div>
+            </div>
+
+            <div className="border-t border-gray-200 my-6"></div>
+
+            {/* 기본 정보 */}
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <p className="text-sm text-gray-500">원산지</p>
+                <p className="text-base text-gray-900">{mainProduct.origin}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">무게</p>
+                <p className="text-base text-gray-900">{mainProduct.weight}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">공급사</p>
+                <p className="text-base text-gray-900">{mainProduct.supply_name}</p>
+              </div>
+            </div>
+
+            <div className="border-t border-gray-200 my-6"></div>
+
+            {/* 상태 정보 */}
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <p className="text-sm text-gray-500">품절률</p>
+                <p className="text-base text-gray-900">{mainProduct.soldout_rate}%</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">드랍 여부</p>
+                <p className="text-base text-gray-900">{mainProduct.drop_yn}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">태그</p>
-                <p className="font-medium text-gray-900">{product.tag}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">시즌</p>
-                <p className="font-medium text-gray-900">{product.extra_column2}</p>
-              </div>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm text-gray-500">공급처명</p>
-                <p className="font-medium text-gray-900">{product.supply_name}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">스케줄</p>
-                <p className="font-medium text-gray-900">{product.scheduled}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">마지막 배송</p>
-                <p className="font-medium text-gray-900">{product.last_shipping}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">단독여부</p>
-                <p className="font-medium text-gray-900">{product.exclusive}</p>
+                <p className="text-base text-gray-900">{mainProduct.tag}</p>
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* 옵션 상품 목록 */}
+      <div className="bg-white">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>옵션 상품코드</TableHead>
+                <TableHead>옵션</TableHead>
+                <TableHead>정상 재고</TableHead>
+                <TableHead>추가 창고</TableHead>
+                <TableHead>생산 대기</TableHead>
+                <TableHead>프리마 창고</TableHead>
+                <TableHead>정상+창고 가용재고</TableHead>
+                <TableHead>정상+창고 가용재고-생산대기</TableHead>
+                <TableHead>입고예정</TableHead>
+                <TableHead>품절</TableHead>
+                <TableHead>ZALORA</TableHead>
+                <TableHead>쇼피 SG</TableHead>
+                <TableHead>쇼피 MY</TableHead>
+                <TableHead>스케줄</TableHead>
+                <TableHead>마지막 배송</TableHead>
+                <TableHead>단독여부</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {optionProducts.map((option, index) => (
+                <TableRow key={index}>
+                  <TableCell className="font-medium">{option.options_product_id}</TableCell>
+                  <TableCell>{option.options_options}</TableCell>
+                  <TableCell>{option.main_stock.toLocaleString()}</TableCell>
+                  <TableCell>{option.add_wh_stock.toLocaleString()}</TableCell>
+                  <TableCell>{option.production_stock.toLocaleString()}</TableCell>
+                  <TableCell>{option.prima_stock.toLocaleString()}</TableCell>
+                  <TableCell>{option.main_wh_available_stock.toLocaleString()}</TableCell>
+                  <TableCell>{option.main_wh_available_stock_excl_production_stock.toLocaleString()}</TableCell>
+                  <TableCell>{option.incoming_stock.toLocaleString()}</TableCell>
+                  <TableCell>{option.soldout}</TableCell>
+                  <TableCell>{option.fulfillment_stock_zalora.toLocaleString()}</TableCell>
+                  <TableCell>{option.fulfillment_stock_shopee_sg.toLocaleString()}</TableCell>
+                  <TableCell>{option.fulfillment_stock_shopee_my.toLocaleString()}</TableCell>
+                  <TableCell>{option.scheduled}</TableCell>
+                  <TableCell>{option.last_shipping}</TableCell>
+                  <TableCell>{option.exclusive}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       </div>
     </div>
