@@ -75,20 +75,7 @@ export default function DynamicTable() {
   }
 
   const columns: Column[] = [
-    { 
-      key: "img_desc1", 
-      label: "상품이미지",
-      format: (value: string) => {
-        if (value) {
-          return (
-            <div className="text-xs break-all">
-              {value}
-            </div>
-          );
-        }
-        return '이미지 없음';
-      }
-    },
+    { key: "img_desc1", label: "상품이미지" },
     { key: "name", label: "이지어드민상품명" },
     { key: "product_id", label: "이지어드민상품코드" },
     { key: "org_price", label: "원가", format: (value: number) => `${value.toLocaleString()}원` },
