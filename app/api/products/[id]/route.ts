@@ -2,18 +2,12 @@ import { NextResponse, NextRequest } from 'next/server'
 import jwt from 'jsonwebtoken';
 import { createPrivateKey } from 'crypto';
 
-type Props = {
-  params: {
-    id: string
-  }
-}
-
 export async function GET(
   request: NextRequest,
-  { params }: Props
+  context: { params: { id: string } }
 ) {
   try {
-    const productId = params.id
+    const productId = context.params.id
     console.log('상품 ID:', productId);
     
     const url = `https://bigquery.googleapis.com/bigquery/v2/projects/${process.env.GOOGLE_CLOUD_PROJECT_ID}/queries`;
