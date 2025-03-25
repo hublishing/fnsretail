@@ -13,6 +13,7 @@ export async function GET(request: Request) {
   try {
     const url = new URL(request.url)
     const productId = url.pathname.split('/').pop()
+    console.log('Received productId:', productId)
 
     if (!productId) {
       return NextResponse.json({ error: '상품 ID가 필요합니다.' }, { status: 400 })
@@ -24,8 +25,10 @@ export async function GET(request: Request) {
       WHERE product_id = '${productId}'
       ORDER BY product_id DESC
     `
+    console.log('BigQuery query:', query)
 
     const [rows] = await bigquery.query({ query })
+    console.log('BigQuery response:', rows)
 
     if (!rows || rows.length === 0) {
       return NextResponse.json({ error: '상품을 찾을 수 없습니다.' }, { status: 404 })
@@ -33,6 +36,7 @@ export async function GET(request: Request) {
 
     // 첫 번째 행을 메인 상품 정보로 사용
     const mainProduct = rows[0]
+    console.log('Main product:', mainProduct)
 
     // 모든 행을 옵션 상품 정보로 사용
     const optionProducts = rows.map(row => ({
@@ -53,6 +57,7 @@ export async function GET(request: Request) {
       fulfillment_stock_shopee_sg: row.fulfillment_stock_shopee_sg,
       fulfillment_stock_shopee_my: row.fulfillment_stock_shopee_my
     }))
+    console.log('Option products:', optionProducts)
 
     return NextResponse.json({
       mainProduct,
