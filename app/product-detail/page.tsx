@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import {
   Table,
   TableBody,
@@ -59,7 +59,7 @@ interface Product {
   fulfillment_stock_shopee_my: number;
 }
 
-export default function ProductDetailPage() {
+function ProductDetailContent() {
   const router = useRouter();
   const [product, setProduct] = useState<Product | null>(null)
   const [user, setUser] = useState<any>(null);
@@ -361,4 +361,16 @@ export default function ProductDetailPage() {
       </div>
     </div>
   )
+}
+
+export default function ProductDetailPage() {
+  return (
+    <Suspense fallback={
+      <div className="container mx-auto py-10">
+        <p className="text-center">로딩 중...</p>
+      </div>
+    }>
+      <ProductDetailContent />
+    </Suspense>
+  );
 } 
