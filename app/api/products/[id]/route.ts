@@ -9,12 +9,14 @@ const bigquery = new BigQuery({
   },
 })
 
-export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: Request) {
   try {
-    const productId = params.id
+    const url = new URL(request.url)
+    const productId = url.pathname.split('/').pop()
+
+    if (!productId) {
+      return NextResponse.json({ error: '상품 ID가 필요합니다.' }, { status: 400 })
+    }
 
     const query = `
       SELECT *
