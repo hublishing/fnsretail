@@ -60,6 +60,17 @@ export function Sidebar() {
     }
   }
 
+  const routes = [
+    {
+      href: '/',
+      label: '홈',
+    },
+    {
+      href: '/dynamic-table',
+      label: '상품 검색',
+    },
+  ]
+
   return (
     <>
       <Sheet open={open} onOpenChange={setOpen}>
@@ -77,7 +88,7 @@ export function Sidebar() {
         </SheetContent>
       </Sheet>
       <div className="hidden md:block w-64 border-r bg-background">
-        <div className="flex h-full flex-col">
+        <div className="flex h-screen flex-col">
           <div className="flex h-14 items-center border-b px-4">
             <Link href="/" className="flex items-center space-x-2">
               <span className="font-bold">Project M</span>
@@ -85,22 +96,20 @@ export function Sidebar() {
           </div>
           <ScrollArea className="flex-1">
             <nav className="grid items-start gap-2 p-4">
-              {menuItems.map((item) => {
-                const Icon = item.icon
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={cn(
-                      "group flex items-center rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-                      pathname === item.href ? "bg-accent" : "transparent"
-                    )}
-                  >
-                    <Icon className="mr-2 h-4 w-4" />
-                    <span>{item.title}</span>
-                  </Link>
-                )
-              })}
+              {routes.map((route) => (
+                <Link
+                  key={route.href}
+                  href={route.href}
+                  className={cn(
+                    'flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors',
+                    pathname === route.href
+                      ? 'bg-gray-900 text-white'
+                      : 'text-gray-300 hover:text-white hover:bg-gray-700'
+                  )}
+                >
+                  {route.label}
+                </Link>
+              ))}
             </nav>
           </ScrollArea>
           <div className="border-t p-4">
