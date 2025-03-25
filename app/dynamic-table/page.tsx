@@ -16,17 +16,19 @@ import { Search } from "lucide-react"
 interface Product {
   product_id: string
   name: string
-  origin: string
-  weight: string
   org_price: number
   shop_price: number
   img_desc1: string
   product_desc: string
-  category: string
-  extra_column1: string
   extra_column2: string
-  options_product_id: string
-  options_options: string
+  cost_ratio: number
+  category_1: string
+  category_3: string
+  main_wh_available_stock_excl_production_stock: number
+  drop_yn: string
+  soldout_rate: number
+  supply_name: string
+  exclusive2: string
 }
 
 interface Column {
@@ -56,6 +58,7 @@ export default function DynamicTable() {
         throw new Error('잘못된 데이터 형식입니다.')
       }
 
+      console.log('API 응답 데이터:', JSON.stringify(result, null, 2))
       setData(result)
     } catch (err) {
       console.error('데이터 로딩 오류:', err)
@@ -75,6 +78,7 @@ export default function DynamicTable() {
   }
 
   const columns: Column[] = [
+    { key: "product_id", label: "이지어드민" },
     { 
       key: "img_desc1", 
       label: "상품이미지",
@@ -97,23 +101,26 @@ export default function DynamicTable() {
       )
     },
     { key: "name", label: "이지어드민상품명" },
-    { key: "product_id", label: "이지어드민상품코드" },
-    { key: "org_price", label: "원가", format: (value: number) => `${value.toLocaleString()}원` },
-    { key: "shop_price", label: "판매가", format: (value: number) => `${value.toLocaleString()}원` },
+    { key: "org_price", label: "원가", format: (value: number) => value.toLocaleString() },
+    { key: "shop_price", label: "판매가", format: (value: number) => value.toLocaleString() },
     { 
       key: "product_desc", 
-      label: "상품URL(자사)",
+      label: "URL",
       format: (value: string) => value ? (
         <a href={value} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
           링크
         </a>
       ) : '링크 없음'
     },
-    { key: "category", label: "카테고리" },
-    { key: "extra_column1", label: "영문상품명" },
+    { key: "category_1", label: "라인" },
+    { key: "category_3", label: "카테고리" },
     { key: "extra_column2", label: "출시시즌" },
-    { key: "options_product_id", label: "이지어드민옵션코드" },
-    { key: "options_options", label: "이지어드민옵션명" },
+    { key: "cost_ratio", label: "원가율", format: (value: number) => `${value}%` },
+    { key: "main_wh_available_stock_excl_production_stock", label: "재고", format: (value: number) => value.toLocaleString() },
+    { key: "drop_yn", label: "드랍여부" },
+    { key: "soldout_rate", label: "품절률", format: (value: number) => `${value}%` },
+    { key: "supply_name", label: "공급처명" },
+    { key: "exclusive2", label: "단독여부" }
   ]
 
   return (

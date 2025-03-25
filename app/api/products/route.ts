@@ -17,63 +17,37 @@ export async function GET(request: Request) {
     
     // BigQuery 쿼리
     const query = `
-      WITH LatestTable AS (
-        SELECT table_id
-        FROM \`third-current-410914.001_ezadmin.__TABLES__\`
-        WHERE table_id LIKE '001_ezadmin_product_%'
-        ORDER BY table_id DESC
-        LIMIT 1
-      ),
-      RankedProducts AS (
+      WITH RankedProducts AS (
         SELECT 
-          product_id,
-          name,
-          origin,
-          weight,
-          org_price,
-          shop_price,
-          img_desc1,
-          product_desc,
-          category,
-          extra_column1,
-          extra_column2,
-          options_product_id,
-          options_options,
+          *,
           ROW_NUMBER() OVER (PARTITION BY product_id ORDER BY product_id DESC) as rn
-        FROM \`third-current-410914.001_ezadmin.\${(SELECT table_id FROM LatestTable)}\`
+        FROM \`third-current-410914.project_m.product_db\`
         WHERE name LIKE '%${searchTerm}%'
       )
       SELECT 
         product_id,
         name,
-        origin,
-        weight,
         org_price,
         shop_price,
         img_desc1,
         product_desc,
-        category,
-        extra_column1,
         extra_column2,
-        options_product_id,
-        options_options
+        cost_ratio,
+        category_1,
+        category_3,
+        main_wh_available_stock_excl_production_stock,
+        drop_yn,
+        soldout_rate,
+        supply_name,
+        exclusive2
       FROM RankedProducts
       WHERE rn = 1
       ORDER BY product_id DESC
     `;
 
-    // 먼저 최신 테이블 ID를 가져옵니다
-    const latestTableQuery = `
-      SELECT table_id
-      FROM \`third-current-410914.001_ezadmin.__TABLES__\`
-      WHERE table_id LIKE '001_ezadmin_product_2%'
-      ORDER BY table_id DESC
-      LIMIT 1
-    `;
-
     // JWT 토큰 생성
     const now = Math.floor(Date.now() / 1000);
-    const privateKeyString = process.env.GOOGLE_CLOUD_PRIVATE_KEY || '';
+    const privateKeyString = process.env.GOOGLE_CLOUD_PRIVATE_KEY?.replace(/\\n/g, '\n') || '';
     
     if (!privateKeyString) {
       throw new Error('GOOGLE_CLOUD_PRIVATE_KEY 환경 변수가 설정되지 않았습니다.');
@@ -113,81 +87,13 @@ export async function GET(request: Request) {
       }),
     });
 
-    const tokenResponseText = await tokenResponse.text();
-    console.log('토큰 응답:', tokenResponseText);
+    const tokenData = await tokenResponse.json();
 
     if (!tokenResponse.ok) {
-      throw new Error(`액세스 토큰 획득 실패: ${tokenResponseText}`);
-    }
-
-    let tokenData;
-    try {
-      tokenData = JSON.parse(tokenResponseText);
-    } catch (e) {
-      throw new Error(`토큰 응답 파싱 실패: ${tokenResponseText}`);
+      throw new Error(`액세스 토큰 획득 실패: ${JSON.stringify(tokenData)}`);
     }
 
     const { access_token } = tokenData;
-
-    // 먼저 최신 테이블 ID를 가져옵니다
-    const latestTableResponse = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${access_token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        query: latestTableQuery,
-        useLegacySql: false,
-      }),
-    });
-
-    const latestTableData = await latestTableResponse.json();
-    const latestTableId = latestTableData.rows?.[0]?.f?.[0]?.v;
-
-    if (!latestTableId) {
-      throw new Error('최신 테이블을 찾을 수 없습니다.');
-    }
-
-    // 실제 데이터를 가져오는 쿼리
-    const dataQuery = `
-      WITH RankedProducts AS (
-        SELECT 
-          product_id,
-          name,
-          origin,
-          weight,
-          org_price,
-          shop_price,
-          img_desc1,
-          product_desc,
-          category,
-          extra_column1,
-          extra_column2,
-          options_product_id,
-          options_options,
-          ROW_NUMBER() OVER (PARTITION BY product_id ORDER BY product_id DESC) as rn
-        FROM \`third-current-410914.001_ezadmin.${latestTableId}\`
-        WHERE name LIKE '%${searchTerm}%'
-      )
-      SELECT 
-        product_id,
-        name,
-        origin,
-        weight,
-        org_price,
-        shop_price,
-        img_desc1,
-        product_desc,
-        category,
-        extra_column1,
-        extra_column2,
-        options_product_id,
-        options_options
-      FROM RankedProducts
-      WHERE rn = 1
-      ORDER BY product_id DESC
-    `;
 
     // BigQuery API 요청
     const response = await fetch(url, {
@@ -197,59 +103,38 @@ export async function GET(request: Request) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        query: dataQuery,
+        query,
         useLegacySql: false,
       }),
     });
 
-    const responseText = await response.text();
-    console.log('BigQuery 쿼리:', dataQuery);
-    console.log('BigQuery 응답 전체:', responseText);
+    const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(`BigQuery API 요청 실패: ${responseText}`);
-    }
-
-    let data;
-    try {
-      data = JSON.parse(responseText);
-      console.log('BigQuery 파싱된 데이터 전체:', JSON.stringify(data, null, 2));
-      if (data.rows && data.rows.length > 0) {
-        console.log('첫 번째 행의 img_desc1:', data.rows[0]?.f[6]?.v);
-      }
-    } catch (e) {
-      throw new Error(`BigQuery 응답 파싱 실패: ${responseText}`);
+      throw new Error(`BigQuery API 요청 실패: ${JSON.stringify(data)}`);
     }
 
     // BigQuery 응답에서 데이터 추출
     const rows = data.rows?.map((row: any) => {
-      try {
-        const imgDesc1Value = row.f[6]?.v;
-        console.log('전체 row 데이터:', JSON.stringify(row, null, 2));
-        console.log('img_desc1 타입:', typeof imgDesc1Value);
-        console.log('img_desc1 값:', imgDesc1Value);
-        
-        const mappedRow = {
-          product_id: row.f[0]?.v || '',
-          name: row.f[1]?.v || '',
-          origin: row.f[2]?.v || '',
-          weight: row.f[3]?.v || '',
-          org_price: Number(row.f[4]?.v || 0),
-          shop_price: Number(row.f[5]?.v || 0),
-          img_desc1: imgDesc1Value || '',
-          product_desc: row.f[7]?.v || '',
-          category: row.f[8]?.v || '',
-          extra_column1: row.f[9]?.v || '',
-          extra_column2: row.f[10]?.v || '',
-          options_product_id: row.f[11]?.v || '',
-          options_options: row.f[12]?.v || '',
-        };
-        return mappedRow;
-      } catch (error) {
-        console.error('행 데이터 매핑 오류:', error, row)
-        return null
-      }
-    }).filter(Boolean) || [];
+      const values = row.f.map((field: any) => field.v);
+      return {
+        product_id: values[0] || '',
+        name: values[1] || '',
+        org_price: Number(values[2] || 0),
+        shop_price: Number(values[3] || 0),
+        img_desc1: values[4] || '',
+        product_desc: values[5] || '',
+        extra_column2: values[6] || '',
+        cost_ratio: Number(values[7] || 0),
+        category_1: values[8] || '',
+        category_3: values[9] || '',
+        main_wh_available_stock_excl_production_stock: Number(values[10] || 0),
+        drop_yn: values[11] || '',
+        soldout_rate: Number(values[12] || 0),
+        supply_name: values[13] || '',
+        exclusive2: values[14] || ''
+      };
+    }) || [];
 
     return NextResponse.json(rows);
   } catch (error) {
