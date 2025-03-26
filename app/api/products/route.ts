@@ -50,12 +50,25 @@ export async function GET(request: Request) {
     
     // BigQuery 쿼리 (1000개로 제한)
     const query = `
-      WITH RankedProducts AS (
-        SELECT 
-          *,
-          ROW_NUMBER() OVER (PARTITION BY product_id ORDER BY product_id DESC) as rn
+      WITH FilteredProducts AS (
+        SELECT *
         FROM \`third-current-410914.project_m.product_db\`
         ${whereClause}
+      ),
+      StockSummary AS (
+        SELECT 
+          product_id,
+          SUM(IFNULL(main_wh_available_stock_excl_production_stock, 0)) as total_stock
+        FROM FilteredProducts
+        GROUP BY product_id
+      ),
+      RankedProducts AS (
+        SELECT 
+          FP.*,
+          SS.total_stock,
+          ROW_NUMBER() OVER (PARTITION BY FP.product_id ORDER BY FP.product_id DESC) as rn
+        FROM FilteredProducts FP
+        LEFT JOIN StockSummary SS ON FP.product_id = SS.product_id
       )
       SELECT 
         product_id,
@@ -84,6 +97,7 @@ export async function GET(request: Request) {
         prima_stock,
         main_wh_available_stock,
         main_wh_available_stock_excl_production_stock,
+        total_stock,
         incoming_stock,
         tag,
         drop_yn,
@@ -202,19 +216,20 @@ export async function GET(request: Request) {
         prima_stock: values[23] || '',
         main_wh_available_stock: Number(values[24] || 0),
         main_wh_available_stock_excl_production_stock: Number(values[25] || 0),
-        incoming_stock: values[26] || '',
-        tag: values[27] || '',
-        drop_yn: values[28] || '',
-        soldout: values[29] || '',
-        soldout_rate: Number(values[30] || 0),
-        supply_name: values[31] || '',
-        scheduled: values[32] || '',
-        last_shipping: values[33] || '',
-        exclusive: values[34] || '',
-        exclusive2: values[35] || '',
-        fulfillment_stock_zalora: values[36] || '',
-        fulfillment_stock_shopee_sg: values[37] || '',
-        fulfillment_stock_shopee_my: values[38] || ''
+        total_stock: Number(values[26] || 0),
+        incoming_stock: values[27] || '',
+        tag: values[28] || '',
+        drop_yn: values[29] || '',
+        soldout: values[30] || '',
+        soldout_rate: Number(values[31] || 0),
+        supply_name: values[32] || '',
+        scheduled: values[33] || '',
+        last_shipping: values[34] || '',
+        exclusive: values[35] || '',
+        exclusive2: values[36] || '',
+        fulfillment_stock_zalora: values[37] || '',
+        fulfillment_stock_shopee_sg: values[38] || '',
+        fulfillment_stock_shopee_my: values[39] || ''
       };
     }) || [];
 

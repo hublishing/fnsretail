@@ -62,6 +62,7 @@ interface Product {
   category_1: string
   category_3: string
   main_wh_available_stock_excl_production_stock: number
+  total_stock: number
   drop_yn: string
   soldout_rate: number
   supply_name: string
@@ -108,6 +109,85 @@ export default function DynamicTable() {
   const router = useRouter()
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
 
+  // 컬럼 정의를 상수로 분리
+  const columns: Column[] = [
+    { key: 'actions', label: '담기' },
+    { key: "product_id", label: "이지어드민" },
+    { 
+      key: "img_desc1", 
+      label: "상품이미지",
+      format: (value: string) => value ? (
+        <img 
+          src={value} 
+          alt="상품 이미지" 
+          className="w-24 h-24 object-cover"
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.src = '/no-image.png';
+          }}
+        />
+      ) : (
+        <img 
+          src="/no-image.png" 
+          alt="이미지 없음" 
+          className="w-24 h-24 object-cover"
+        />
+      )
+    },
+    { 
+      key: 'name',
+      label: '상품명',
+      sortable: true,
+      format: (value: string, product: any) => (
+        <button
+          onClick={() => {
+            console.log('상품명 클릭:', {
+              productName: value,
+              productId: product.product_id,
+              optionsProductId: product.options_product_id
+            });
+            setSelectedProductId(product.product_id);
+          }}
+          className="text-left hover:text-blue-600 transition-colors"
+        >
+          <div className="font-medium">{value}</div>
+          <div className="text-sm text-gray-500 mt-1">
+            {[
+              product.brand,
+              product.category_1,
+              product.extra_column2
+            ].filter(Boolean).join(' ')}
+          </div>
+        </button>
+      ),
+    },
+    { key: "org_price", label: "원가", format: (value: number) => (value !== undefined && value !== null) ? value.toLocaleString() : '-' },
+    { key: "shop_price", label: "판매가", format: (value: number) => (value !== undefined && value !== null) ? value.toLocaleString() : '-' },
+    { 
+      key: "product_desc", 
+      label: "URL",
+      format: (value: string) => value ? (
+        <a href={value} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+          링크
+        </a>
+      ) : '링크 없음'
+    },
+    { key: "category_3", label: "카테고리" },
+    { key: "cost_ratio", label: "원가율", format: (value: number) => (value !== undefined && value !== null) ? `${value}%` : '-' },
+    { 
+      key: "total_stock", 
+      label: "재고", 
+      format: (value: number) => {
+        if (value === undefined || value === null) return '-';
+        return value.toLocaleString();
+      }
+    },
+    { key: "drop_yn", label: "드랍여부" },
+    { key: "soldout_rate", label: "품절률", format: (value: number) => (value !== undefined && value !== null) ? `${value}%` : '-' },
+    { key: "supply_name", label: "공급처명" },
+    { key: "exclusive2", label: "단독여부" }
+  ];
+
   // 초기화 함수
   const resetState = async () => {
     try {
@@ -140,6 +220,8 @@ export default function DynamicTable() {
         supply_name: 'all',
         exclusive2: 'all'
       });
+
+      // 컬럼 상태는 변경하지 않습니다 - 컬럼 정의는 columns 변수에 정의되어 있으며 이 함수에서는 수정하지 않습니다.
     } catch (error) {
       console.error('상태 초기화 오류:', error);
     }
@@ -205,7 +287,12 @@ export default function DynamicTable() {
             exclusive2: 'all'
           });
           if (data.searchResults) {
-            setData(data.searchResults);
+            // 저장된 검색 결과를 불러올 때 필요한 필드가 없으면 기본값 추가
+            const processedResults = data.searchResults.map((item: any) => ({
+              ...item,
+              total_stock: item.total_stock || 0, // total_stock이 없는 경우 기본값 설정
+            }));
+            setData(processedResults);
           }
         } else {
           console.log('저장된 데이터가 없습니다.');
@@ -299,7 +386,13 @@ export default function DynamicTable() {
         throw new Error('잘못된 데이터 형식입니다.')
       }
 
-      setData(result)
+      // total_stock 필드가 없는 경우 기본값 설정 (API 응답에 누락된 경우)
+      const processedResults = result.map((item: any) => ({
+        ...item,
+        total_stock: item.total_stock !== undefined ? item.total_stock : 0,
+      }));
+      
+      setData(processedResults);
       
       // 검색 결과 저장
       if (user) {
@@ -309,7 +402,7 @@ export default function DynamicTable() {
             searchTerm,
             searchType,
             filters,
-            resultCount: result.length
+            resultCount: processedResults.length
           });
           
           const docRef = doc(db, 'userSearchStates', user.uid);
@@ -317,7 +410,7 @@ export default function DynamicTable() {
             searchTerm,
             searchType,
             filters,
-            searchResults: result,
+            searchResults: processedResults,
             updatedAt: new Date().toISOString()
           };
           
@@ -362,79 +455,6 @@ export default function DynamicTable() {
       ? "상품명을 입력하세요" 
       : "상품코드를 입력하세요 (여러 개인 경우 쉼표로 구분)"
   }
-
-  const columns: Column[] = [
-    { key: 'actions', label: '담기' },
-    { key: "product_id", label: "이지어드민" },
-    { 
-      key: "img_desc1", 
-      label: "상품이미지",
-      format: (value: string) => value ? (
-        <img 
-          src={value} 
-          alt="상품 이미지" 
-          className="w-24 h-24 object-cover"
-          onError={(e) => {
-            const target = e.target as HTMLImageElement;
-            target.src = '/no-image.png';
-          }}
-        />
-      ) : (
-        <img 
-          src="/no-image.png" 
-          alt="이미지 없음" 
-          className="w-24 h-24 object-cover"
-        />
-      )
-    },
-    { 
-      key: 'name',
-      label: '상품명',
-      sortable: true,
-      format: (value: string, product: any) => (
-        <button
-          onClick={() => {
-            console.log('상품명 클릭:', {
-              productName: value,
-              productId: product.product_id,
-              optionsProductId: product.options_product_id
-            });
-            setSelectedProductId(product.product_id);
-          }}
-          className="text-left hover:text-blue-600 transition-colors"
-        >
-          <div className="font-medium">{value}</div>
-          <div className="text-sm text-gray-500 mt-1">
-            {[
-              product.brand,
-              product.category_1,
-              product.extra_column2
-            ].filter(Boolean).join(' ')}
-          </div>
-        </button>
-      ),
-    },
-    { key: "org_price", label: "원가", format: (value: number) => (value !== undefined && value !== null) ? value.toLocaleString() : '-' },
-    { key: "shop_price", label: "판매가", format: (value: number) => (value !== undefined && value !== null) ? value.toLocaleString() : '-' },
-    { 
-      key: "product_desc", 
-      label: "URL",
-      format: (value: string) => value ? (
-        <a href={value} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
-          링크
-        </a>
-      ) : '링크 없음'
-    },
-    { key: "category_1", label: "라인" },
-    { key: "category_3", label: "카테고리" },
-    { key: "extra_column2", label: "출시시즌" },
-    { key: "cost_ratio", label: "원가율", format: (value: number) => (value !== undefined && value !== null) ? `${value}%` : '-' },
-    { key: "main_wh_available_stock_excl_production_stock", label: "재고", format: (value: number) => (value !== undefined && value !== null) ? value.toLocaleString() : '-' },
-    { key: "drop_yn", label: "드랍여부" },
-    { key: "soldout_rate", label: "품절률", format: (value: number) => (value !== undefined && value !== null) ? `${value}%` : '-' },
-    { key: "supply_name", label: "공급처명" },
-    { key: "exclusive2", label: "단독여부" }
-  ]
 
   // 장바구니에서 상품 제거
   const handleRemoveFromCart = async (product: Product) => {
