@@ -24,8 +24,12 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-screen">
       <head>
-        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="icon" href="/favicon.ico" />
+        <link rel="icon" href="/favicon.ico" sizes="16x16" />
+        <link rel="icon" href="/favicon.ico" sizes="32x32" />
+        <link rel="icon" href="/favicon.ico" sizes="48x48" />
         <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
+        <link rel="shortcut icon" href="/favicon.ico" />
       </head>
       <body className={cn(inter.className, "h-screen")}>
         <ClientLayout>{children}</ClientLayout>

@@ -47,8 +47,7 @@ export async function GET(request: Request) {
     if (exclusive2 && exclusive2 !== 'all') conditions.push(`exclusive2 = '${exclusive2}'`);
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-    
-    // BigQuery 쿼리 (1000개로 제한)
+     
     const query = `
       WITH FilteredProducts AS (
         SELECT *
@@ -113,8 +112,7 @@ export async function GET(request: Request) {
         fulfillment_stock_shopee_my
       FROM RankedProducts
       WHERE rn = 1
-      ORDER BY product_id DESC
-      LIMIT 1000
+      ORDER BY product_id DESC 
     `;
 
     // JWT 토큰 생성

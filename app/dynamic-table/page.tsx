@@ -121,7 +121,8 @@ export default function DynamicTable() {
           <img 
             src={value} 
             alt="상품 이미지" 
-            className="w-20 h-20 object-cover"
+            className="w-20 h-20 object-cover rounded-md"
+            style={{ borderRadius: '5px' }}
             onError={(e) => {
               const target = e.target as HTMLImageElement;
               target.src = '/no-image.png';
@@ -133,7 +134,8 @@ export default function DynamicTable() {
           <img 
             src="/no-image.png" 
             alt="이미지 없음" 
-            className="w-20 h-20 object-cover"
+            className="w-20 h-20 object-cover rounded-md"
+            style={{ borderRadius: '5px' }}
           />
         </div>
       )
