@@ -14,6 +14,13 @@ import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { getSession } from '@/app/actions/auth';
 import { ProductDetailModal } from "@/components/product-detail-modal"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 interface Product {
   product_id: string;
@@ -39,41 +46,44 @@ interface Product {
 export default function CartPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
-  const [sortOption, setSortOption] = useState<'original' | 'sales'>('original');
+  const [sortOption, setSortOption] = useState<'default' | 'qty_desc' | 'qty_asc'>('qty_desc');
+  const [sortedProducts, setSortedProducts] = useState<Product[]>([]);
 
   // 사용자 세션 로드
   useEffect(() => {
     const loadSession = async () => {
       try {
         const session = await getSession();
+        setUser(session);
+        
         if (session) {
-          setUser(session);
-          // 저장된 장바구니 데이터 불러오기
-          const docRef = doc(db, 'userCarts', session.uid);
-          const docSnap = await getDoc(docRef);
-          
-          if (docSnap.exists()) {
-            const data = docSnap.data();
-            setProducts(data.products || []);
-          }
-        } else {
-          // 로그아웃 상태에서도 장바구니 데이터 유지
-          const localCart = localStorage.getItem('cartProducts');
-          if (localCart) {
-            setProducts(JSON.parse(localCart));
+          try {
+            // 장바구니 데이터 불러오기 로직...
+            const docRef = doc(db, 'userCarts', session.uid);
+            const docSnap = await getDoc(docRef);
+            
+            if (docSnap.exists()) {
+              const data = docSnap.data();
+              if (data.products && Array.isArray(data.products)) {
+                setProducts(data.products);
+                // 기본적으로 판매 많은 순으로 정렬
+                const sortedItems = [...data.products].sort((a, b) => (b.total_order_qty || 0) - (a.total_order_qty || 0));
+                setSortedProducts(sortedItems);
+              }
+            }
+          } catch (error) {
+            console.error('장바구니 데이터 불러오기 오류:', error);
           }
         }
       } catch (error) {
         console.error('세션 로드 오류:', error);
-        // 에러 발생 시에도 로컬 데이터 확인
-        const localCart = localStorage.getItem('cartProducts');
-        if (localCart) {
-          setProducts(JSON.parse(localCart));
-        }
+      } finally {
+        setLoading(false);
       }
     };
-
+    
     loadSession();
   }, []);
 
@@ -101,20 +111,18 @@ export default function CartPage() {
     }
   }
 
-  // 상품 정렬 함수
-  const getSortedProducts = () => {
-    if (sortOption === 'original' || products.length === 0) {
-      return products;
+  // 정렬 상태 변경 시 상품 정렬
+  useEffect(() => {
+    if (!products.length) return;
+    
+    let sortedItems = [...products];
+    if (sortOption === 'qty_desc') {
+      sortedItems.sort((a, b) => (b.total_order_qty || 0) - (a.total_order_qty || 0));
+    } else if (sortOption === 'qty_asc') {
+      sortedItems.sort((a, b) => (a.total_order_qty || 0) - (b.total_order_qty || 0));
     }
-
-    return [...products].sort((a, b) => {
-      const aValue = a.total_order_qty || 0;
-      const bValue = b.total_order_qty || 0;
-      return bValue - aValue; // 판매수량 많은 순
-    });
-  };
-
-  const sortedProducts = getSortedProducts();
+    setSortedProducts(sortedItems);
+  }, [products, sortOption]);
 
   return (
     <div className="container mx-auto py-10">
@@ -125,14 +133,29 @@ export default function CartPage() {
       ) : (
         <>
           <div className="flex justify-end mb-2">
-            <select 
+            <Select
               value={sortOption}
-              onChange={(e) => setSortOption(e.target.value as 'original' | 'sales')}
-              className="w-[120px] text-sm border-none focus:ring-0 focus:ring-offset-0 shadow-none h-10"
+              onValueChange={(value) => {
+                setSortOption(value as 'default' | 'qty_desc' | 'qty_asc');
+                
+                // 상품을 바로 정렬
+                let sortedItems = [...products];
+                if (value === 'qty_desc') {
+                  sortedItems.sort((a, b) => (b.total_order_qty || 0) - (a.total_order_qty || 0));
+                } else if (value === 'qty_asc') {
+                  sortedItems.sort((a, b) => (a.total_order_qty || 0) - (b.total_order_qty || 0));
+                }
+                setSortedProducts(sortedItems);
+              }}
             >
-              <option value="original">담은 순서</option>
-              <option value="sales">판매 많은 순</option>
-            </select>
+              <SelectTrigger className="w-[140px] border-none focus:ring-0 focus:ring-offset-0 shadow-none h-10">
+                <SelectValue placeholder="판매수량 정렬" />
+              </SelectTrigger>
+              <SelectContent className="min-w-[140px]">
+                <SelectItem value="qty_desc">판매 많은 순</SelectItem>
+                <SelectItem value="qty_asc">판매 적은 순</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           
           <div className="rounded-md border overflow-x-auto">

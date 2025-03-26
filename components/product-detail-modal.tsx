@@ -91,7 +91,12 @@ export function ProductDetailModal({ productId, onClose }: ProductDetailModalPro
 
         console.log('상품 정보 설정:', data.mainProduct);
         setProduct(data.mainProduct);
-        setOptionProducts(data.optionProducts || []);
+        
+        // 옵션 상품을 옵션 낮은 순으로 정렬
+        const sortedOptions = [...(data.optionProducts || [])].sort((a, b) => 
+          a.options_options.localeCompare(b.options_options)
+        );
+        setOptionProducts(sortedOptions);
       } catch (error) {
         console.error('상품 정보 조회 오류:', error);
         setError(error instanceof Error ? error.message : '상품 정보를 불러오는데 실패했습니다.');
