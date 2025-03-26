@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button"
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { getSession } from '@/app/actions/auth';
+import { ProductDetailModal } from "@/components/product-detail-modal"
 
 interface Product {
   product_id: string;
@@ -30,11 +31,14 @@ interface Product {
   soldout_rate: number;
   supply_name: string;
   exclusive2: string;
+  brand?: string;
+  category_1?: string;
 }
 
 export default function CartPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [user, setUser] = useState<any>(null);
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
 
   // 사용자 세션 로드
   useEffect(() => {
@@ -106,7 +110,9 @@ export default function CartPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>관리</TableHead>
                 <TableHead>상품코드</TableHead>
+                <TableHead>상품이미지</TableHead>
                 <TableHead>상품명</TableHead>
                 <TableHead>정상가</TableHead>
                 <TableHead>판매가</TableHead>
@@ -117,14 +123,49 @@ export default function CartPage() {
                 <TableHead>품절율</TableHead>
                 <TableHead>공급처명</TableHead>
                 <TableHead>단독여부</TableHead>
-                <TableHead>관리</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {products.map((product) => (
                 <TableRow key={product.product_id}>
+                  <TableCell>
+                    <button
+                      onClick={() => handleRemoveFromCart(product.product_id)}
+                      className="w-8 h-8 flex items-center justify-center bg-white text-red-500 border border-red-500 hover:bg-red-50 transition-colors rounded-[5px] mx-auto"
+                    >
+                      -
+                    </button>
+                  </TableCell>
                   <TableCell>{product.product_id}</TableCell>
-                  <TableCell>{product.name}</TableCell>
+                  <TableCell>
+                    <div className="flex justify-center">
+                      <img 
+                        src={product.img_desc1 || '/no-image.png'} 
+                        alt="상품 이미지" 
+                        className="w-20 h-20 object-cover rounded-md"
+                        style={{ borderRadius: '5px' }}
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.src = '/no-image.png';
+                        }}
+                      />
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <button
+                      onClick={() => setSelectedProductId(product.product_id)}
+                      className="text-left hover:text-blue-600 transition-colors w-full"
+                    >
+                      <div className="font-medium">{product.name}</div>
+                      <div className="text-sm text-gray-500 mt-1">
+                        {[
+                          product.brand,
+                          product.category_1,
+                          product.extra_column2
+                        ].filter(Boolean).join(' ')}
+                      </div>
+                    </button>
+                  </TableCell>
                   <TableCell>{product.org_price?.toLocaleString() || 0}</TableCell>
                   <TableCell>{product.shop_price?.toLocaleString() || 0}</TableCell>
                   <TableCell>{product.cost_ratio}%</TableCell>
@@ -138,20 +179,18 @@ export default function CartPage() {
                   <TableCell>{product.soldout_rate}%</TableCell>
                   <TableCell>{product.supply_name}</TableCell>
                   <TableCell>{product.exclusive2}</TableCell>
-                  <TableCell>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleRemoveFromCart(product.product_id)}
-                    >
-                      제거
-                    </Button>
-                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </div>
+      )}
+
+      {selectedProductId && (
+        <ProductDetailModal
+          productId={selectedProductId}
+          onClose={() => setSelectedProductId(null)}
+        />
       )}
     </div>
   )
