@@ -24,6 +24,7 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/auth';
 import { getSession } from '@/app/actions/auth';
 import { useRouter } from "next/navigation"
+import { ProductDetailModal } from "@/components/product-detail-modal"
 
 // 고정 필터 옵션
 const STATIC_FILTER_OPTIONS = {
@@ -101,6 +102,7 @@ export default function DynamicTable() {
   })
 
   const router = useRouter()
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
 
   // 초기화 함수
   const resetState = async () => {
@@ -386,7 +388,7 @@ export default function DynamicTable() {
       label: "이지어드민상품명",
       format: (value: string, product?: Product) => product ? (
         <button 
-          onClick={() => router.push(`/product-detail?id=${product.options_product_id}`)}
+          onClick={() => setSelectedProductId(product.product_id)}
           className="text-gray-900 hover:underline text-left"
         >
           {value}
@@ -675,6 +677,13 @@ export default function DynamicTable() {
           </TableBody>
         </Table>
       </div>
+
+      {selectedProductId && (
+        <ProductDetailModal
+          productId={selectedProductId}
+          onClose={() => setSelectedProductId(null)}
+        />
+      )}
     </div>
   )
 } 
