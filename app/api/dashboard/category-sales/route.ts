@@ -27,16 +27,6 @@ export async function GET(request: NextRequest) {
 
     logDebug('검색 파라미터', { startDate, endDate });
 
-    // 날짜 필터 조건 생성
-    let dateCondition = '';
-    if (startDate && endDate) {
-      dateCondition = `AND o.order_date BETWEEN '${startDate}' AND '${endDate}'`;
-    } else if (startDate) {
-      dateCondition = `AND o.order_date >= '${startDate}'`;
-    } else if (endDate) {
-      dateCondition = `AND o.order_date <= '${endDate}'`;
-    }
-
     // 카테고리별 판매 데이터를 가져오는 쿼리
     const query = `
       SELECT 
@@ -48,9 +38,17 @@ export async function GET(request: NextRequest) {
       JOIN 
         \`third-current-410914.project_m.product_db\` p ON o.product_id = p.product_id
       WHERE 
-        o.product_id IS NOT NULL
-        AND p.category_3 IS NOT NULL
-        ${dateCondition}
+        p.category_3 IS NOT NULL
+        ${startDate && endDate ? 
+          startDate === endDate ?
+            `AND SUBSTR(CAST(o.order_date AS STRING), 1, 10) = '${startDate}'` :
+            `AND SUBSTR(CAST(o.order_date AS STRING), 1, 10) >= '${startDate}' 
+             AND SUBSTR(CAST(o.order_date AS STRING), 1, 10) <= '${endDate}'`
+          : startDate ?
+            `AND SUBSTR(CAST(o.order_date AS STRING), 1, 10) >= '${startDate}'` :
+            endDate ?
+            `AND SUBSTR(CAST(o.order_date AS STRING), 1, 10) <= '${endDate}'` : ''
+        }
       GROUP BY 
         p.category_3
       ORDER BY 
@@ -139,12 +137,22 @@ export async function GET(request: NextRequest) {
 
     if (!response.ok) {
       logDebug('BigQuery API 요청 실패', data);
+      logDebug('오류 상세 정보', {
+        error: data.error || {},
+        message: data.error?.message || '상세 오류 정보 없음',
+        status: response.status,
+        statusText: response.statusText
+      });
       throw new Error(`BigQuery API 요청 실패: ${JSON.stringify(data)}`);
     }
 
     logDebug('BigQuery API 응답 성공', { 
       hasRows: !!data.rows,
-      rowCount: data.rows?.length || 0
+      rowCount: data.rows?.length || 0,
+      totalRows: data.totalRows,
+      // 응답 데이터의 구조와 처음 몇 개의 행 출력
+      schema: data.schema,
+      sampleRows: data.rows?.slice(0, 3)
     });
 
     // 결과가 없는 경우 빈 배열 반환
