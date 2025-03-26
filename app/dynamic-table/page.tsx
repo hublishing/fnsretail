@@ -148,7 +148,7 @@ export default function DynamicTable() {
             });
             setSelectedProductId(product.product_id);
           }}
-          className="text-left hover:text-blue-600 transition-colors"
+          className="text-left hover:text-blue-600 transition-colors w-full"
         >
           <div className="font-medium">{value}</div>
           <div className="text-sm text-gray-500 mt-1">
@@ -163,15 +163,6 @@ export default function DynamicTable() {
     },
     { key: "org_price", label: "원가", format: (value: number) => (value !== undefined && value !== null) ? value.toLocaleString() : '-' },
     { key: "shop_price", label: "판매가", format: (value: number) => (value !== undefined && value !== null) ? value.toLocaleString() : '-' },
-    { 
-      key: "product_desc", 
-      label: "URL",
-      format: (value: string) => value ? (
-        <a href={value} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
-          링크
-        </a>
-      ) : '링크 없음'
-    },
     { key: "category_3", label: "카테고리" },
     { key: "cost_ratio", label: "원가율", format: (value: number) => (value !== undefined && value !== null) ? `${value}%` : '-' },
     { 
@@ -182,10 +173,19 @@ export default function DynamicTable() {
         return value.toLocaleString();
       }
     },
-    { key: "drop_yn", label: "드랍여부" },
     { key: "soldout_rate", label: "품절률", format: (value: number) => (value !== undefined && value !== null) ? `${value}%` : '-' },
+    { key: "drop_yn", label: "드랍여부" },
     { key: "supply_name", label: "공급처명" },
-    { key: "exclusive2", label: "단독여부" }
+    { key: "exclusive2", label: "단독여부" },
+    { 
+      key: "product_desc", 
+      label: "URL",
+      format: (value: string) => value ? (
+        <a href={value} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+          링크
+        </a>
+      ) : '링크 없음'
+    }
   ];
 
   // 초기화 함수
@@ -665,7 +665,7 @@ export default function DynamicTable() {
           <TableHeader>
             <TableRow>
               {columns.map((column) => (
-                <TableHead key={column.key}>{column.label}</TableHead>
+                <TableHead key={column.key} className="text-center">{column.label}</TableHead>
               ))}
             </TableRow>
           </TableHeader>
@@ -686,19 +686,19 @@ export default function DynamicTable() {
               data.map((item) => (
                 <TableRow key={item.product_id}>
                   {columns.map((column) => (
-                    <TableCell key={column.key}>
+                    <TableCell key={column.key} className="text-center">
                       {column.key === 'actions' ? (
                         cartItems.has(item.product_id) ? (
                           <button
                             onClick={() => handleRemoveFromCart(item)}
-                            className="w-8 h-8 flex items-center justify-center bg-white text-red-500 border border-red-500 hover:bg-red-50 transition-colors rounded-[5px]"
+                            className="w-8 h-8 flex items-center justify-center bg-white text-red-500 border border-red-500 hover:bg-red-50 transition-colors rounded-[5px] mx-auto"
                           >
                             -
                           </button>
                         ) : (
                           <button
                             onClick={() => handleAddToCart(item)}
-                            className="w-8 h-8 flex items-center justify-center bg-white text-blue-500 border border-blue-500 hover:bg-blue-50 transition-colors rounded-[5px]"
+                            className="w-8 h-8 flex items-center justify-center bg-white text-blue-500 border border-blue-500 hover:bg-blue-50 transition-colors rounded-[5px] mx-auto"
                           >
                             +
                           </button>
