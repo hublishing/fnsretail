@@ -163,7 +163,7 @@ export async function GET(request: Request) {
         order_types
       FROM RankedProducts
       WHERE rn = 1
-      ${sort_by_qty && sort_by_qty !== 'default' ? `ORDER BY total_order_qty ${sort_by_qty === 'desc' ? 'DESC' : 'ASC'}, product_id DESC` : 'ORDER BY product_id DESC'}
+      ${sort_by_qty && sort_by_qty !== 'default' ? `ORDER BY total_order_qty ${sort_by_qty === 'desc' ? 'DESC' : 'ASC'}, product_id DESC` : 'ORDER BY total_order_qty DESC, product_id DESC'}
     `;
 
     // JWT 토큰 생성

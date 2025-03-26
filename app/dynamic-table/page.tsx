@@ -109,7 +109,7 @@ export default function DynamicTable() {
     channel_category_3: 'all',
     order_date_from: '',
     order_date_to: '',
-    sort_by_qty: 'default'
+    sort_by_qty: 'desc'
   })
 
   // 동적 필터 옵션
@@ -142,18 +142,22 @@ export default function DynamicTable() {
             style={{ borderRadius: '5px' }}
             onError={(e) => {
               const target = e.target as HTMLImageElement;
-              target.src = '/no-image.png';
+              target.style.backgroundColor = '#e5e7eb'; // gray-200
+              target.style.display = 'block';
+              target.style.objectFit = 'none';
+              target.removeAttribute('src');
+              target.alt = '';
             }}
           />
         </div>
       ) : (
         <div className="flex justify-center">
-          <img 
-            src="/no-image.png" 
-            alt="이미지 없음" 
-            className="w-20 h-20 object-cover rounded-md"
+          <div 
+            className="w-20 h-20 bg-gray-200 rounded-md flex items-center justify-center"
             style={{ borderRadius: '5px' }}
-          />
+          >
+            <span className="text-gray-400 text-xs">이미지 없음</span>
+          </div>
         </div>
       )
     },
@@ -202,7 +206,7 @@ export default function DynamicTable() {
     { key: "exclusive2", label: "단독여부" },
     { 
       key: "total_order_qty", 
-      label: "주문수량", 
+      label: "판매수량", 
       format: (value: number) => {
         if (value === undefined || value === null) return '-';
         return value.toLocaleString();
@@ -240,7 +244,7 @@ export default function DynamicTable() {
             channel_category_3: 'all',
             order_date_from: '',
             order_date_to: '',
-            sort_by_qty: 'default'
+            sort_by_qty: 'desc'
           },
           searchResults: [],
           updatedAt: new Date().toISOString()
@@ -263,7 +267,7 @@ export default function DynamicTable() {
         channel_category_3: 'all',
         order_date_from: '',
         order_date_to: '',
-        sort_by_qty: 'default'
+        sort_by_qty: 'desc'
       });
 
       // 컬럼 상태는 변경하지 않습니다 - 컬럼 정의는 columns 변수에 정의되어 있으며 이 함수에서는 수정하지 않습니다.
@@ -336,7 +340,7 @@ export default function DynamicTable() {
             channel_category_3: 'all',
             order_date_from: '',
             order_date_to: '',
-            sort_by_qty: 'default'
+            sort_by_qty: 'desc'
           });
           if (data.searchResults) {
             // 저장된 검색 결과를 불러올 때 필요한 필드가 없으면 기본값 추가
@@ -427,10 +431,6 @@ export default function DynamicTable() {
       // 'all'이 아닌 필터만 추가
       Object.entries(filters).forEach(([key, value]) => {
         if ((value !== 'all' && value !== '') || key === 'sort_by_qty') {
-          if (key === 'sort_by_qty' && value === 'default') {
-            // 기본 정렬일 경우 파라미터에 추가하지 않음
-            return;
-          }
           params.append(key, value);
         }
       });
@@ -865,12 +865,12 @@ export default function DynamicTable() {
             onValueChange={(value) => handleFilterChange('sort_by_qty', value)}
           >
             <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="주문수량 정렬" />
+              <SelectValue placeholder="판매수량 정렬" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="default">기본 정렬</SelectItem>
-              <SelectItem value="desc">주문 많은 순</SelectItem>
-              <SelectItem value="asc">주문 적은 순</SelectItem>
+              <SelectItem value="desc">판매 많은 순</SelectItem>
+              <SelectItem value="asc">판매 적은 순</SelectItem>
             </SelectContent>
           </Select>
         </div>
