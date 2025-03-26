@@ -517,8 +517,13 @@ export default function DynamicTable() {
         return;
       }
 
-      // 상품 추가
-      currentProducts.push(product);
+      // 상품 추가 - total_stock 정보 포함
+      const productWithStock = {
+        ...product,
+        total_stock: product.total_stock || 0 // total_stock이 없는 경우 기본값 설정
+      };
+      
+      currentProducts.push(productWithStock);
       
       // Firestore 업데이트
       await setDoc(docRef, {

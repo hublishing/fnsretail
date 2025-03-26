@@ -25,6 +25,7 @@ interface Product {
   cost_ratio: number;
   category_3: string;
   main_wh_available_stock_excl_production_stock: number;
+  total_stock: number;
   drop_yn: string;
   soldout_rate: number;
   supply_name: string;
@@ -111,7 +112,7 @@ export default function CartPage() {
                 <TableHead>판매가</TableHead>
                 <TableHead>원가율</TableHead>
                 <TableHead>카테고리</TableHead>
-                <TableHead>재고</TableHead>
+                <TableHead>총재고</TableHead>
                 <TableHead>드랍여부</TableHead>
                 <TableHead>품절율</TableHead>
                 <TableHead>공급처명</TableHead>
@@ -124,11 +125,15 @@ export default function CartPage() {
                 <TableRow key={product.product_id}>
                   <TableCell>{product.product_id}</TableCell>
                   <TableCell>{product.name}</TableCell>
-                  <TableCell>{product.org_price}</TableCell>
-                  <TableCell>{product.shop_price}</TableCell>
+                  <TableCell>{product.org_price?.toLocaleString() || 0}</TableCell>
+                  <TableCell>{product.shop_price?.toLocaleString() || 0}</TableCell>
                   <TableCell>{product.cost_ratio}%</TableCell>
                   <TableCell>{product.category_3}</TableCell>
-                  <TableCell>{product.main_wh_available_stock_excl_production_stock}</TableCell>
+                  <TableCell>
+                    {(product.total_stock !== undefined 
+                      ? product.total_stock 
+                      : product.main_wh_available_stock_excl_production_stock)?.toLocaleString() || 0}
+                  </TableCell>
                   <TableCell>{product.drop_yn}</TableCell>
                   <TableCell>{product.soldout_rate}%</TableCell>
                   <TableCell>{product.supply_name}</TableCell>
