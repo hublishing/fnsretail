@@ -30,27 +30,29 @@ export async function GET(request: NextRequest) {
     // 날짜 필터 조건 생성
     let dateCondition = '';
     if (startDate && endDate) {
-      dateCondition = `AND order_date BETWEEN '${startDate}' AND '${endDate}'`;
+      dateCondition = `AND o.order_date BETWEEN '${startDate}' AND '${endDate}'`;
     } else if (startDate) {
-      dateCondition = `AND order_date >= '${startDate}'`;
+      dateCondition = `AND o.order_date >= '${startDate}'`;
     } else if (endDate) {
-      dateCondition = `AND order_date <= '${endDate}'`;
+      dateCondition = `AND o.order_date <= '${endDate}'`;
     }
 
     // 채널별 판매 데이터를 가져오는 쿼리
     const query = `
       SELECT 
-        channel_name AS channel,
-        SUM(qty) AS quantity,
-        SUM(final_calculated_amount) AS revenue
+        o.channel_name AS channel,
+        SUM(o.qty) AS quantity,
+        SUM(o.final_calculated_amount) AS revenue
       FROM 
-        \`third-current-410914.project_m.order_db\`
+        \`third-current-410914.project_m.order_db\` o
+      JOIN
+        \`third-current-410914.project_m.product_db\` p ON o.product_id = p.product_id
       WHERE 
-        product_id IS NOT NULL
-        AND channel_name IS NOT NULL
+        o.product_id IS NOT NULL
+        AND o.channel_name IS NOT NULL
         ${dateCondition}
       GROUP BY 
-        channel_name
+        o.channel_name
       ORDER BY 
         revenue DESC
     `;

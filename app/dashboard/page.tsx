@@ -37,9 +37,19 @@ interface ChannelSalesData {
 export default function DashboardPage() {
   const today = new Date().toISOString().split('T')[0]; // 오늘 날짜를 YYYY-MM-DD 형식으로 가져옴
   
+  // 어제 날짜 계산
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = yesterday.toISOString().split('T')[0];
+  
+  // 1년 전 날짜 계산
+  const oneYearAgo = new Date();
+  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+  const oneYearAgoStr = oneYearAgo.toISOString().split('T')[0];
+  
   const [dateRange, setDateRange] = useState({
-    startDate: today,
-    endDate: today
+    startDate: yesterdayStr, // 기본값을 어제로 변경
+    endDate: yesterdayStr    // 기본값을 어제로 변경
   });
   
   const [isLoading, setIsLoading] = useState(true);
@@ -57,16 +67,6 @@ export default function DashboardPage() {
         startDate: dateRange.startDate,
         endDate: dateRange.endDate
       });
-      
-      // 테스트 연결 API 호출
-      try {
-        console.log('BigQuery 연결 테스트 API 호출...');
-        const testRes = await fetch('/api/dashboard/test-connection');
-        const testJson = await testRes.json();
-        console.log('BigQuery 연결 테스트 결과:', testJson);
-      } catch (testError) {
-        console.error('BigQuery 연결 테스트 오류:', testError);
-      }
       
       // 카테고리별 판매 데이터 로드
       const categoryRes = await fetch(
@@ -247,7 +247,7 @@ export default function DashboardPage() {
                     <TableRow key={item.category}>
                       <TableCell className="font-medium">{item.category}</TableCell>
                       <TableCell className="text-right">{item.quantity.toLocaleString()}</TableCell>
-                      <TableCell className="text-right">{item.revenue.toLocaleString()}원</TableCell>
+                      <TableCell className="text-right">{Math.round(item.revenue).toLocaleString()}원</TableCell>
                     </TableRow>
                   ))}
                   <TableRow className="bg-gray-50">
@@ -256,7 +256,7 @@ export default function DashboardPage() {
                       {categoryData.reduce((sum, item) => sum + item.quantity, 0).toLocaleString()}
                     </TableCell>
                     <TableCell className="text-right font-semibold">
-                      {categoryData.reduce((sum, item) => sum + item.revenue, 0).toLocaleString()}원
+                      {Math.round(categoryData.reduce((sum, item) => sum + item.revenue, 0)).toLocaleString()}원
                     </TableCell>
                   </TableRow>
                 </TableBody>
@@ -291,7 +291,7 @@ export default function DashboardPage() {
                     <TableRow key={item.channel}>
                       <TableCell className="font-medium">{item.channel}</TableCell>
                       <TableCell className="text-right">{item.quantity.toLocaleString()}</TableCell>
-                      <TableCell className="text-right">{item.revenue.toLocaleString()}원</TableCell>
+                      <TableCell className="text-right">{Math.round(item.revenue).toLocaleString()}원</TableCell>
                     </TableRow>
                   ))}
                   <TableRow className="bg-gray-50">
@@ -300,7 +300,7 @@ export default function DashboardPage() {
                       {channelData.reduce((sum, item) => sum + item.quantity, 0).toLocaleString()}
                     </TableCell>
                     <TableCell className="text-right font-semibold">
-                      {channelData.reduce((sum, item) => sum + item.revenue, 0).toLocaleString()}원
+                      {Math.round(channelData.reduce((sum, item) => sum + item.revenue, 0)).toLocaleString()}원
                     </TableCell>
                   </TableRow>
                 </TableBody>
