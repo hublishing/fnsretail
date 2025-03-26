@@ -117,21 +117,25 @@ export default function DynamicTable() {
       key: "img_desc1", 
       label: "상품이미지",
       format: (value: string) => value ? (
-        <img 
-          src={value} 
-          alt="상품 이미지" 
-          className="w-24 h-24 object-cover"
-          onError={(e) => {
-            const target = e.target as HTMLImageElement;
-            target.src = '/no-image.png';
-          }}
-        />
+        <div className="flex justify-center">
+          <img 
+            src={value} 
+            alt="상품 이미지" 
+            className="w-20 h-20 object-cover"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.src = '/no-image.png';
+            }}
+          />
+        </div>
       ) : (
-        <img 
-          src="/no-image.png" 
-          alt="이미지 없음" 
-          className="w-24 h-24 object-cover"
-        />
+        <div className="flex justify-center">
+          <img 
+            src="/no-image.png" 
+            alt="이미지 없음" 
+            className="w-20 h-20 object-cover"
+          />
+        </div>
       )
     },
     { 
