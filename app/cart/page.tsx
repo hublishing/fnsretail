@@ -139,16 +139,30 @@ export default function CartPage() {
                   <TableCell>{product.product_id}</TableCell>
                   <TableCell>
                     <div className="flex justify-center">
-                      <img 
-                        src={product.img_desc1 || '/no-image.png'} 
-                        alt="상품 이미지" 
-                        className="w-20 h-20 object-cover rounded-md"
-                        style={{ borderRadius: '5px' }}
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.src = '/no-image.png';
-                        }}
-                      />
+                      {product.img_desc1 ? (
+                        <img 
+                          src={product.img_desc1} 
+                          alt="상품 이미지" 
+                          className="w-20 h-20 object-cover rounded-md"
+                          style={{ borderRadius: '5px' }}
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = '/no-image.png';
+                            target.alt = '이미지 없음';
+                            target.style.objectFit = 'contain';
+                            target.style.backgroundColor = 'transparent';
+                          }}
+                        />
+                      ) : (
+                        <div className="w-20 h-20 flex items-center justify-center">
+                          <img 
+                            src="/no-image.png" 
+                            alt="이미지 없음" 
+                            className="w-20 h-20 object-contain rounded-md"
+                            style={{ borderRadius: '5px' }}
+                          />
+                        </div>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell>

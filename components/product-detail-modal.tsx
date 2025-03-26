@@ -174,12 +174,15 @@ export function ProductDetailModal({ productId, onClose }: ProductDetailModalPro
             <div className="relative w-full aspect-square">
               <a href={product.product_desc} target="_blank" rel="noopener noreferrer" className="block">
                 <img 
-                  src={product.img_desc1 || '/no-image.png'} 
+                  src={product.img_desc1 || ''}
                   alt={product.name}
                   className="w-full h-full object-contain cursor-pointer hover:opacity-90 transition-opacity rounded-md"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     target.src = '/no-image.png';
+                    target.alt = '이미지 없음';
+                    target.style.objectFit = 'contain';
+                    target.style.backgroundColor = 'transparent';
                   }}
                 />
               </a>
