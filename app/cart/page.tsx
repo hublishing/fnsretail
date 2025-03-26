@@ -33,12 +33,14 @@ interface Product {
   exclusive2: string;
   brand?: string;
   category_1?: string;
+  total_order_qty?: number;
 }
 
 export default function CartPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [user, setUser] = useState<any>(null);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [sortOption, setSortOption] = useState<'original' | 'sales'>('original');
 
   // 사용자 세션 로드
   useEffect(() => {
@@ -99,6 +101,21 @@ export default function CartPage() {
     }
   }
 
+  // 상품 정렬 함수
+  const getSortedProducts = () => {
+    if (sortOption === 'original' || products.length === 0) {
+      return products;
+    }
+
+    return [...products].sort((a, b) => {
+      const aValue = a.total_order_qty || 0;
+      const bValue = b.total_order_qty || 0;
+      return bValue - aValue; // 판매수량 많은 순
+    });
+  };
+
+  const sortedProducts = getSortedProducts();
+
   return (
     <div className="container mx-auto py-10">
       <h1 className="text-2xl font-bold mb-6">담은 상품 목록</h1>
@@ -106,98 +123,121 @@ export default function CartPage() {
       {products.length === 0 ? (
         <p className="text-center text-gray-500">담은 상품이 없습니다.</p>
       ) : (
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>관리</TableHead>
-                <TableHead>상품코드</TableHead>
-                <TableHead>상품이미지</TableHead>
-                <TableHead>상품명</TableHead>
-                <TableHead>정상가</TableHead>
-                <TableHead>판매가</TableHead>
-                <TableHead>원가율</TableHead>
-                <TableHead>카테고리</TableHead>
-                <TableHead>총재고</TableHead>
-                <TableHead>드랍여부</TableHead>
-                <TableHead>품절율</TableHead>
-                <TableHead>공급처명</TableHead>
-                <TableHead>단독여부</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {products.map((product) => (
-                <TableRow key={product.product_id}>
-                  <TableCell>
-                    <button
-                      onClick={() => handleRemoveFromCart(product.product_id)}
-                      className="w-8 h-8 flex items-center justify-center bg-white text-red-500 border border-red-500 hover:bg-red-50 transition-colors rounded-[5px] mx-auto"
-                    >
-                      -
-                    </button>
-                  </TableCell>
-                  <TableCell>{product.product_id}</TableCell>
-                  <TableCell>
-                    <div className="flex justify-center">
-                      {product.img_desc1 ? (
-                        <img 
-                          src={product.img_desc1} 
-                          alt="상품 이미지" 
-                          className="w-20 h-20 object-cover rounded-md"
-                          style={{ borderRadius: '5px' }}
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.src = '/no-image.png';
-                            target.alt = '이미지 없음';
-                            target.style.objectFit = 'contain';
-                            target.style.backgroundColor = 'transparent';
-                          }}
-                        />
-                      ) : (
-                        <div className="w-20 h-20 flex items-center justify-center">
-                          <img 
-                            src="/no-image.png" 
-                            alt="이미지 없음" 
-                            className="w-20 h-20 object-contain rounded-md"
-                            style={{ borderRadius: '5px' }}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <button
-                      onClick={() => setSelectedProductId(product.product_id)}
-                      className="text-left hover:text-blue-600 transition-colors w-full"
-                    >
-                      <div className="font-medium">{product.name}</div>
-                      <div className="text-sm text-gray-500 mt-1">
-                        {[
-                          product.brand,
-                          product.category_1,
-                          product.extra_column2
-                        ].filter(Boolean).join(' ')}
-                      </div>
-                    </button>
-                  </TableCell>
-                  <TableCell>{product.org_price?.toLocaleString() || 0}</TableCell>
-                  <TableCell>{product.shop_price?.toLocaleString() || 0}</TableCell>
-                  <TableCell>{product.cost_ratio}%</TableCell>
-                  <TableCell>{product.category_3}</TableCell>
-                  <TableCell>
-                    {(product.total_stock !== undefined 
-                      ? product.total_stock 
-                      : product.main_wh_available_stock_excl_production_stock)?.toLocaleString() || 0}
-                  </TableCell>
-                  <TableCell>{product.drop_yn}</TableCell>
-                  <TableCell>{product.soldout_rate}%</TableCell>
-                  <TableCell>{product.supply_name}</TableCell>
-                  <TableCell>{product.exclusive2}</TableCell>
+        <>
+          <div className="flex justify-end mb-2">
+            <select 
+              value={sortOption}
+              onChange={(e) => setSortOption(e.target.value as 'original' | 'sales')}
+              className="w-[120px] text-sm border-none focus:ring-0 focus:ring-offset-0 shadow-none h-10"
+            >
+              <option value="original">담은 순서</option>
+              <option value="sales">판매 많은 순</option>
+            </select>
+          </div>
+          
+          <div className="rounded-md border overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-center">관리</TableHead>
+                  <TableHead className="text-center">상품코드</TableHead>
+                  <TableHead className="text-center">상품이미지</TableHead>
+                  <TableHead className="text-center">상품명</TableHead>
+                  <TableHead className="text-center">원가</TableHead>
+                  <TableHead className="text-center">판매가</TableHead>
+                  <TableHead className="text-center">카테고리</TableHead>
+                  <TableHead className="text-center">원가율</TableHead>
+                  <TableHead className="text-center">재고</TableHead>
+                  <TableHead className="text-center">품절률</TableHead>
+                  <TableHead className="text-center">드랍여부</TableHead>
+                  <TableHead className="text-center">공급처명</TableHead>
+                  <TableHead className="text-center">단독여부</TableHead>
+                  <TableHead className="text-center">판매수량</TableHead>
+                  <TableHead className="text-center">URL</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {sortedProducts.map((product) => (
+                  <TableRow key={product.product_id}>
+                    <TableCell className="text-center">
+                      <button
+                        onClick={() => handleRemoveFromCart(product.product_id)}
+                        className="w-8 h-8 flex items-center justify-center bg-white text-red-500 border border-red-500 hover:bg-red-50 transition-colors rounded-[5px] mx-auto"
+                      >
+                        -
+                      </button>
+                    </TableCell>
+                    <TableCell className="text-center">{product.product_id}</TableCell>
+                    <TableCell className="text-center">
+                      <div className="flex justify-center">
+                        {product.img_desc1 ? (
+                          <img 
+                            src={product.img_desc1} 
+                            alt="상품 이미지" 
+                            className="w-20 h-20 object-cover rounded-md"
+                            style={{ borderRadius: '5px' }}
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.src = '/no-image.png';
+                              target.alt = '이미지 없음';
+                              target.style.objectFit = 'contain';
+                              target.style.backgroundColor = 'transparent';
+                            }}
+                          />
+                        ) : (
+                          <div className="w-20 h-20 flex items-center justify-center">
+                            <img 
+                              src="/no-image.png" 
+                              alt="이미지 없음" 
+                              className="w-20 h-20 object-contain rounded-md"
+                              style={{ borderRadius: '5px' }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <button
+                        onClick={() => setSelectedProductId(product.product_id)}
+                        className="text-left hover:text-blue-600 transition-colors w-full"
+                      >
+                        <div className="font-medium">{product.name}</div>
+                        <div className="text-sm text-gray-500 mt-1">
+                          {[
+                            product.brand,
+                            product.category_1,
+                            product.extra_column2
+                          ].filter(Boolean).join(' ')}
+                        </div>
+                      </button>
+                    </TableCell>
+                    <TableCell className="text-center">{product.org_price?.toLocaleString() || '-'}</TableCell>
+                    <TableCell className="text-center">{product.shop_price?.toLocaleString() || '-'}</TableCell>
+                    <TableCell className="text-center">{product.category_3 || '-'}</TableCell>
+                    <TableCell className="text-center">{product.cost_ratio ? `${product.cost_ratio}%` : '-'}</TableCell>
+                    <TableCell className="text-center">
+                      {(product.total_stock !== undefined 
+                        ? product.total_stock 
+                        : product.main_wh_available_stock_excl_production_stock)?.toLocaleString() || '-'}
+                    </TableCell>
+                    <TableCell className="text-center">{product.soldout_rate ? `${product.soldout_rate}%` : '-'}</TableCell>
+                    <TableCell className="text-center">{product.drop_yn || '-'}</TableCell>
+                    <TableCell className="text-center">{product.supply_name || '-'}</TableCell>
+                    <TableCell className="text-center">{product.exclusive2 || '-'}</TableCell>
+                    <TableCell className="text-center">{product.total_order_qty?.toLocaleString() || '-'}</TableCell>
+                    <TableCell className="text-center">
+                      {product.product_desc ? (
+                        <a href={product.product_desc} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+                          링크
+                        </a>
+                      ) : '링크 없음'}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </>
       )}
 
       {selectedProductId && (

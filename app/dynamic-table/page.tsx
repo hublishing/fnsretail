@@ -631,7 +631,9 @@ export default function DynamicTable() {
 
   return (
     <div className="container mx-auto py-10">
-      <div className="flex flex-col gap-4 mb-6">
+      <h1 className="text-2xl font-bold mb-6">상품 검색</h1>
+      
+      <div className="flex flex-col gap-4 mb-4">
         <div className="flex items-center gap-4">
           <Select
             value={searchType}
@@ -861,7 +863,7 @@ export default function DynamicTable() {
       </div>
 
       {error && (
-        <div className="p-3 text-sm text-red-500 bg-red-50 rounded-md mb-4">
+        <div className="p-3 text-sm text-red-500 bg-red-50 rounded-md mb-2">
           {error}
         </div>
       )}
