@@ -91,11 +91,11 @@ export async function GET(request: Request) {
         SELECT 
           product_id,
           SUM(IFNULL(qty, 0)) as total_order_qty,
-          ARRAY_AGG(DISTINCT order_date ORDER BY order_date DESC LIMIT 10) as recent_order_dates,
-          ARRAY_AGG(DISTINCT code30 LIMIT 10) as order_countries,
-          ARRAY_AGG(DISTINCT channel_name LIMIT 10) as order_channels,
-          ARRAY_AGG(DISTINCT channel_category_2 LIMIT 10) as order_categories,
-          ARRAY_AGG(DISTINCT channel_category_3 LIMIT 10) as order_types
+          ARRAY_AGG(DISTINCT order_date ORDER BY order_date DESC LIMIT 20) as recent_order_dates,
+          ARRAY_AGG(DISTINCT code30 LIMIT 20) as order_countries,
+          ARRAY_AGG(DISTINCT channel_name LIMIT 20) as order_channels,
+          ARRAY_AGG(DISTINCT channel_category_2 LIMIT 20) as order_categories,
+          ARRAY_AGG(DISTINCT channel_category_3 LIMIT 20) as order_types
         FROM FilteredOrders
         GROUP BY product_id
       ),

@@ -160,9 +160,15 @@ export async function GET() {
       const extraColumn2 = row.f[1].v;
       const exclusive = row.f[2].v;
       
-      if (supplyName) supply_name.add(supplyName);
-      if (extraColumn2) extra_column2.add(extraColumn2);
-      if (exclusive) exclusive2.add(exclusive);
+      if (supplyName && supplyName !== 'NaN' && supplyName !== 'nan' && supplyName !== 'undefined' && supplyName !== 'null') {
+        supply_name.add(supplyName);
+      }
+      if (extraColumn2 && extraColumn2 !== 'NaN' && extraColumn2 !== 'nan' && extraColumn2 !== 'undefined' && extraColumn2 !== 'null') {
+        extra_column2.add(extraColumn2);
+      }
+      if (exclusive && exclusive !== 'NaN' && exclusive !== 'nan' && exclusive !== 'undefined' && exclusive !== 'null') {
+        exclusive2.add(exclusive);
+      }
     });
 
     // 주문 필터 옵션 추출
@@ -172,10 +178,18 @@ export async function GET() {
       const category2 = row.f[2].v;
       const category3 = row.f[3].v;
       
-      if (countryCode) code30.add(countryCode);
-      if (channelName) channel_name.add(channelName);
-      if (category2) channel_category_2.add(category2);
-      if (category3) channel_category_3.add(category3);
+      if (countryCode && countryCode !== 'NaN' && countryCode !== 'nan' && countryCode !== 'undefined' && countryCode !== 'null') {
+        code30.add(countryCode);
+      }
+      if (channelName && channelName !== 'NaN' && channelName !== 'nan' && channelName !== 'undefined' && channelName !== 'null') {
+        channel_name.add(channelName);
+      }
+      if (category2 && category2 !== 'NaN' && category2 !== 'nan' && category2 !== 'undefined' && category2 !== 'null') {
+        channel_category_2.add(category2);
+      }
+      if (category3 && category3 !== 'NaN' && category3 !== 'nan' && category3 !== 'undefined' && category3 !== 'null') {
+        channel_category_3.add(category3);
+      }
     });
 
     // 결과 캐싱 및 반환
