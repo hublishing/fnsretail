@@ -68,12 +68,16 @@ interface Product {
   exclusive2: string
   detail?: never
   options_product_id: string
+  brand?: string
+  line?: string
+  season?: string
 }
 
 interface Column {
   key: keyof Product | 'actions' | 'detail';
   label: string;
   format?: (value: any, product?: Product) => React.ReactNode;
+  sortable?: boolean;
 }
 
 type SearchType = 'name' | 'product_id';
@@ -384,10 +388,11 @@ export default function DynamicTable() {
       )
     },
     { 
-      key: "name", 
-      label: "이지어드민상품명",
-      format: (value: string, product?: Product) => product ? (
-        <button 
+      key: 'name',
+      label: '상품명',
+      sortable: true,
+      format: (value: string, product: any) => (
+        <button
           onClick={() => {
             console.log('상품명 클릭:', {
               productName: value,
@@ -396,11 +401,18 @@ export default function DynamicTable() {
             });
             setSelectedProductId(product.product_id);
           }}
-          className="text-gray-900 hover:underline text-left"
+          className="text-left hover:text-blue-600 transition-colors"
         >
-          {value}
+          <div className="font-medium">{value}</div>
+          <div className="text-sm text-gray-500 mt-1">
+            {[
+              product.brand,
+              product.category_1,
+              product.extra_column2
+            ].filter(Boolean).join(' ')}
+          </div>
         </button>
-      ) : value
+      ),
     },
     { key: "org_price", label: "원가", format: (value: number) => value.toLocaleString() },
     { key: "shop_price", label: "판매가", format: (value: number) => value.toLocaleString() },
