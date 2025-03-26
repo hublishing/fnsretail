@@ -10,13 +10,9 @@ export const metadata: Metadata = {
   title: "Project M",
   description: "FNS Retail Management System",
   icons: {
-    icon: [
-      { url: '/favicon.ico' },
-      { url: '/icon.png', type: 'image/png' },
-    ],
-    apple: [
-      { url: '/apple-icon.png', type: 'image/png' },
-    ],
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+    apple: '/favicon.ico',
   },
 };
 
@@ -27,6 +23,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="h-screen">
+      <head>
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
+      </head>
       <body className={cn(inter.className, "h-screen")}>
         <ClientLayout>{children}</ClientLayout>
       </body>
