@@ -414,8 +414,8 @@ export default function DynamicTable() {
         </button>
       ),
     },
-    { key: "org_price", label: "원가", format: (value: number) => value.toLocaleString() },
-    { key: "shop_price", label: "판매가", format: (value: number) => value.toLocaleString() },
+    { key: "org_price", label: "원가", format: (value: number) => (value !== undefined && value !== null) ? value.toLocaleString() : '-' },
+    { key: "shop_price", label: "판매가", format: (value: number) => (value !== undefined && value !== null) ? value.toLocaleString() : '-' },
     { 
       key: "product_desc", 
       label: "URL",
@@ -428,10 +428,10 @@ export default function DynamicTable() {
     { key: "category_1", label: "라인" },
     { key: "category_3", label: "카테고리" },
     { key: "extra_column2", label: "출시시즌" },
-    { key: "cost_ratio", label: "원가율", format: (value: number) => `${value}%` },
-    { key: "main_wh_available_stock_excl_production_stock", label: "재고", format: (value: number) => value.toLocaleString() },
+    { key: "cost_ratio", label: "원가율", format: (value: number) => (value !== undefined && value !== null) ? `${value}%` : '-' },
+    { key: "main_wh_available_stock_excl_production_stock", label: "재고", format: (value: number) => (value !== undefined && value !== null) ? value.toLocaleString() : '-' },
     { key: "drop_yn", label: "드랍여부" },
-    { key: "soldout_rate", label: "품절률", format: (value: number) => `${value}%` },
+    { key: "soldout_rate", label: "품절률", format: (value: number) => (value !== undefined && value !== null) ? `${value}%` : '-' },
     { key: "supply_name", label: "공급처명" },
     { key: "exclusive2", label: "단독여부" }
   ]
