@@ -16,7 +16,20 @@ export async function GET(request: Request) {
     console.log('Received productId:', productId)
 
     if (!productId) {
+      console.error('상품 ID가 제공되지 않았습니다.')
       return NextResponse.json({ error: '상품 ID가 필요합니다.' }, { status: 400 })
+    }
+
+    // BigQuery 연결 확인
+    try {
+      await bigquery.getProjectId()
+      console.log('BigQuery 연결 성공')
+    } catch (error) {
+      console.error('BigQuery 연결 실패:', error)
+      return NextResponse.json(
+        { error: '데이터베이스 연결에 실패했습니다.' },
+        { status: 500 }
+      )
     }
 
     // product_id로 모든 옵션 상품 조회
@@ -26,18 +39,19 @@ export async function GET(request: Request) {
       WHERE product_id = '${productId}'
       ORDER BY product_id DESC
     `
-    console.log('Main query:', query)
+    console.log('실행할 쿼리:', query)
 
     const [rows] = await bigquery.query({ query })
-    console.log('Main query response:', rows)
+    console.log('쿼리 결과 행 수:', rows?.length || 0)
 
     if (!rows || rows.length === 0) {
+      console.error('상품을 찾을 수 없음:', productId)
       return NextResponse.json({ error: '상품을 찾을 수 없습니다.' }, { status: 404 })
     }
 
     // 첫 번째 행을 메인 상품 정보로 사용
     const mainProduct = rows[0]
-    console.log('Main product:', mainProduct)
+    console.log('메인 상품 정보:', mainProduct)
 
     // 모든 행을 옵션 상품 정보로 사용
     const optionProducts = rows.map(row => ({
@@ -58,14 +72,14 @@ export async function GET(request: Request) {
       last_delivery: row.last_shipping,
       exclusive2: row.exclusive2
     }))
-    console.log('Option products:', optionProducts)
+    console.log('옵션 상품 수:', optionProducts.length)
 
     return NextResponse.json({
       mainProduct,
       optionProducts
     })
   } catch (error) {
-    console.error('Error fetching product:', error)
+    console.error('상품 정보 조회 중 오류 발생:', error)
     return NextResponse.json(
       { error: '상품 정보를 가져오는데 실패했습니다.' },
       { status: 500 }
