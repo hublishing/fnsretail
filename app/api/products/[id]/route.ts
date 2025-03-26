@@ -12,31 +12,12 @@ const bigquery = new BigQuery({
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url)
-    const optionsProductId = url.pathname.split('/').pop()
-    console.log('Received optionsProductId:', optionsProductId)
+    const productId = url.pathname.split('/').pop()
+    console.log('Received productId:', productId)
 
-    if (!optionsProductId) {
+    if (!productId) {
       return NextResponse.json({ error: '상품 ID가 필요합니다.' }, { status: 400 })
     }
-
-    // 먼저 options_product_id로 product_id를 조회
-    const productIdQuery = `
-      SELECT product_id
-      FROM \`${process.env.GOOGLE_CLOUD_DATASET}.product_db\`
-      WHERE options_product_id = '${optionsProductId}'
-      LIMIT 1
-    `
-    console.log('Product ID query:', productIdQuery)
-
-    const [productIdRows] = await bigquery.query({ query: productIdQuery })
-    console.log('Product ID response:', productIdRows)
-
-    if (!productIdRows || productIdRows.length === 0) {
-      return NextResponse.json({ error: '상품을 찾을 수 없습니다.' }, { status: 404 })
-    }
-
-    const productId = productIdRows[0].product_id
-    console.log('Found product_id:', productId)
 
     // product_id로 모든 옵션 상품 조회
     const query = `
@@ -62,20 +43,20 @@ export async function GET(request: Request) {
     const optionProducts = rows.map(row => ({
       options_product_id: row.options_product_id,
       options_options: row.options_options,
-      main_stock: row.main_stock,
-      add_wh_stock: row.add_wh_stock,
-      production_stock: row.production_stock,
-      prima_stock: row.prima_stock,
       main_wh_available_stock: row.main_wh_available_stock,
+      additional_wh_available_stock: row.add_wh_stock,
+      production_waiting_stock: row.production_stock,
+      prima_wh_available_stock: row.prima_stock,
       main_wh_available_stock_excl_production_stock: row.main_wh_available_stock_excl_production_stock,
+      main_wh_available_stock_excl_production_stock_with_additional: row.main_wh_available_stock_excl_production_stock_with_additional,
       incoming_stock: row.incoming_stock,
       soldout: row.soldout,
-      scheduled: row.scheduled,
-      last_shipping: row.last_shipping,
-      exclusive: row.exclusive,
-      fulfillment_stock_zalora: row.fulfillment_stock_zalora,
-      fulfillment_stock_shopee_sg: row.fulfillment_stock_shopee_sg,
-      fulfillment_stock_shopee_my: row.fulfillment_stock_shopee_my
+      zalora: row.fulfillment_stock_zalora,
+      shopee_sg: row.fulfillment_stock_shopee_sg,
+      shopee_my: row.fulfillment_stock_shopee_my,
+      schedule: row.scheduled,
+      last_delivery: row.last_shipping,
+      exclusive2: row.exclusive2
     }))
     console.log('Option products:', optionProducts)
 

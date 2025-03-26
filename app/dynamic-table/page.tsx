@@ -388,7 +388,14 @@ export default function DynamicTable() {
       label: "이지어드민상품명",
       format: (value: string, product?: Product) => product ? (
         <button 
-          onClick={() => setSelectedProductId(product.product_id)}
+          onClick={() => {
+            console.log('상품명 클릭:', {
+              productName: value,
+              productId: product.product_id,
+              optionsProductId: product.options_product_id
+            });
+            setSelectedProductId(product.product_id);
+          }}
           className="text-gray-900 hover:underline text-left"
         >
           {value}

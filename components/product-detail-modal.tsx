@@ -72,27 +72,40 @@ export function ProductDetailModal({ productId, onClose }: ProductDetailModalPro
     const fetchProduct = async () => {
       try {
         setLoading(true);
+        console.log('상품 상세 정보 조회 시작:', { productId });
+        
         const response = await fetch(`/api/products/${productId}`);
+        console.log('API 응답 상태:', response.status);
+        
         const data = await response.json();
+        console.log('API 응답 데이터:', data);
         
         if (!response.ok) {
           throw new Error(data.error || '상품 정보를 불러오는데 실패했습니다.');
         }
 
         if (!data || !data.mainProduct) {
+          console.error('상품 데이터 누락:', data);
           throw new Error('상품 정보가 올바르지 않습니다.');
         }
 
+        console.log('상품 정보 설정:', data.mainProduct);
         setProduct(data.mainProduct);
         setOptionProducts(data.optionProducts || []);
       } catch (error) {
+        console.error('상품 정보 조회 오류:', error);
         setError(error instanceof Error ? error.message : '상품 정보를 불러오는데 실패했습니다.');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchProduct();
+    if (productId) {
+      console.log('상품 ID 변경 감지:', productId);
+      fetchProduct();
+    } else {
+      console.warn('상품 ID가 없습니다.');
+    }
   }, [productId]);
 
   if (loading) {

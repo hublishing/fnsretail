@@ -73,10 +73,6 @@ export function Sidebar() {
       href: '/cart',
       label: '담은 상품',
     },
-    {
-      href: '/product-detail',
-      label: '상세보기',
-    },
   ]
 
   return (
