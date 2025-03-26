@@ -9,6 +9,10 @@ let cachedResults: {
   extra_column2: string[],
   supply_name: string[],
   exclusive2: string[],
+  code30: string[],
+  channel_name: string[],
+  channel_category_2: string[],
+  channel_category_3: string[],
   lastUpdated: number 
 } | null = null;
 
@@ -19,57 +23,38 @@ export async function GET() {
   try {
     // 캐시가 유효한 경우 캐시된 결과 반환
     if (cachedResults && (Date.now() - cachedResults.lastUpdated) < CACHE_TTL) {
-      return NextResponse.json({
-        extra_column2: cachedResults.extra_column2,
-        supply_name: cachedResults.supply_name,
-        exclusive2: cachedResults.exclusive2
-      });
+      return NextResponse.json(cachedResults);
     }
 
     // Google Cloud API 엔드포인트
     const url = `https://bigquery.googleapis.com/bigquery/v2/projects/${process.env.GOOGLE_CLOUD_PROJECT_ID}/queries`;
     
-    // 제품 필터 옵션 쿼리 
+    // 제품 필터 옵션 쿼리 - 단순화된 쿼리로 변경
     const productFiltersQuery = `
-      WITH UniqueValues AS (
-        SELECT DISTINCT 
-          supply_name,
-          extra_column2,
-          exclusive2
-        FROM \`third-current-410914.project_m.product_db\`
-        WHERE 
-          supply_name IS NOT NULL AND supply_name != '' AND
-          extra_column2 IS NOT NULL AND extra_column2 != '' AND
-          exclusive2 IS NOT NULL AND exclusive2 != ''
-      )
-      SELECT
-        ARRAY_AGG(DISTINCT supply_name) as supply_name,
-        ARRAY_AGG(DISTINCT extra_column2) as extra_column2,
-        ARRAY_AGG(DISTINCT exclusive2) as exclusive2
-      FROM UniqueValues
+      SELECT DISTINCT 
+        supply_name,
+        extra_column2,
+        exclusive2
+      FROM \`third-current-410914.project_m.product_db\`
+      WHERE 
+        supply_name IS NOT NULL AND supply_name != '' AND
+        extra_column2 IS NOT NULL AND extra_column2 != '' AND
+        exclusive2 IS NOT NULL AND exclusive2 != ''
     `;
 
-    // 주문 필터 옵션 쿼리
+    // 주문 필터 옵션 쿼리 - 단순화된 쿼리로 변경
     const orderFiltersQuery = `
-      WITH UniqueOrderValues AS (
-        SELECT DISTINCT 
-          code30,
-          channel_name,
-          channel_category_2,
-          channel_category_3
-        FROM \`third-current-410914.project_m.order_db\`
-        WHERE 
-          code30 IS NOT NULL AND code30 != '' AND
-          channel_name IS NOT NULL AND channel_name != '' AND
-          channel_category_2 IS NOT NULL AND channel_category_2 != '' AND
-          channel_category_3 IS NOT NULL AND channel_category_3 != ''
-      )
-      SELECT
-        ARRAY_AGG(DISTINCT code30) as code30,
-        ARRAY_AGG(DISTINCT channel_name) as channel_name,
-        ARRAY_AGG(DISTINCT channel_category_2) as channel_category_2,
-        ARRAY_AGG(DISTINCT channel_category_3) as channel_category_3
-      FROM UniqueOrderValues
+      SELECT DISTINCT 
+        code30,
+        channel_name,
+        channel_category_2,
+        channel_category_3
+      FROM \`third-current-410914.project_m.order_db\`
+      WHERE 
+        code30 IS NOT NULL AND code30 != '' AND
+        channel_name IS NOT NULL AND channel_name != '' AND
+        channel_category_2 IS NOT NULL AND channel_category_2 != '' AND
+        channel_category_3 IS NOT NULL AND channel_category_3 != ''
     `;
 
     // JWT 토큰 생성
@@ -161,83 +146,57 @@ export async function GET() {
     }
 
     // 데이터 추출
-    // 안전하게 BigQuery 배열 데이터 파싱하는 함수
-    const safeParseArray = (value: any): string[] => {
-      if (!value) return [];
-      try {
-        // BigQuery의 ARRAY 반환 결과는 중첩된 f와 v 구조를 가지고 있음
-        if (typeof value === 'object' && value.f) {
-          return value.f.map((item: any) => item.v || '');
-        }
-        
-        // 문자열인 경우 JSON 파싱 시도
-        if (typeof value === 'string') {
-          try {
-            const parsed = JSON.parse(value);
-            if (Array.isArray(parsed)) {
-              return parsed;
-            }
-          } catch (e) {
-            // JSON 파싱 실패 시 무시하고 빈 배열 반환
-            console.error('JSON 파싱 실패:', e);
-          }
-        }
-        
-        // 기본값으로 빈 배열 반환
-        return [];
-      } catch (error) {
-        console.error('배열 파싱 오류:', error);
-        return [];
-      }
-    };
+    const supply_name = new Set<string>();
+    const extra_column2 = new Set<string>();
+    const exclusive2 = new Set<string>();
+    const code30 = new Set<string>();
+    const channel_name = new Set<string>();
+    const channel_category_2 = new Set<string>();
+    const channel_category_3 = new Set<string>();
 
     // 제품 필터 옵션 추출
-    const productFilterOptions = {
-      supply_name: productData.rows?.[0]?.f?.[0]?.v ? 
-        safeParseArray(productData.rows[0].f[0].v) : [],
-      extra_column2: productData.rows?.[0]?.f?.[1]?.v ? 
-        safeParseArray(productData.rows[0].f[1].v) : [],
-      exclusive2: productData.rows?.[0]?.f?.[2]?.v ? 
-        safeParseArray(productData.rows[0].f[2].v) : [],
-    };
+    productData.rows?.forEach((row: any) => {
+      const supplyName = row.f[0].v;
+      const extraColumn2 = row.f[1].v;
+      const exclusive = row.f[2].v;
+      
+      if (supplyName) supply_name.add(supplyName);
+      if (extraColumn2) extra_column2.add(extraColumn2);
+      if (exclusive) exclusive2.add(exclusive);
+    });
 
     // 주문 필터 옵션 추출
-    const orderFilterOptions = {
-      code30: orderData.rows?.[0]?.f?.[0]?.v ? 
-        safeParseArray(orderData.rows[0].f[0].v) : [],
-      channel_name: orderData.rows?.[0]?.f?.[1]?.v ? 
-        safeParseArray(orderData.rows[0].f[1].v) : [],
-      channel_category_2: orderData.rows?.[0]?.f?.[2]?.v ? 
-        safeParseArray(orderData.rows[0].f[2].v) : [],
-      channel_category_3: orderData.rows?.[0]?.f?.[3]?.v ? 
-        safeParseArray(orderData.rows[0].f[3].v) : [],
-    };
+    orderData.rows?.forEach((row: any) => {
+      const countryCode = row.f[0].v;
+      const channelName = row.f[1].v;
+      const category2 = row.f[2].v;
+      const category3 = row.f[3].v;
+      
+      if (countryCode) code30.add(countryCode);
+      if (channelName) channel_name.add(channelName);
+      if (category2) channel_category_2.add(category2);
+      if (category3) channel_category_3.add(category3);
+    });
 
-    // 필터 옵션 결합
-    const filterOptions = {
-      ...productFilterOptions,
-      ...orderFilterOptions
-    };
-
-    // 결과 캐싱
+    // 결과 캐싱 및 반환
     cachedResults = {
-      extra_column2: Array.from(new Set(filterOptions.extra_column2)),
-      supply_name: Array.from(new Set(filterOptions.supply_name)),
-      exclusive2: Array.from(new Set(filterOptions.exclusive2)),
+      supply_name: Array.from(supply_name),
+      extra_column2: Array.from(extra_column2),
+      exclusive2: Array.from(exclusive2),
+      code30: Array.from(code30),
+      channel_name: Array.from(channel_name),
+      channel_category_2: Array.from(channel_category_2),
+      channel_category_3: Array.from(channel_category_3),
       lastUpdated: Date.now()
     };
 
-    return NextResponse.json(filterOptions);
+    return NextResponse.json(cachedResults);
   } catch (error) {
     console.error('필터 옵션 조회 오류:', error);
     
     // 에러 발생 시 캐시된 결과가 있다면 반환
     if (cachedResults) {
-      return NextResponse.json({
-        extra_column2: cachedResults.extra_column2,
-        supply_name: cachedResults.supply_name,
-        exclusive2: cachedResults.exclusive2
-      });
+      return NextResponse.json(cachedResults);
     }
 
     return NextResponse.json(

@@ -505,6 +505,33 @@ export default function DynamicTable() {
     setFilters(prev => ({ ...prev, [field]: value }));
   };
 
+  // 날짜 퀵 선택 버튼 핸들러
+  const handleQuickDateSelect = (period: 'week' | 'month' | 'all') => {
+    const today = new Date();
+    const endDate = today.toISOString().split('T')[0]; // 오늘 날짜 YYYY-MM-DD 형식
+    
+    let startDate = '';
+    
+    if (period === 'week') {
+      // 일주일 전
+      const weekAgo = new Date(today);
+      weekAgo.setDate(today.getDate() - 7);
+      startDate = weekAgo.toISOString().split('T')[0];
+    } else if (period === 'month') {
+      // 한달 전
+      const monthAgo = new Date(today);
+      monthAgo.setMonth(today.getMonth() - 1);
+      startDate = monthAgo.toISOString().split('T')[0];
+    }
+    // 'all'인 경우 startDate는 빈 문자열로 남겨둠
+    
+    setFilters(prev => ({ 
+      ...prev, 
+      order_date_from: startDate,
+      order_date_to: period === 'all' ? '' : endDate 
+    }));
+  };
+
   const handleSearch = () => {
     // 검색어나 필터 중 하나라도 있는 경우에만 검색 실행
     const hasSearchTerm = searchTerm.trim().length > 0;
@@ -743,6 +770,32 @@ export default function DynamicTable() {
               onChange={(e) => handleDateChange(e, 'order_date_to')}
               className="w-40"
             />
+            <div className="flex gap-1 ml-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => handleQuickDateSelect('week')}
+                className="px-2 h-8 text-xs"
+              >
+                일주일
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => handleQuickDateSelect('month')}
+                className="px-2 h-8 text-xs"
+              >
+                한달
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => handleQuickDateSelect('all')}
+                className="px-2 h-8 text-xs"
+              >
+                전체
+              </Button>
+            </div>
           </div>
 
           <Select
