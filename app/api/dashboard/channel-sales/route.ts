@@ -21,36 +21,28 @@ export async function GET(request: NextRequest) {
   logDebug('API 호출 시작', { url: request.url });
 
   try {
-    const { searchParams } = new URL(request.url);
-    const startDate = searchParams.get('startDate');
-    const endDate = searchParams.get('endDate');
-
-    logDebug('검색 파라미터', { startDate, endDate });
+    // URL에서 날짜 파라미터 가져오기
+    const searchParams = request.nextUrl.searchParams;
+    const date = searchParams.get('date');
+    
+    // 날짜가 없으면 어제 날짜 사용
+    const targetDate = date || new Date(new Date().setDate(new Date().getDate() - 1)).toISOString().split('T')[0];
+    
+    logDebug('날짜 필터링', { targetDate });
 
     // 채널별 판매 데이터를 가져오는 쿼리
     const query = `
       SELECT 
-        o.channel_name AS channel,
-        SUM(o.qty) AS quantity,
-        SUM(o.final_calculated_amount) AS revenue
+        channel_name AS channel,
+        SUM(qty) AS quantity,
+        SUM(final_calculated_amount) AS revenue
       FROM 
-        \`third-current-410914.project_m.order_db\` o
-      JOIN 
-        \`third-current-410914.project_m.product_db\` p ON o.product_id = p.product_id
+        \`third-current-410914.project_m.order_db\`
       WHERE 
-        o.channel_name IS NOT NULL
-        ${startDate && endDate ? 
-          startDate === endDate ?
-            `AND SUBSTR(CAST(o.order_date AS STRING), 1, 10) = '${startDate}'` :
-            `AND SUBSTR(CAST(o.order_date AS STRING), 1, 10) >= '${startDate}' 
-             AND SUBSTR(CAST(o.order_date AS STRING), 1, 10) <= '${endDate}'`
-          : startDate ?
-            `AND SUBSTR(CAST(o.order_date AS STRING), 1, 10) >= '${startDate}'` :
-            endDate ?
-            `AND SUBSTR(CAST(o.order_date AS STRING), 1, 10) <= '${endDate}'` : ''
-        }
+        channel_name IS NOT NULL
+        AND CAST(order_date AS STRING) LIKE '${targetDate}%'
       GROUP BY 
-        o.channel_name
+        channel_name
       ORDER BY 
         revenue DESC
     `;
@@ -170,13 +162,13 @@ export async function GET(request: NextRequest) {
       return {
         channel,
         quantity,
-        revenue
+        revenue,
       };
     });
 
     logDebug('데이터 변환 완료', { 
       resultCount: results.length,
-      firstItem: results[0]
+      firstItem: results[0],
     });
 
     // 결과 반환
