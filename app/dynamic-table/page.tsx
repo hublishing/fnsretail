@@ -72,6 +72,12 @@ interface Product {
   brand?: string
   line?: string
   season?: string
+  total_order_qty?: number
+  recent_order_dates?: string[]
+  order_countries?: string[]
+  order_channels?: string[]
+  order_categories?: string[]
+  order_types?: string[]
 }
 
 interface Column {
@@ -96,14 +102,25 @@ export default function DynamicTable() {
     category_3: 'all',
     drop_yn: 'all',
     supply_name: 'all',
-    exclusive2: 'all'
+    exclusive2: 'all',
+    code30: 'all',
+    channel_name: 'all',
+    channel_category_2: 'all',
+    channel_category_3: 'all',
+    order_date_from: '',
+    order_date_to: '',
+    sort_by_qty: 'default'
   })
 
   // 동적 필터 옵션
   const [dynamicFilterOptions, setDynamicFilterOptions] = useState({
     supply_name: new Set<string>(),
     extra_column2: new Set<string>(),
-    exclusive2: new Set<string>()
+    exclusive2: new Set<string>(),
+    code30: new Set<string>(),  // 주문 국가
+    channel_name: new Set<string>(),  // 채널명
+    channel_category_2: new Set<string>(),  // 구분
+    channel_category_3: new Set<string>()  // 분류
   })
 
   const router = useRouter()
@@ -184,6 +201,14 @@ export default function DynamicTable() {
     { key: "supply_name", label: "공급처명" },
     { key: "exclusive2", label: "단독여부" },
     { 
+      key: "total_order_qty", 
+      label: "주문수량", 
+      format: (value: number) => {
+        if (value === undefined || value === null) return '-';
+        return value.toLocaleString();
+      }
+    },
+    { 
       key: "product_desc", 
       label: "URL",
       format: (value: string) => value ? (
@@ -208,7 +233,14 @@ export default function DynamicTable() {
             category_3: 'all',
             drop_yn: 'all',
             supply_name: 'all',
-            exclusive2: 'all'
+            exclusive2: 'all',
+            code30: 'all',
+            channel_name: 'all',
+            channel_category_2: 'all',
+            channel_category_3: 'all',
+            order_date_from: '',
+            order_date_to: '',
+            sort_by_qty: 'default'
           },
           searchResults: [],
           updatedAt: new Date().toISOString()
@@ -224,7 +256,14 @@ export default function DynamicTable() {
         category_3: 'all',
         drop_yn: 'all',
         supply_name: 'all',
-        exclusive2: 'all'
+        exclusive2: 'all',
+        code30: 'all',
+        channel_name: 'all',
+        channel_category_2: 'all',
+        channel_category_3: 'all',
+        order_date_from: '',
+        order_date_to: '',
+        sort_by_qty: 'default'
       });
 
       // 컬럼 상태는 변경하지 않습니다 - 컬럼 정의는 columns 변수에 정의되어 있으며 이 함수에서는 수정하지 않습니다.
@@ -290,7 +329,14 @@ export default function DynamicTable() {
             category_3: 'all',
             drop_yn: 'all',
             supply_name: 'all',
-            exclusive2: 'all'
+            exclusive2: 'all',
+            code30: 'all',
+            channel_name: 'all',
+            channel_category_2: 'all',
+            channel_category_3: 'all',
+            order_date_from: '',
+            order_date_to: '',
+            sort_by_qty: 'default'
           });
           if (data.searchResults) {
             // 저장된 검색 결과를 불러올 때 필요한 필드가 없으면 기본값 추가
@@ -332,7 +378,11 @@ export default function DynamicTable() {
         setDynamicFilterOptions({
           supply_name: new Set(result.supply_name || []),
           extra_column2: new Set(result.extra_column2 || []),
-          exclusive2: new Set(result.exclusive2 || [])
+          exclusive2: new Set(result.exclusive2 || []),
+          code30: new Set(result.code30 || []),
+          channel_name: new Set(result.channel_name || []),
+          channel_category_2: new Set(result.channel_category_2 || []),
+          channel_category_3: new Set(result.channel_category_3 || [])
         });
       } catch (err) {
         console.error('필터 옵션 로딩 오류:', err);
@@ -376,7 +426,11 @@ export default function DynamicTable() {
       
       // 'all'이 아닌 필터만 추가
       Object.entries(filters).forEach(([key, value]) => {
-        if (value !== 'all') {
+        if ((value !== 'all' && value !== '') || key === 'sort_by_qty') {
+          if (key === 'sort_by_qty' && value === 'default') {
+            // 기본 정렬일 경우 파라미터에 추가하지 않음
+            return;
+          }
           params.append(key, value);
         }
       });
@@ -440,8 +494,16 @@ export default function DynamicTable() {
 
   // 필터 변경 핸들러
   const handleFilterChange = (key: keyof typeof filters, value: string) => {
-    setFilters(prev => ({ ...prev, [key]: value }))
+    // 값이 undefined일 경우 빈 문자열로 대체
+    const safeValue = value === undefined ? '' : value;
+    setFilters(prev => ({ ...prev, [key]: safeValue }));
   }
+
+  // 날짜 필드 핸들러 - 항상 문자열 반환 보장
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'order_date_from' | 'order_date_to') => {
+    const value = e.target.value || ''; // undefined나 null이면 빈 문자열로
+    setFilters(prev => ({ ...prev, [field]: value }));
+  };
 
   const handleSearch = () => {
     // 검색어나 필터 중 하나라도 있는 경우에만 검색 실행
@@ -660,6 +722,102 @@ export default function DynamicTable() {
                   {option === 'Y' ? '단독' : option === 'N' ? '단독아님' : option}
                 </SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* 주문 관련 필터 */}
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <div className="text-sm text-gray-500">주문기간:</div>
+            <Input
+              type="date"
+              value={filters.order_date_from || ''}
+              onChange={(e) => handleDateChange(e, 'order_date_from')}
+              className="w-40"
+            />
+            <span>-</span>
+            <Input
+              type="date"
+              value={filters.order_date_to || ''}
+              onChange={(e) => handleDateChange(e, 'order_date_to')}
+              className="w-40"
+            />
+          </div>
+
+          <Select
+            value={filters.code30}
+            onValueChange={(value) => handleFilterChange('code30', value)}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="주문국가" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">전체 국가</SelectItem>
+              {Array.from(dynamicFilterOptions.code30).map((option) => (
+                <SelectItem key={option} value={option}>{option}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={filters.channel_name}
+            onValueChange={(value) => handleFilterChange('channel_name', value)}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="채널명" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">전체 채널</SelectItem>
+              {Array.from(dynamicFilterOptions.channel_name).map((option) => (
+                <SelectItem key={option} value={option}>{option}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <Select
+            value={filters.channel_category_2}
+            onValueChange={(value) => handleFilterChange('channel_category_2', value)}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="구분" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">전체 구분</SelectItem>
+              {Array.from(dynamicFilterOptions.channel_category_2).map((option) => (
+                <SelectItem key={option} value={option}>{option}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={filters.channel_category_3}
+            onValueChange={(value) => handleFilterChange('channel_category_3', value)}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="분류" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">전체 분류</SelectItem>
+              {Array.from(dynamicFilterOptions.channel_category_3).map((option) => (
+                <SelectItem key={option} value={option}>{option}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={filters.sort_by_qty}
+            onValueChange={(value) => handleFilterChange('sort_by_qty', value)}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="주문수량 정렬" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="default">기본 정렬</SelectItem>
+              <SelectItem value="desc">주문 많은 순</SelectItem>
+              <SelectItem value="asc">주문 적은 순</SelectItem>
             </SelectContent>
           </Select>
         </div>

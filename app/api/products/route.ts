@@ -11,10 +11,21 @@ export async function GET(request: Request) {
   const drop_yn = searchParams.get('drop_yn');
   const supply_name = searchParams.get('supply_name');
   const exclusive2 = searchParams.get('exclusive2');
+  
+  // 주문 데이터 필터링 파라미터
+  const order_date_from = searchParams.get('order_date_from');
+  const order_date_to = searchParams.get('order_date_to');
+  const code30 = searchParams.get('code30');
+  const channel_name = searchParams.get('channel_name');
+  const channel_category_2 = searchParams.get('channel_category_2');
+  const channel_category_3 = searchParams.get('channel_category_3');
+  const sort_by_qty = searchParams.get('sort_by_qty'); // 'asc' or 'desc' or 'default'
 
   // 검색어나 필터 중 하나라도 있어야 검색 실행
   const hasSearchTerm = searchTerm.trim().length > 0;
-  const hasFilter = [extra_column2, category_3, drop_yn, supply_name, exclusive2].some(filter => filter && filter !== 'all');
+  const hasFilter = [extra_column2, category_3, drop_yn, supply_name, exclusive2, 
+                     order_date_from, order_date_to, code30, channel_name, 
+                     channel_category_2, channel_category_3].some(filter => filter && filter !== 'all');
 
   if (!hasSearchTerm && !hasFilter) {
     return NextResponse.json([]);
@@ -25,34 +36,49 @@ export async function GET(request: Request) {
     const url = `https://bigquery.googleapis.com/bigquery/v2/projects/${process.env.GOOGLE_CLOUD_PROJECT_ID}/queries`;
     
     // WHERE 절 조건 생성
-    const conditions = [];
+    const productConditions = [];
+    const orderConditions = [];
     
     // 검색어 조건 추가
     if (searchTerm) {
       if (searchType === 'name') {
-        conditions.push(`name LIKE '%${searchTerm}%'`);
+        productConditions.push(`name LIKE '%${searchTerm}%'`);
       } else {
         const productIds = searchTerm.split(',').map(id => id.trim()).filter(Boolean);
         if (productIds.length > 0) {
-          conditions.push(`product_id IN ('${productIds.join("','")}')`);
+          productConditions.push(`product_id IN ('${productIds.join("','")}')`);
         }
       }
     }
 
-    // 필터 조건 추가
-    if (extra_column2 && extra_column2 !== 'all') conditions.push(`extra_column2 = '${extra_column2}'`);
-    if (category_3 && category_3 !== 'all') conditions.push(`category_3 = '${category_3}'`);
-    if (drop_yn && drop_yn !== 'all') conditions.push(`drop_yn = '${drop_yn}'`);
-    if (supply_name && supply_name !== 'all') conditions.push(`supply_name = '${supply_name}'`);
-    if (exclusive2 && exclusive2 !== 'all') conditions.push(`exclusive2 = '${exclusive2}'`);
+    // 상품 필터 조건 추가
+    if (extra_column2 && extra_column2 !== 'all') productConditions.push(`extra_column2 = '${extra_column2}'`);
+    if (category_3 && category_3 !== 'all') productConditions.push(`category_3 = '${category_3}'`);
+    if (drop_yn && drop_yn !== 'all') productConditions.push(`drop_yn = '${drop_yn}'`);
+    if (supply_name && supply_name !== 'all') productConditions.push(`supply_name = '${supply_name}'`);
+    if (exclusive2 && exclusive2 !== 'all') productConditions.push(`exclusive2 = '${exclusive2}'`);
 
-    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    // 주문 데이터 필터 조건 추가
+    if (order_date_from) orderConditions.push(`order_date >= '${order_date_from}'`);
+    if (order_date_to) orderConditions.push(`order_date <= '${order_date_to}'`);
+    if (code30 && code30 !== 'all') orderConditions.push(`code30 = '${code30}'`);
+    if (channel_name && channel_name !== 'all') orderConditions.push(`channel_name = '${channel_name}'`);
+    if (channel_category_2 && channel_category_2 !== 'all') orderConditions.push(`channel_category_2 = '${channel_category_2}'`);
+    if (channel_category_3 && channel_category_3 !== 'all') orderConditions.push(`channel_category_3 = '${channel_category_3}'`);
+
+    const productWhereClause = productConditions.length > 0 ? `WHERE ${productConditions.join(' AND ')}` : '';
+    const orderWhereClause = orderConditions.length > 0 ? `WHERE ${orderConditions.join(' AND ')}` : '';
      
     const query = `
       WITH FilteredProducts AS (
         SELECT *
         FROM \`third-current-410914.project_m.product_db\`
-        ${whereClause}
+        ${productWhereClause}
+      ),
+      FilteredOrders AS (
+        SELECT *
+        FROM \`third-current-410914.project_m.order_db\`
+        ${orderWhereClause}
       ),
       StockSummary AS (
         SELECT 
@@ -61,13 +87,32 @@ export async function GET(request: Request) {
         FROM FilteredProducts
         GROUP BY product_id
       ),
+      OrderSummary AS (
+        SELECT 
+          product_id,
+          SUM(IFNULL(qty, 0)) as total_order_qty,
+          ARRAY_AGG(DISTINCT order_date ORDER BY order_date DESC LIMIT 10) as recent_order_dates,
+          ARRAY_AGG(DISTINCT code30 LIMIT 10) as order_countries,
+          ARRAY_AGG(DISTINCT channel_name LIMIT 10) as order_channels,
+          ARRAY_AGG(DISTINCT channel_category_2 LIMIT 10) as order_categories,
+          ARRAY_AGG(DISTINCT channel_category_3 LIMIT 10) as order_types
+        FROM FilteredOrders
+        GROUP BY product_id
+      ),
       RankedProducts AS (
         SELECT 
           FP.*,
           SS.total_stock,
+          OS.total_order_qty,
+          OS.recent_order_dates,
+          OS.order_countries,
+          OS.order_channels,
+          OS.order_categories,
+          OS.order_types,
           ROW_NUMBER() OVER (PARTITION BY FP.product_id ORDER BY FP.product_id DESC) as rn
         FROM FilteredProducts FP
         LEFT JOIN StockSummary SS ON FP.product_id = SS.product_id
+        LEFT JOIN OrderSummary OS ON FP.product_id = OS.product_id
       )
       SELECT 
         product_id,
@@ -109,10 +154,16 @@ export async function GET(request: Request) {
         exclusive2,
         fulfillment_stock_zalora,
         fulfillment_stock_shopee_sg,
-        fulfillment_stock_shopee_my
+        fulfillment_stock_shopee_my,
+        total_order_qty,
+        recent_order_dates,
+        order_countries,
+        order_channels,
+        order_categories,
+        order_types
       FROM RankedProducts
       WHERE rn = 1
-      ORDER BY product_id DESC 
+      ${sort_by_qty && sort_by_qty !== 'default' ? `ORDER BY total_order_qty ${sort_by_qty === 'desc' ? 'DESC' : 'ASC'}, product_id DESC` : 'ORDER BY product_id DESC'}
     `;
 
     // JWT 토큰 생성
@@ -187,6 +238,37 @@ export async function GET(request: Request) {
     // BigQuery 응답에서 데이터 추출
     const rows = data.rows?.map((row: any) => {
       const values = row.f.map((field: any) => field.v);
+      
+      // 안전하게 BigQuery 배열 데이터 파싱하는 함수
+      const safeParseArray = (value: any): string[] => {
+        if (!value) return [];
+        try {
+          // BigQuery의 ARRAY 반환 결과는 중첩된 f와 v 구조를 가지고 있음
+          if (typeof value === 'object' && value.f) {
+            return value.f.map((item: any) => item.v || '');
+          }
+          
+          // 문자열인 경우 JSON 파싱 시도
+          if (typeof value === 'string') {
+            try {
+              const parsed = JSON.parse(value);
+              if (Array.isArray(parsed)) {
+                return parsed;
+              }
+            } catch (e) {
+              // JSON 파싱 실패 시 빈 배열 반환
+              console.error('JSON 파싱 실패:', e);
+            }
+          }
+          
+          // 기본값으로 빈 배열 반환
+          return [];
+        } catch (error) {
+          console.error('배열 파싱 오류:', error);
+          return [];
+        }
+      };
+      
       return {
         product_id: values[0] || '',
         name: values[1] || '',
@@ -227,7 +309,13 @@ export async function GET(request: Request) {
         exclusive2: values[36] || '',
         fulfillment_stock_zalora: values[37] || '',
         fulfillment_stock_shopee_sg: values[38] || '',
-        fulfillment_stock_shopee_my: values[39] || ''
+        fulfillment_stock_shopee_my: values[39] || '',
+        total_order_qty: Number(values[40] || 0),
+        recent_order_dates: safeParseArray(values[41]),
+        order_countries: safeParseArray(values[42]),
+        order_channels: safeParseArray(values[43]),
+        order_categories: safeParseArray(values[44]),
+        order_types: safeParseArray(values[45])
       };
     }) || [];
 
