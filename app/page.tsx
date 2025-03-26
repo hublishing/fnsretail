@@ -13,7 +13,7 @@ export default function HomePage() {
       try {
         const session = await getSession()
         if (session) {
-          router.push('/dynamic-table')
+          router.push('/dashboard')
         } else {
           router.push('/login')
         }

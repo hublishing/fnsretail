@@ -62,8 +62,8 @@ export function Sidebar() {
 
   const routes = [
     {
-      href: '/',
-      label: '홈',
+      href: '/dashboard',
+      label: '대시보드',
     },
     {
       href: '/dynamic-table',
