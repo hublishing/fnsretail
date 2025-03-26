@@ -13,7 +13,9 @@ export async function GET(request: Request) {
   try {
     const url = new URL(request.url)
     const productId = url.pathname.split('/').pop()
-    console.log('Received productId:', productId)
+    console.log('=== 상품 상세 정보 API 호출 시작 ===')
+    console.log('요청 URL:', request.url)
+    console.log('추출된 상품 ID:', productId)
 
     if (!productId) {
       console.error('상품 ID가 제공되지 않았습니다.')
@@ -22,8 +24,9 @@ export async function GET(request: Request) {
 
     // BigQuery 연결 확인
     try {
-      await bigquery.getProjectId()
-      console.log('BigQuery 연결 성공')
+      const projectId = await bigquery.getProjectId()
+      console.log('BigQuery 연결 성공 - 프로젝트 ID:', projectId)
+      console.log('데이터셋:', process.env.GOOGLE_CLOUD_DATASET)
     } catch (error) {
       console.error('BigQuery 연결 실패:', error)
       return NextResponse.json(
@@ -51,7 +54,12 @@ export async function GET(request: Request) {
 
     // 첫 번째 행을 메인 상품 정보로 사용
     const mainProduct = rows[0]
-    console.log('메인 상품 정보:', mainProduct)
+    console.log('메인 상품 정보:', {
+      product_id: mainProduct.product_id,
+      options_product_id: mainProduct.options_product_id,
+      options_options: mainProduct.options_options,
+      main_wh_available_stock: mainProduct.main_wh_available_stock
+    })
 
     // 모든 행을 옵션 상품 정보로 사용
     const optionProducts = rows.map(row => ({
@@ -73,13 +81,18 @@ export async function GET(request: Request) {
       exclusive2: row.exclusive2
     }))
     console.log('옵션 상품 수:', optionProducts.length)
+    console.log('=== 상품 상세 정보 API 호출 완료 ===')
 
     return NextResponse.json({
       mainProduct,
       optionProducts
     })
-  } catch (error) {
-    console.error('상품 정보 조회 중 오류 발생:', error)
+  } catch (error: any) {
+    console.error('=== 상품 정보 조회 중 오류 발생 ===')
+    console.error('에러 타입:', error?.constructor?.name || 'Unknown')
+    console.error('에러 메시지:', error?.message || '알 수 없는 에러')
+    console.error('에러 스택:', error?.stack || '스택 트레이스 없음')
+    console.error('=== 오류 로그 끝 ===')
     return NextResponse.json(
       { error: '상품 정보를 가져오는데 실패했습니다.' },
       { status: 500 }
