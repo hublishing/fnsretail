@@ -419,33 +419,31 @@ export default function DynamicTable() {
 
   const fetchData = async () => {
     try {
-      setLoading(true)
-      setError(null)
+      if (loading) return;
+      setLoading(true);
+      setError(null);
 
-      // URL 파라미터 생성
       const params = new URLSearchParams();
       if (searchTerm) params.append('search', searchTerm);
       params.append('type', searchType);
       
-      // 'all'이 아닌 필터만 추가
       Object.entries(filters).forEach(([key, value]) => {
         if ((value !== 'all' && value !== '') || key === 'sort_by_qty') {
           params.append(key, value);
         }
       });
 
-      const response = await fetch(`/api/products?${params.toString()}`)
-      const result = await response.json()
+      const response = await fetch(`/api/products?${params.toString()}`);
+      const result = await response.json();
       
       if (!response.ok) {
-        throw new Error(result.error || '데이터를 불러오는데 실패했습니다.')
+        throw new Error(result.error || '데이터를 불러오는데 실패했습니다.');
       }
 
       if (!Array.isArray(result)) {
-        throw new Error('잘못된 데이터 형식입니다.')
+        throw new Error('잘못된 데이터 형식입니다.');
       }
 
-      // total_stock 필드가 없는 경우 기본값 설정 (API 응답에 누락된 경우)
       const processedResults = result.map((item: any) => ({
         ...item,
         total_stock: item.total_stock !== undefined ? item.total_stock : 0,
@@ -453,82 +451,131 @@ export default function DynamicTable() {
       
       setData(processedResults);
       
-      // 검색 결과 저장
+      // 검색 결과만 업데이트
       if (user) {
-        try {
-          console.log('검색 결과 저장 시도:', {
-            userId: user.uid,
-            searchTerm,
-            searchType,
-            filters,
-            resultCount: processedResults.length
-          });
-          
-          const docRef = doc(db, 'userSearchStates', user.uid);
-          const searchState = {
-            searchTerm,
-            searchType,
-            filters,
-            searchResults: processedResults,
-            updatedAt: new Date().toISOString()
-          };
-          
-          await setDoc(docRef, searchState, { merge: true });
-          console.log('검색 결과 저장 완료');
-        } catch (error) {
-          console.error('검색 결과 저장 실패:', error);
-          // 저장 실패해도 검색 결과는 표시
-        }
-      } else {
-        console.log('사용자가 로그인되지 않아 저장하지 않습니다.');
+        const docRef = doc(db, 'userSearchStates', user.uid);
+        await setDoc(docRef, {
+          searchResults: processedResults,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
       }
     } catch (err) {
-      console.error('데이터 로딩 오류:', err)
-      setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.')
-      setData([])
+      console.error('데이터 로딩 오류:', err);
+      setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.');
+      setData([]);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   // 필터 변경 핸들러
   const handleFilterChange = (key: keyof typeof filters, value: string) => {
-    // 값이 undefined일 경우 빈 문자열로 대체
     const safeValue = value === undefined ? '' : value;
-    setFilters(prev => ({ ...prev, [key]: safeValue }));
-  }
+    setFilters(prev => {
+      const newFilters = { ...prev, [key]: safeValue };
+      // 필터 상태를 먼저 Firestore에 저장
+      if (user) {
+        const docRef = doc(db, 'userSearchStates', user.uid);
+        setDoc(docRef, {
+          searchTerm,
+          searchType,
+          filters: newFilters,
+          updatedAt: new Date().toISOString()
+        }, { merge: true })
+        .then(() => {
+          // 저장 성공 후 데이터 fetch
+          if (!loading) {
+            fetchData();
+          }
+        })
+        .catch(error => {
+          console.error('필터 상태 저장 실패:', error);
+        });
+      } else {
+        // 로그인하지 않은 경우 바로 fetch
+        if (!loading) {
+          fetchData();
+        }
+      }
+      return newFilters;
+    });
+  };
 
-  // 날짜 필드 핸들러 - 항상 문자열 반환 보장
+  // 날짜 필드 핸들러
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'order_date_from' | 'order_date_to') => {
-    const value = e.target.value || ''; // undefined나 null이면 빈 문자열로
-    setFilters(prev => ({ ...prev, [field]: value }));
+    const value = e.target.value || '';
+    setFilters(prev => {
+      const newFilters = { ...prev, [field]: value };
+      if (user) {
+        const docRef = doc(db, 'userSearchStates', user.uid);
+        setDoc(docRef, {
+          searchTerm,
+          searchType,
+          filters: newFilters,
+          updatedAt: new Date().toISOString()
+        }, { merge: true })
+        .then(() => {
+          if (!loading) {
+            fetchData();
+          }
+        })
+        .catch(error => {
+          console.error('필터 상태 저장 실패:', error);
+        });
+      } else {
+        if (!loading) {
+          fetchData();
+        }
+      }
+      return newFilters;
+    });
   };
 
   // 날짜 퀵 선택 버튼 핸들러
   const handleQuickDateSelect = (period: 'week' | 'month' | 'all') => {
     const today = new Date();
-    const endDate = today.toISOString().split('T')[0]; // 오늘 날짜 YYYY-MM-DD 형식
-    
+    const endDate = today.toISOString().split('T')[0];
     let startDate = '';
     
     if (period === 'week') {
-      // 일주일 전
       const weekAgo = new Date(today);
       weekAgo.setDate(today.getDate() - 7);
       startDate = weekAgo.toISOString().split('T')[0];
     } else if (period === 'month') {
-      // 한달 전
       const monthAgo = new Date(today);
       monthAgo.setMonth(today.getMonth() - 1);
       startDate = monthAgo.toISOString().split('T')[0];
     }
-    // 'all'인 경우 startDate는 빈 문자열로 남겨둠
     
-    setFilters(prev => ({ 
-      ...prev, 
-      order_date_from: startDate,
-      order_date_to: period === 'all' ? '' : endDate 
-    }));
+    setFilters(prev => {
+      const newFilters = { 
+        ...prev, 
+        order_date_from: startDate,
+        order_date_to: period === 'all' ? '' : endDate 
+      };
+      if (user) {
+        const docRef = doc(db, 'userSearchStates', user.uid);
+        setDoc(docRef, {
+          searchTerm,
+          searchType,
+          filters: newFilters,
+          updatedAt: new Date().toISOString()
+        }, { merge: true })
+        .then(() => {
+          if (!loading) {
+            fetchData();
+          }
+        })
+        .catch(error => {
+          console.error('필터 상태 저장 실패:', error);
+        });
+      } else {
+        if (!loading) {
+          fetchData();
+        }
+      }
+      return newFilters;
+    });
   };
 
   const handleSearch = () => {
@@ -628,6 +675,13 @@ export default function DynamicTable() {
       alert('장바구니에 담는 중 오류가 발생했습니다.');
     }
   };
+
+  // 초기 데이터 로드를 위한 useEffect
+  useEffect(() => {
+    if (!loading && user) {
+      fetchData();
+    }
+  }, [user]); // user가 변경될 때만 실행
 
   return (
     <div className="container mx-auto py-10">
@@ -786,21 +840,6 @@ export default function DynamicTable() {
           </Select>
 
           <Select
-            value={filters.channel_name}
-            onValueChange={(value) => handleFilterChange('channel_name', value)}
-          >
-            <SelectTrigger className={`w-[140px] ${filters.channel_name !== 'all' ? 'bg-blue-50 border-blue-200' : ''} h-10`}>
-              <SelectValue placeholder="채널명" />
-            </SelectTrigger>
-            <SelectContent className="min-w-[140px]">
-              <SelectItem value="all">전체 채널</SelectItem>
-              {Array.from(dynamicFilterOptions.channel_name).map((option) => (
-                <SelectItem key={option} value={option}>{option}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select
             value={filters.channel_category_3}
             onValueChange={(value) => handleFilterChange('channel_category_3', value)}
           >
@@ -810,6 +849,21 @@ export default function DynamicTable() {
             <SelectContent className="min-w-[140px]">
               <SelectItem value="all">전체 분류</SelectItem>
               {Array.from(dynamicFilterOptions.channel_category_3).map((option) => (
+                <SelectItem key={option} value={option}>{option}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={filters.channel_name}
+            onValueChange={(value) => handleFilterChange('channel_name', value)}
+          >
+            <SelectTrigger className={`w-[140px] ${filters.channel_name !== 'all' ? 'bg-blue-50 border-blue-200' : ''} h-10`}>
+              <SelectValue placeholder="채널명" />
+            </SelectTrigger>
+            <SelectContent className="min-w-[140px]">
+              <SelectItem value="all">전체 채널</SelectItem>
+              {Array.from(dynamicFilterOptions.channel_name).map((option) => (
                 <SelectItem key={option} value={option}>{option}</SelectItem>
               ))}
             </SelectContent>
