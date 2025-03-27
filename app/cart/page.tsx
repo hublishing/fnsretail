@@ -48,7 +48,7 @@ export default function CartPage() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
-  const [sortOption, setSortOption] = useState<'default' | 'qty_desc' | 'qty_asc'>('qty_desc');
+  const [sortOption, setSortOption] = useState<'default' | 'qty_desc' | 'qty_asc' | 'stock_desc' | 'stock_asc'>('qty_desc');
   const [sortedProducts, setSortedProducts] = useState<Product[]>([]);
 
   // 사용자 세션 로드
@@ -120,6 +120,10 @@ export default function CartPage() {
       sortedItems.sort((a, b) => (b.total_order_qty || 0) - (a.total_order_qty || 0));
     } else if (sortOption === 'qty_asc') {
       sortedItems.sort((a, b) => (a.total_order_qty || 0) - (b.total_order_qty || 0));
+    } else if (sortOption === 'stock_desc') {
+      sortedItems.sort((a, b) => (b.total_stock || 0) - (a.total_stock || 0));
+    } else if (sortOption === 'stock_asc') {
+      sortedItems.sort((a, b) => (a.total_stock || 0) - (b.total_stock || 0));
     }
     setSortedProducts(sortedItems);
   }, [products, sortOption]);
@@ -136,7 +140,7 @@ export default function CartPage() {
             <Select
               value={sortOption}
               onValueChange={(value) => {
-                setSortOption(value as 'default' | 'qty_desc' | 'qty_asc');
+                setSortOption(value as 'default' | 'qty_desc' | 'qty_asc' | 'stock_desc' | 'stock_asc');
                 
                 // 상품을 바로 정렬
                 let sortedItems = [...products];
@@ -144,16 +148,22 @@ export default function CartPage() {
                   sortedItems.sort((a, b) => (b.total_order_qty || 0) - (a.total_order_qty || 0));
                 } else if (value === 'qty_asc') {
                   sortedItems.sort((a, b) => (a.total_order_qty || 0) - (b.total_order_qty || 0));
+                } else if (value === 'stock_desc') {
+                  sortedItems.sort((a, b) => (b.total_stock || 0) - (a.total_stock || 0));
+                } else if (value === 'stock_asc') {
+                  sortedItems.sort((a, b) => (a.total_stock || 0) - (b.total_stock || 0));
                 }
                 setSortedProducts(sortedItems);
               }}
             >
               <SelectTrigger className="w-[140px] border-none focus:ring-0 focus:ring-offset-0 shadow-none h-10">
-                <SelectValue placeholder="판매수량 정렬" />
+                <SelectValue placeholder="정렬 기준" />
               </SelectTrigger>
               <SelectContent className="min-w-[140px]">
                 <SelectItem value="qty_desc">판매 많은 순</SelectItem>
                 <SelectItem value="qty_asc">판매 적은 순</SelectItem>
+                <SelectItem value="stock_desc">재고 많은 순</SelectItem>
+                <SelectItem value="stock_asc">재고 적은 순</SelectItem>
               </SelectContent>
             </Select>
           </div>
