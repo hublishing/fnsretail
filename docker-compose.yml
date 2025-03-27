@@ -6,11 +6,9 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - .:/app:delegated
+      - .:/app
       - /app/node_modules
       - /app/.next
     environment:
       - NODE_ENV=development
-      - WATCHPACK_POLLING=true
-      - CHOKIDAR_USEPOLLING=true
     command: npm run dev 

@@ -109,7 +109,7 @@ export default function DynamicTable() {
     channel_category_3: 'all',
     order_date_from: '',
     order_date_to: '',
-    sort_by_qty: 'default'
+    sort_by_qty: 'desc'
   })
 
   // 동적 필터 옵션
@@ -243,7 +243,7 @@ export default function DynamicTable() {
             channel_category_3: 'all',
             order_date_from: '',
             order_date_to: '',
-            sort_by_qty: 'default'
+            sort_by_qty: 'desc'
           },
           searchResults: [],
           updatedAt: new Date().toISOString()
@@ -266,7 +266,7 @@ export default function DynamicTable() {
         channel_category_3: 'all',
         order_date_from: '',
         order_date_to: '',
-        sort_by_qty: 'default'
+        sort_by_qty: 'desc'
       });
 
       // 컬럼 상태는 변경하지 않습니다 - 컬럼 정의는 columns 변수에 정의되어 있으며 이 함수에서는 수정하지 않습니다.
@@ -339,7 +339,7 @@ export default function DynamicTable() {
             channel_category_3: 'all',
             order_date_from: '',
             order_date_to: '',
-            sort_by_qty: 'default'
+            sort_by_qty: 'desc'
           });
           if (data.searchResults) {
             // 저장된 검색 결과를 불러올 때 필요한 필드가 없으면 기본값 추가
@@ -871,17 +871,30 @@ export default function DynamicTable() {
       <div className="flex justify-end mb-2">
         <Select
           value={filters.sort_by_qty}
-          onValueChange={(value) => handleFilterChange('sort_by_qty', value)}
+          onValueChange={(value) => {
+            handleFilterChange('sort_by_qty', value);
+            // 로컬에서 바로 정렬하는 로직 추가
+            const sortedData = [...data].sort((a, b) => {
+              const aQty = a.total_order_qty || 0;
+              const bQty = b.total_order_qty || 0;
+              
+              if (value === 'asc') {
+                return aQty - bQty;
+              } else if (value === 'desc') {
+                return bQty - aQty;
+              }
+              return 0; // default 정렬은 변경하지 않음
+            });
+            
+            setData(sortedData);
+          }}
         >
-          <SelectTrigger className={`w-[140px] ${filters.sort_by_qty !== 'default' ? 'bg-blue-50 border-blue-200' : ''} h-10`}>
-            <SelectValue placeholder="정렬" />
+          <SelectTrigger className="w-[140px] border-none focus:ring-0 focus:ring-offset-0 shadow-none h-10">
+            <SelectValue placeholder="판매수량 정렬" />
           </SelectTrigger>
           <SelectContent className="min-w-[140px]">
-            <SelectItem value="default">기본 정렬</SelectItem>
-            <SelectItem value="desc">판매수량 많은순</SelectItem>
-            <SelectItem value="asc">판매수량 적은순</SelectItem>
-            <SelectItem value="stock_desc">재고 많은순</SelectItem>
-            <SelectItem value="stock_asc">재고 적은순</SelectItem>
+            <SelectItem value="desc">판매 많은 순</SelectItem>
+            <SelectItem value="asc">판매 적은 순</SelectItem>
           </SelectContent>
         </Select>
       </div>

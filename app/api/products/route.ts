@@ -19,7 +19,7 @@ export async function GET(request: Request) {
   const channel_name = searchParams.get('channel_name');
   const channel_category_2 = searchParams.get('channel_category_2');
   const channel_category_3 = searchParams.get('channel_category_3');
-  const sort_by_qty = searchParams.get('sort_by_qty'); // 'asc' or 'desc' or 'default' or 'stock_asc' or 'stock_desc'
+  const sort_by_qty = searchParams.get('sort_by_qty'); // 'asc' or 'desc' or 'default'
 
   // 검색어나 필터 중 하나라도 있어야 검색 실행
   const hasSearchTerm = searchTerm.trim().length > 0;
@@ -69,18 +69,6 @@ export async function GET(request: Request) {
     const productWhereClause = productConditions.length > 0 ? `WHERE ${productConditions.join(' AND ')}` : '';
     const orderWhereClause = orderConditions.length > 0 ? `WHERE ${orderConditions.join(' AND ')}` : '';
      
-    // 정렬 조건 설정
-    let orderByClause = '';
-    if (sort_by_qty === 'desc') {
-      orderByClause = 'ORDER BY total_order_qty DESC';
-    } else if (sort_by_qty === 'asc') {
-      orderByClause = 'ORDER BY total_order_qty ASC';
-    } else if (sort_by_qty === 'stock_desc') {
-      orderByClause = 'ORDER BY stock_qty DESC';
-    } else if (sort_by_qty === 'stock_asc') {
-      orderByClause = 'ORDER BY stock_qty ASC';
-    }
-
     const query = `
       WITH FilteredProducts AS (
         SELECT *
@@ -175,7 +163,7 @@ export async function GET(request: Request) {
         order_types
       FROM RankedProducts
       WHERE rn = 1
-      ${orderByClause}
+      ${sort_by_qty && sort_by_qty !== 'default' ? `ORDER BY total_order_qty ${sort_by_qty === 'desc' ? 'DESC' : 'ASC'}, product_id DESC` : 'ORDER BY total_order_qty DESC, product_id DESC'}
     `;
 
     // JWT 토큰 생성
