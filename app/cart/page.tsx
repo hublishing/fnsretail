@@ -98,10 +98,18 @@ export default function CartPage() {
   useEffect(() => {
     const loadChannels = async () => {
       try {
+        console.log('채널 정보 로드 시작');
         const response = await fetch('/api/channels');
+        console.log('API 응답 상태:', response.status);
+        
         const data = await response.json();
+        console.log('API 응답 데이터:', data);
+        
         if (data.channels) {
+          console.log('채널 목록 설정:', data.channels);
           setChannels(data.channels);
+        } else {
+          console.error('채널 데이터 없음');
         }
       } catch (error) {
         console.error('채널 정보 로드 오류:', error);
@@ -184,7 +192,7 @@ export default function CartPage() {
                 onValueChange={setSelectedChannel}
               >
                 <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="채널 선택" />
+                  <SelectValue placeholder={channels.length > 0 ? "채널 선택" : "채널 로딩 중..."} />
                 </SelectTrigger>
                 <SelectContent>
                   {channels.map((channel) => (

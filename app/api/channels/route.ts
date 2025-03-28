@@ -4,6 +4,8 @@ import { createPrivateKey } from 'crypto';
 
 export async function GET() {
   try {
+    console.log('채널 정보 조회 시작');
+    
     // Google Cloud API 엔드포인트
     const url = `https://bigquery.googleapis.com/bigquery/v2/projects/${process.env.GOOGLE_CLOUD_PROJECT_ID}/queries`;
     
@@ -14,6 +16,8 @@ export async function GET() {
       WHERE channel_name IS NOT NULL
       ORDER BY channel_name
     `;
+
+    console.log('쿼리:', query);
 
     // JWT 토큰 생성
     const privateKey = createPrivateKey({
@@ -35,6 +39,8 @@ export async function GET() {
       { algorithm: 'RS256' }
     );
 
+    console.log('토큰 생성 완료');
+
     // BigQuery API 호출
     const response = await fetch(url, {
       method: 'POST',
@@ -49,13 +55,17 @@ export async function GET() {
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('BigQuery API 호출 실패:', errorText);
       throw new Error('BigQuery API 호출 실패');
     }
 
     const data = await response.json();
+    console.log('BigQuery 응답:', data);
     
     // 결과 처리
     const channels = data.rows?.map((row: any) => row.f[0].v) || [];
+    console.log('처리된 채널 목록:', channels);
     
     return NextResponse.json({ channels });
   } catch (error) {
