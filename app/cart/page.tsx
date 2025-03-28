@@ -661,6 +661,15 @@ export default function CartPage() {
                 className="w-[200px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-gray-50 text-sm text-gray-500"
               />
             </div>
+
+            {/* 메모 입력창 */}
+            <div className="w-full">
+              <input
+                type="text"
+                placeholder="메모를 입력해주세요"
+                className="w-full h-10 px-3 border-[1px] rounded-md shadow-sm focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm border-gray-300"
+              />
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -668,9 +677,14 @@ export default function CartPage() {
       {/* 할인 적용 섹션 */}
       <div className="mb-4">
         <div className="flex justify-between items-center">
-          <Button variant="outline" onClick={() => setShowDiscountModal(true)}>
-            할인 적용
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setShowDiscountModal(true)}>
+              할인 적용
+            </Button>
+            <Button className="bg-blue-500 text-white hover:bg-blue-600">
+              리스트저장
+            </Button>
+          </div>
           <div className="flex gap-2">
             <Select value={sortOption} onValueChange={(value: 'default' | 'qty_desc' | 'qty_asc' | 'stock_desc' | 'stock_asc') => setSortOption(value)}>
               <SelectTrigger className="w-[140px] border-none focus:ring-0 focus:ring-offset-0 shadow-none h-10">
