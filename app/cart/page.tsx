@@ -47,6 +47,10 @@ interface Product {
   selected?: boolean;
 }
 
+interface Filters {
+  channel_name: string;
+}
+
 export default function CartPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [user, setUser] = useState<any>(null);
@@ -56,7 +60,12 @@ export default function CartPage() {
   const [sortedProducts, setSortedProducts] = useState<Product[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [channels, setChannels] = useState<string[]>([]);
-  const [selectedChannel, setSelectedChannel] = useState<string>('');
+  const [channelSearchTerm, setChannelSearchTerm] = useState('');
+  const [showChannelSuggestions, setShowChannelSuggestions] = useState(false);
+  const [filteredChannels, setFilteredChannels] = useState<string[]>([]);
+  const [filters, setFilters] = useState<Filters>({
+    channel_name: ''
+  });
 
   // 사용자 세션 로드
   useEffect(() => {
@@ -98,25 +107,62 @@ export default function CartPage() {
   useEffect(() => {
     const loadChannels = async () => {
       try {
-        console.log('채널 정보 로드 시작');
         const response = await fetch('/api/channels');
-        console.log('API 응답 상태:', response.status);
-        
         const data = await response.json();
-        console.log('API 응답 데이터:', data);
-        
         if (data.channels) {
-          console.log('채널 목록 설정:', data.channels);
           setChannels(data.channels);
-        } else {
-          console.error('채널 데이터 없음');
         }
       } catch (error) {
-        console.error('채널 정보 로드 오류:', error);
+        console.error('채널 정보 로딩 실패:', error);
       }
     };
+
     loadChannels();
   }, []);
+
+  // 채널 검색어 변경 시 필터링
+  useEffect(() => {
+    if (channelSearchTerm.trim()) {
+      const filtered = channels.filter(channel => 
+        channel.toLowerCase().includes(channelSearchTerm.toLowerCase())
+      );
+      setFilteredChannels(filtered);
+      setShowChannelSuggestions(true);
+    } else {
+      setFilteredChannels([]);
+      setShowChannelSuggestions(false);
+    }
+  }, [channelSearchTerm, channels]);
+
+  // 채널 선택 핸들러
+  const handleChannelSelect = (channel: string) => {
+    setChannelSearchTerm(channel);
+    setShowChannelSuggestions(false);
+    setFilters(prev => ({
+      ...prev,
+      channel_name: channel
+    }));
+  };
+
+  // 채널 검색 입력 핸들러
+  const handleChannelSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setChannelSearchTerm(e.target.value);
+  };
+
+  // 채널 검색창 포커스 핸들러
+  const handleChannelSearchFocus = () => {
+    if (channelSearchTerm.trim()) {
+      setShowChannelSuggestions(true);
+    }
+  };
+
+  // 채널 검색창 블러 핸들러
+  const handleChannelSearchBlur = () => {
+    // 약간의 지연을 주어 선택 이벤트가 먼저 발생하도록 함
+    setTimeout(() => {
+      setShowChannelSuggestions(false);
+    }, 200);
+  };
 
   const handleRemoveFromCart = async (productId: string) => {
     try {
@@ -187,21 +233,30 @@ export default function CartPage() {
         <CardContent>
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-4">
-              <Select
-                value={selectedChannel}
-                onValueChange={setSelectedChannel}
-              >
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder={channels.length > 0 ? "채널 선택" : "채널 로딩 중..."} />
-                </SelectTrigger>
-                <SelectContent>
-                  {channels.map((channel) => (
-                    <SelectItem key={channel} value={channel}>
-                      {channel}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={channelSearchTerm}
+                  onChange={handleChannelSearch}
+                  onFocus={handleChannelSearchFocus}
+                  onBlur={handleChannelSearchBlur}
+                  placeholder="채널명을 입력하세요"
+                  className="w-[200px] px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                />
+                {showChannelSuggestions && filteredChannels.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                    {filteredChannels.map((channel) => (
+                      <div
+                        key={channel}
+                        className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                        onClick={() => handleChannelSelect(channel)}
+                      >
+                        {channel}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
               <Button variant="outline" onClick={() => {}}>
                 할인 적용
               </Button>
