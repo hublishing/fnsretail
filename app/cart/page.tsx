@@ -118,6 +118,9 @@ export default function CartPage() {
   const [deliveryType, setDeliveryType] = useState<string>('');
   const [isValidDeliveryType, setIsValidDeliveryType] = useState(true);
   const [selectedChannelInfo, setSelectedChannelInfo] = useState<ChannelInfo | null>(null);
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
+  const [title, setTitle] = useState<string>('');
 
   // UUID 생성 함수
   const generateUniqueId = () => {
@@ -333,6 +336,16 @@ export default function CartPage() {
     setDiscountRate(0);
   };
 
+  // 날짜 변경 핸들러
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'start' | 'end') => {
+    const value = e.target.value;
+    if (type === 'start') {
+      setStartDate(value);
+    } else {
+      setEndDate(value);
+    }
+  };
+
   return (
     <div className="container mx-auto py-8">
       <div className="flex justify-between items-center mb-6">
@@ -354,8 +367,12 @@ export default function CartPage() {
             <div className="flex items-center gap-4">
               <input
                 type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
                 placeholder="타이틀을 입력해주세요"
-                className="w-[300px] h-10 px-3 border-[1px] rounded-md shadow-sm focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm border-gray-300"
+                className={`w-[300px] h-10 px-3 border-[1px] rounded-md shadow-sm focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
+                  title ? 'border-blue-500 focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 bg-blue-50' : 'border-gray-300'
+                }`}
               />
               <div className="relative">
                 <input
@@ -365,7 +382,7 @@ export default function CartPage() {
                   onFocus={handleChannelSearchFocus}
                   onBlur={handleChannelSearchBlur}
                   placeholder="채널명을 입력하세요"
-                  className={`w-[200px] h-10 px-3 border-[1px] rounded-md shadow-sm focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
+                  className={`w-[160px] h-10 px-3 border-[1px] rounded-md shadow-sm focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
                     channelSearchTerm && !isValidChannel 
                       ? 'border-red-500 focus:ring-[1px] focus:ring-red-500 focus:border-red-500 bg-red-50' 
                       : channelSearchTerm && isValidChannel
@@ -398,7 +415,9 @@ export default function CartPage() {
                   }));
                 }}
               >
-                <SelectTrigger className="w-[200px] h-10">
+                <SelectTrigger className={`w-[120px] h-10 ${
+                  deliveryType ? 'border-blue-500 focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 bg-blue-50' : ''
+                }`}>
                   <SelectValue placeholder="배송조건" />
                 </SelectTrigger>
                 <SelectContent>
@@ -406,6 +425,26 @@ export default function CartPage() {
                   <SelectItem value="free">무료배송</SelectItem>
                 </SelectContent>
               </Select>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => handleDateChange(e, 'start')}
+                  className={`w-[150px] h-10 px-3 border-[1px] rounded-md shadow-sm focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
+                    startDate ? 'border-blue-500 focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 bg-blue-50' : 'border-gray-300'
+                  }`}
+                />
+                <span className="text-gray-500">~</span>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => handleDateChange(e, 'end')}
+                  className={`w-[150px] h-10 px-3 border-[1px] rounded-md shadow-sm focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
+                    endDate ? 'border-blue-500 focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 bg-blue-50' : 'border-gray-300'
+                  }`}
+                />
+              </div>
             </div>
 
             {/* 채널 상세 정보 첫 번째 줄 */}
@@ -415,28 +454,28 @@ export default function CartPage() {
                 value={selectedChannelInfo?.channel_category_2 || ''}
                 readOnly
                 placeholder="구분"
-                className="w-[200px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-gray-50 text-sm text-gray-500"
+                className="w-[120px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-gray-50 text-sm text-gray-500"
               />
               <input
                 type="text"
                 value={selectedChannelInfo?.channel_category_3 || ''}
                 readOnly
                 placeholder="분류"
-                className="w-[200px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-gray-50 text-sm text-gray-500"
+                className="w-[120px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-gray-50 text-sm text-gray-500"
               />
               <input
                 type="text"
                 value={selectedChannelInfo?.team || ''}
                 readOnly
                 placeholder="팀"
-                className="w-[200px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-gray-50 text-sm text-gray-500"
+                className="w-[80px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-gray-50 text-sm text-gray-500"
               />
               <input
                 type="text"
                 value={selectedChannelInfo?.manager || ''}
                 readOnly
                 placeholder="담당자"
-                className="w-[200px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-gray-50 text-sm text-gray-500"
+                className="w-[80px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-gray-50 text-sm text-gray-500"
               />
             </div>
 
