@@ -465,40 +465,42 @@ export default function DynamicTable() {
         // 새로운 검색 결과를 기존 결과에 추가
         const updatedResults = [...existingResults, ...processedResults];
         
-        // 모든 필드를 포함하여 저장
+        // undefined 값을 null로 변환하여 저장
+        const sanitizedResults = updatedResults.map(result => ({
+          ...result,
+          product_id: result.product_id || null,
+          name: result.name || null,
+          org_price: result.org_price || null,
+          shop_price: result.shop_price || null,
+          img_desc1: result.img_desc1 || null,
+          product_desc: result.product_desc || null,
+          extra_column2: result.extra_column2 || null,
+          cost_ratio: result.cost_ratio || null,
+          category_1: result.category_1 || null,
+          category_3: result.category_3 || null,
+          main_wh_available_stock_excl_production_stock: result.main_wh_available_stock_excl_production_stock || null,
+          total_stock: result.total_stock || null,
+          drop_yn: result.drop_yn || null,
+          soldout_rate: result.soldout_rate || null,
+          supply_name: result.supply_name || null,
+          exclusive2: result.exclusive2 || null,
+          options_product_id: result.options_product_id || null,
+          brand: result.brand || null,
+          line: result.line || null,
+          season: result.season || null,
+          total_order_qty: result.total_order_qty || null,
+          recent_order_dates: result.recent_order_dates || null,
+          order_countries: result.order_countries || null,
+          order_channels: result.order_channels || null,
+          order_categories: result.order_categories || null,
+          order_types: result.order_types || null
+        }));
+        
         await setDoc(docRef, {
-          searchTerm,
-          searchType,
-          filters,
-          searchResults: updatedResults.map(result => ({
-            ...result,
-            product_id: result.product_id,
-            name: result.name,
-            org_price: result.org_price,
-            shop_price: result.shop_price,
-            img_desc1: result.img_desc1,
-            product_desc: result.product_desc,
-            extra_column2: result.extra_column2,
-            cost_ratio: result.cost_ratio,
-            category_1: result.category_1,
-            category_3: result.category_3,
-            main_wh_available_stock_excl_production_stock: result.main_wh_available_stock_excl_production_stock,
-            total_stock: result.total_stock,
-            drop_yn: result.drop_yn,
-            soldout_rate: result.soldout_rate,
-            supply_name: result.supply_name,
-            exclusive2: result.exclusive2,
-            options_product_id: result.options_product_id,
-            brand: result.brand,
-            line: result.line,
-            season: result.season,
-            total_order_qty: result.total_order_qty,
-            recent_order_dates: result.recent_order_dates,
-            order_countries: result.order_countries,
-            order_channels: result.order_channels,
-            order_categories: result.order_categories,
-            order_types: result.order_types
-          })),
+          searchTerm: searchTerm || null,
+          searchType: searchType || null,
+          filters: filters || null,
+          searchResults: sanitizedResults,
           updatedAt: new Date().toISOString()
         });
       }
