@@ -4,7 +4,7 @@ import * as React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { usePathname } from "next/navigation"
-import { Menu, Package, Users, Settings, LogOut, TableIcon, ShoppingCartIcon } from "lucide-react"
+import { Menu, LogOut } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -14,16 +14,16 @@ import { signOut, getSession } from "@/app/actions/auth"
 
 const menuItems = [
   {
-    title: "대시보드",
-    href: "/dashboard",
+    href: '/dashboard',
+    label: '대시보드',
   },
   {
-    title: "상품 검색",
-    href: "/dynamic-table",
+    href: '/dynamic-table',
+    label: '상품 검색',
   },
   {
-    title: "리스트 작성",
-    href: "/cart",
+    href: '/cart',
+    label: '리스트 작성',
   },
 ]
 
@@ -52,37 +52,66 @@ export function Sidebar() {
     }
   }
 
-  const routes = [
-    {
-      href: '/dashboard',
-      label: '대시보드',
-    },
-    {
-      href: '/dynamic-table',
-      label: '상품 검색',
-    },
-    {
-      href: '/cart',
-      label: '리스트 작성',
-    },
-  ]
-
   return (
     <>
+      {/* 모바일 메뉴 버튼 */}
+      <Button
+        variant="ghost"
+        className="mr-2 px-0 text-base hover:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 md:hidden"
+        onClick={() => setOpen(true)}
+      >
+        <Menu className="h-6 w-6" />
+        <span className="sr-only">메뉴 열기</span>
+      </Button>
+
+      {/* 모바일 사이드바 */}
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetTrigger asChild>
-          <Button
-            variant="ghost"
-            className="mr-2 px-0 text-base hover:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 md:hidden"
-          >
-            <Menu className="h-6 w-6" />
-            <span className="sr-only">메뉴 열기</span>
-          </Button>
-        </SheetTrigger>
         <SheetContent side="left" className="pr-0">
-          <MobileNav items={menuItems} pathname={pathname} />
+          <div className="flex h-screen flex-col">
+            <div className="flex h-14 items-center border-b px-4">
+              <Link href="/" className="flex items-center space-x-2">
+                <span className="font-bold">Project M</span>
+              </Link>
+            </div>
+            <ScrollArea className="flex-1">
+              <nav className="grid items-start gap-2 p-4">
+                {menuItems.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setOpen(false)}
+                    className={cn(
+                      "group flex items-center rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
+                      pathname === item.href ? "bg-accent" : "transparent"
+                    )}
+                  >
+                    <span>{item.label}</span>
+                  </Link>
+                ))}
+              </nav>
+            </ScrollArea>
+            <div className="border-t p-4">
+              <div className="flex flex-col gap-2">
+                {userEmail && (
+                  <div className="text-sm text-muted-foreground">
+                    {userEmail}
+                  </div>
+                )}
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50"
+                  onClick={handleLogout}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  로그아웃
+                </Button>
+              </div>
+            </div>
+          </div>
         </SheetContent>
       </Sheet>
+
+      {/* 데스크톱 사이드바 */}
       <div className="hidden md:block w-64 border-r bg-background">
         <div className="flex h-screen flex-col">
           <div className="flex h-14 items-center border-b px-4">
@@ -92,18 +121,18 @@ export function Sidebar() {
           </div>
           <ScrollArea className="flex-1">
             <nav className="grid items-start gap-2 p-4">
-              {routes.map((route) => (
+              {menuItems.map((item) => (
                 <Link
-                  key={route.href}
-                  href={route.href}
+                  key={item.href}
+                  href={item.href}
                   className={cn(
                     'flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors',
-                    pathname === route.href
+                    pathname === item.href
                       ? 'bg-gray-900 text-white'
                       : 'text-[hsl(var(--primary)/.9)] hover:text-white hover:bg-gray-700'
                   )}
                 >
-                  {route.label}
+                  {item.label}
                 </Link>
               ))}
             </nav>
@@ -128,29 +157,5 @@ export function Sidebar() {
         </div>
       </div>
     </>
-  )
-}
-
-interface MobileNavProps {
-  items: typeof menuItems
-  pathname: string
-}
-
-function MobileNav({ items, pathname }: MobileNavProps) {
-  return (
-    <nav className="grid items-start gap-2">
-      {items.map((item) => (
-        <Link
-          key={item.href}
-          href={item.href}
-          className={cn(
-            "group flex items-center rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-            pathname === item.href ? "bg-accent" : "transparent"
-          )}
-        >
-          <span>{item.title}</span>
-        </Link>
-      ))}
-    </nav>
   )
 } 
