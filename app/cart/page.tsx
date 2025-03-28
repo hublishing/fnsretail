@@ -63,6 +63,7 @@ export default function CartPage() {
   const [channelSearchTerm, setChannelSearchTerm] = useState('');
   const [showChannelSuggestions, setShowChannelSuggestions] = useState(false);
   const [filteredChannels, setFilteredChannels] = useState<string[]>([]);
+  const [isValidChannel, setIsValidChannel] = useState(true);
   const [filters, setFilters] = useState<Filters>({
     channel_name: ''
   });
@@ -134,19 +135,23 @@ export default function CartPage() {
     }
   }, [channelSearchTerm, channels]);
 
+  // 채널 검색 입력 핸들러
+  const handleChannelSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setChannelSearchTerm(value);
+    // 입력된 값이 채널 목록에 있는지 확인
+    setIsValidChannel(channels.includes(value));
+  };
+
   // 채널 선택 핸들러
   const handleChannelSelect = (channel: string) => {
     setChannelSearchTerm(channel);
     setShowChannelSuggestions(false);
+    setIsValidChannel(true);
     setFilters(prev => ({
       ...prev,
       channel_name: channel
     }));
-  };
-
-  // 채널 검색 입력 핸들러
-  const handleChannelSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setChannelSearchTerm(e.target.value);
   };
 
   // 채널 검색창 포커스 핸들러
@@ -241,7 +246,11 @@ export default function CartPage() {
                   onFocus={handleChannelSearchFocus}
                   onBlur={handleChannelSearchBlur}
                   placeholder="채널명을 입력하세요"
-                  className="w-[200px] px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  className={`w-[200px] px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm ${
+                    channelSearchTerm && !isValidChannel 
+                      ? 'border-red-500 focus:ring-red-500 focus:border-red-500 bg-red-50' 
+                      : 'border-gray-300'
+                  }`}
                 />
                 {showChannelSuggestions && filteredChannels.length > 0 && (
                   <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
