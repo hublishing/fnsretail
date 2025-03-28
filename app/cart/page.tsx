@@ -525,7 +525,7 @@ export default function CartPage() {
         <Table>
             <TableHeader className="sticky top-0 bg-white z-10">
             <TableRow>
-              <TableHead className="w-[50px]">
+              <TableHead className="w-[50px] text-center">
                 <Checkbox 
                   checked={selectedProducts.length === products.length}
                   onCheckedChange={(checked) => {
@@ -559,7 +559,7 @@ export default function CartPage() {
           <TableBody>
             {sortedProducts.map((product) => (
               <TableRow key={product.product_id}>
-                <TableCell>
+                <TableCell className="text-center">
                   <Checkbox 
                     checked={selectedProducts.includes(product.product_id)}
                     onCheckedChange={(checked) => {
