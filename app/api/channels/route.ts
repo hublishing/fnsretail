@@ -18,8 +18,42 @@ export async function GET() {
     
     // 채널 정보를 가져오는 쿼리
     const query = `
-      SELECT DISTINCT channel_name
-      FROM \`third-current-410914.project_m.order_db\`
+      SELECT 
+        channel_name,
+        channel_category_2,
+        channel_category_3,
+        team,
+        manager,
+        shop_id,
+        shop_name,
+        used,
+        price_formula,
+        shipping_formula,
+        exchange_rate,
+        currency,
+        correction_rate,
+        amount,
+        comment,
+        use_yn,
+        type,
+        markup_ratio,
+        applied_exchange_rate,
+        rounddown,
+        digit_adjustment,
+        currency_2,
+        average_fee_rate,
+        shipping_condition,
+        outerbox_fee,
+        domestic_delivery_fee,
+        shipping_fee,
+        customs_fee,
+        declaration_fee,
+        innerbox_fee,
+        packingbox_fee,
+        brand_type,
+        free_shipping,
+        conditional_shipping
+      FROM \`third-current-410914.project_m.channel_db\`
       WHERE channel_name IS NOT NULL
       ORDER BY channel_name
     `;
@@ -110,7 +144,42 @@ export async function GET() {
     console.log('BigQuery API 응답:', data);
     
     // 결과 처리
-    const channels = data.rows?.map((row: any) => row.f[0].v) || [];
+    const channels = data.rows?.map((row: any) => ({
+      channel_name: row.f[0].v,
+      channel_category_2: row.f[1].v,
+      channel_category_3: row.f[2].v,
+      team: row.f[3].v,
+      manager: row.f[4].v,
+      shop_id: row.f[5].v,
+      shop_name: row.f[6].v,
+      used: row.f[7].v,
+      price_formula: row.f[8].v,
+      shipping_formula: row.f[9].v,
+      exchange_rate: row.f[10].v,
+      currency: row.f[11].v,
+      correction_rate: row.f[12].v,
+      amount: row.f[13].v,
+      comment: row.f[14].v,
+      use_yn: row.f[15].v,
+      type: row.f[16].v,
+      markup_ratio: row.f[17].v,
+      applied_exchange_rate: row.f[18].v,
+      rounddown: row.f[19].v,
+      digit_adjustment: row.f[20].v,
+      currency_2: row.f[21].v,
+      average_fee_rate: row.f[22].v,
+      shipping_condition: row.f[23].v,
+      outerbox_fee: row.f[24].v,
+      domestic_delivery_fee: row.f[25].v,
+      shipping_fee: row.f[26].v,
+      customs_fee: row.f[27].v,
+      declaration_fee: row.f[28].v,
+      innerbox_fee: row.f[29].v,
+      packingbox_fee: row.f[30].v,
+      brand_type: row.f[31].v,
+      free_shipping: parseFloat(row.f[32].v),
+      conditional_shipping: parseFloat(row.f[33].v)
+    })) || [];
     console.log('처리된 채널 목록:', channels);
     
     return NextResponse.json({ channels });
