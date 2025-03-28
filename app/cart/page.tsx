@@ -261,20 +261,6 @@ export default function CartPage() {
     <div className="container mx-auto py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">담은상품</h1>
-        <div className="flex gap-2">
-          <Select value={sortOption} onValueChange={(value: 'default' | 'qty_desc' | 'qty_asc' | 'stock_desc' | 'stock_asc') => setSortOption(value)}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="정렬" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="default">기본</SelectItem>
-              <SelectItem value="qty_desc">수량 많은순</SelectItem>
-              <SelectItem value="qty_asc">수량 적은순</SelectItem>
-              <SelectItem value="stock_desc">재고 많은순</SelectItem>
-              <SelectItem value="stock_asc">재고 적은순</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
       </div>
 
       {/* 편집 섹션 */}
@@ -315,9 +301,6 @@ export default function CartPage() {
                   </div>
                 )}
               </div>
-              <Button variant="outline" onClick={() => setShowDiscountModal(true)}>
-                할인 적용
-              </Button>
               <Button variant="outline" onClick={() => {}}>
                 리스트 생성
               </Button>
@@ -325,6 +308,29 @@ export default function CartPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* 할인 적용 섹션 */}
+      <div className="mb-6">
+        <div className="flex justify-between items-center">
+          <Button variant="outline" onClick={() => setShowDiscountModal(true)}>
+            할인 적용
+          </Button>
+          <div className="flex gap-2">
+            <Select value={sortOption} onValueChange={(value: 'default' | 'qty_desc' | 'qty_asc' | 'stock_desc' | 'stock_asc') => setSortOption(value)}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="정렬" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="default">기본</SelectItem>
+                <SelectItem value="qty_desc">판매 많은순</SelectItem>
+                <SelectItem value="qty_asc">판매 적은순</SelectItem>
+                <SelectItem value="stock_desc">재고 많은순</SelectItem>
+                <SelectItem value="stock_asc">재고 적은순</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
 
       {/* 상품 테이블 */}
       <div className="rounded-md border">
