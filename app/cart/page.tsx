@@ -704,139 +704,141 @@ export default function CartPage() {
 
       {/* 상품 테이블 */}
       <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[50px]">
-                <Checkbox 
-                  checked={selectedProducts.length === products.length}
-                  onCheckedChange={(checked) => {
-                    if (checked) {
-                      setSelectedProducts(products.map(p => p.product_id));
-                    } else {
-                      setSelectedProducts([]);
-                    }
-                  }}
-                />
-              </TableHead>
-              <TableHead className="text-center">상품코드</TableHead>
-              <TableHead className="text-center">상품이미지</TableHead>
-              <TableHead className="text-center">상품명</TableHead>
-              <TableHead className="text-center">원가</TableHead>
-              <TableHead className="text-center">판매가</TableHead>
-              <TableHead className="text-center">할인가</TableHead>
-              <TableHead className="text-center">할인율</TableHead>
-              <TableHead className="text-center">카테고리</TableHead>
-              <TableHead className="text-center">원가율</TableHead>
-              <TableHead className="text-center">재고</TableHead>
-              <TableHead className="text-center">품절률</TableHead>
-              <TableHead className="text-center">드랍여부</TableHead>
-              <TableHead className="text-center">공급처명</TableHead>
-              <TableHead className="text-center">단독여부</TableHead>
-              <TableHead className="text-center">판매수량</TableHead>
-              <TableHead className="text-center">URL</TableHead>
-              <TableHead className="text-center">관리</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sortedProducts.map((product) => (
-              <TableRow key={product.product_id}>
-                <TableCell>
+        <div className="max-h-[calc(100vh-500px)] overflow-auto">
+          <Table>
+            <TableHeader className="sticky top-0 bg-white z-10">
+              <TableRow>
+                <TableHead className="w-[50px]">
                   <Checkbox 
-                    checked={selectedProducts.includes(product.product_id)}
+                    checked={selectedProducts.length === products.length}
                     onCheckedChange={(checked) => {
                       if (checked) {
-                        setSelectedProducts([...selectedProducts, product.product_id]);
+                        setSelectedProducts(products.map(p => p.product_id));
                       } else {
-                        setSelectedProducts(selectedProducts.filter(id => id !== product.product_id));
+                        setSelectedProducts([]);
                       }
                     }}
                   />
-                </TableCell>
-                <TableCell className="text-center">{product.product_id}</TableCell>
-                <TableCell className="text-center">
-                  <div className="flex justify-center">
-                    {product.img_desc1 ? (
-                      <img 
-                        src={product.img_desc1} 
-                        alt="상품 이미지" 
-                        className="w-20 h-20 object-cover rounded-md"
-                        style={{ borderRadius: '5px' }}
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.src = '/no-image.png';
-                          target.alt = '이미지 없음';
-                          target.style.objectFit = 'contain';
-                          target.style.backgroundColor = 'transparent';
-                        }}
-                      />
-                    ) : (
-                      <div className="w-20 h-20 flex items-center justify-center">
-                        <img 
-                          src="/no-image.png" 
-                          alt="이미지 없음" 
-                          className="w-20 h-20 object-contain rounded-md"
-                          style={{ borderRadius: '5px' }}
-                        />
-                      </div>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell className="text-center">
-                  <button
-                    onClick={() => setSelectedProductId(product.product_id)}
-                    className="text-left hover:text-blue-600 transition-colors w-full"
-                  >
-                    <div className="font-medium">{product.name}</div>
-                    <div className="text-sm text-gray-500 mt-1">
-                      {[
-                        product.brand,
-                        product.category_1,
-                        product.extra_column2
-                      ].filter(Boolean).join(' ')}
-                    </div>
-                  </button>
-                </TableCell>
-                <TableCell className="text-center">{product.org_price?.toLocaleString() || '-'}</TableCell>
-                <TableCell className="text-center">{product.shop_price?.toLocaleString() || '-'}</TableCell>
-                <TableCell className="text-center">{product.discount_price?.toLocaleString() || '-'}</TableCell>
-                <TableCell className="text-center">
-                  {product.discount_price && product.shop_price 
-                    ? `${Math.round(((product.shop_price - product.discount_price) / product.shop_price) * 100)}%`
-                    : product.discount ? `${product.discount}%` : '-'}
-                </TableCell>
-                <TableCell className="text-center">{product.category_3 || '-'}</TableCell>
-                <TableCell className="text-center">{product.cost_ratio ? `${product.cost_ratio}%` : '-'}</TableCell>
-                <TableCell className="text-center">
-                  {(product.total_stock !== undefined 
-                    ? product.total_stock 
-                    : product.main_wh_available_stock_excl_production_stock)?.toLocaleString() || '-'}
-                </TableCell>
-                <TableCell className="text-center">{product.soldout_rate ? `${product.soldout_rate}%` : '-'}</TableCell>
-                <TableCell className="text-center">{product.drop_yn || '-'}</TableCell>
-                <TableCell className="text-center">{product.supply_name || '-'}</TableCell>
-                <TableCell className="text-center">{product.exclusive2 || '-'}</TableCell>
-                <TableCell className="text-center">{product.total_order_qty?.toLocaleString() || '-'}</TableCell>
-                <TableCell className="text-center">
-                  {product.product_desc ? (
-                    <a href={product.product_desc} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
-                      링크
-                    </a>
-                  ) : '링크 없음'}
-                </TableCell>
-                <TableCell className="text-center">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleRemoveFromCart(product.product_id)}
-                  >
-                    삭제
-                  </Button>
-                </TableCell>
+                </TableHead>
+                <TableHead className="text-center">상품코드</TableHead>
+                <TableHead className="text-center">상품이미지</TableHead>
+                <TableHead className="text-center">상품명</TableHead>
+                <TableHead className="text-center">원가</TableHead>
+                <TableHead className="text-center">판매가</TableHead>
+                <TableHead className="text-center">할인가</TableHead>
+                <TableHead className="text-center">할인율</TableHead>
+                <TableHead className="text-center">카테고리</TableHead>
+                <TableHead className="text-center">원가율</TableHead>
+                <TableHead className="text-center">재고</TableHead>
+                <TableHead className="text-center">품절률</TableHead>
+                <TableHead className="text-center">드랍여부</TableHead>
+                <TableHead className="text-center">공급처명</TableHead>
+                <TableHead className="text-center">단독여부</TableHead>
+                <TableHead className="text-center">판매수량</TableHead>
+                <TableHead className="text-center">URL</TableHead>
+                <TableHead className="text-center">관리</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {sortedProducts.map((product) => (
+                <TableRow key={product.product_id}>
+                  <TableCell>
+                    <Checkbox 
+                      checked={selectedProducts.includes(product.product_id)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedProducts([...selectedProducts, product.product_id]);
+                        } else {
+                          setSelectedProducts(selectedProducts.filter(id => id !== product.product_id));
+                        }
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell className="text-center">{product.product_id}</TableCell>
+                  <TableCell className="text-center">
+                    <div className="flex justify-center">
+                      {product.img_desc1 ? (
+                        <img 
+                          src={product.img_desc1} 
+                          alt="상품 이미지" 
+                          className="w-20 h-20 object-cover rounded-md"
+                          style={{ borderRadius: '5px' }}
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = '/no-image.png';
+                            target.alt = '이미지 없음';
+                            target.style.objectFit = 'contain';
+                            target.style.backgroundColor = 'transparent';
+                          }}
+                        />
+                      ) : (
+                        <div className="w-20 h-20 flex items-center justify-center">
+                          <img 
+                            src="/no-image.png" 
+                            alt="이미지 없음" 
+                            className="w-20 h-20 object-contain rounded-md"
+                            style={{ borderRadius: '5px' }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <button
+                      onClick={() => setSelectedProductId(product.product_id)}
+                      className="text-left hover:text-blue-600 transition-colors w-full"
+                    >
+                      <div className="font-medium">{product.name}</div>
+                      <div className="text-sm text-gray-500 mt-1">
+                        {[
+                          product.brand,
+                          product.category_1,
+                          product.extra_column2
+                        ].filter(Boolean).join(' ')}
+                      </div>
+                    </button>
+                  </TableCell>
+                  <TableCell className="text-center">{product.org_price?.toLocaleString() || '-'}</TableCell>
+                  <TableCell className="text-center">{product.shop_price?.toLocaleString() || '-'}</TableCell>
+                  <TableCell className="text-center">{product.discount_price?.toLocaleString() || '-'}</TableCell>
+                  <TableCell className="text-center">
+                    {product.discount_price && product.shop_price 
+                      ? `${Math.round(((product.shop_price - product.discount_price) / product.shop_price) * 100)}%`
+                      : product.discount ? `${product.discount}%` : '-'}
+                  </TableCell>
+                  <TableCell className="text-center">{product.category_3 || '-'}</TableCell>
+                  <TableCell className="text-center">{product.cost_ratio ? `${product.cost_ratio}%` : '-'}</TableCell>
+                  <TableCell className="text-center">
+                    {(product.total_stock !== undefined 
+                      ? product.total_stock 
+                      : product.main_wh_available_stock_excl_production_stock)?.toLocaleString() || '-'}
+                  </TableCell>
+                  <TableCell className="text-center">{product.soldout_rate ? `${product.soldout_rate}%` : '-'}</TableCell>
+                  <TableCell className="text-center">{product.drop_yn || '-'}</TableCell>
+                  <TableCell className="text-center">{product.supply_name || '-'}</TableCell>
+                  <TableCell className="text-center">{product.exclusive2 || '-'}</TableCell>
+                  <TableCell className="text-center">{product.total_order_qty?.toLocaleString() || '-'}</TableCell>
+                  <TableCell className="text-center">
+                    {product.product_desc ? (
+                      <a href={product.product_desc} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+                        링크
+                      </a>
+                    ) : '링크 없음'}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleRemoveFromCart(product.product_id)}
+                    >
+                      삭제
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       {selectedProductId && (
