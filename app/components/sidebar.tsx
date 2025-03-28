@@ -19,6 +19,11 @@ const menuItems = [
     icon: Package,
   },
   {
+    title: "리스트 작성",
+    href: "/cart",
+    icon: ShoppingCartIcon,
+  },
+  {
     title: "고객 관리",
     href: "/customers",
     icon: Users,
@@ -71,7 +76,7 @@ export function Sidebar() {
     },
     {
       href: '/cart',
-      label: '담은 상품',
+      label: '리스트 작성',
     },
   ]
 
