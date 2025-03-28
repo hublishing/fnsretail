@@ -67,6 +67,8 @@ export default function CartPage() {
   const [filters, setFilters] = useState<Filters>({
     channel_name: ''
   });
+  const [discountRate, setDiscountRate] = useState<number>(0);
+  const [showDiscountModal, setShowDiscountModal] = useState(false);
 
   // 사용자 세션 로드
   useEffect(() => {
@@ -210,6 +212,38 @@ export default function CartPage() {
     setSortedProducts(sortedItems);
   }, [products, sortOption]);
 
+  // 할인 적용 핸들러
+  const handleApplyDiscount = () => {
+    if (!selectedProducts.length) {
+      alert('할인을 적용할 상품을 선택해주세요.');
+      return;
+    }
+
+    if (!filters.channel_name) {
+      alert('채널을 선택해주세요.');
+      return;
+    }
+
+    if (!discountRate) {
+      alert('할인율을 입력해주세요.');
+      return;
+    }
+
+    const updatedProducts = products.map(product => {
+      if (selectedProducts.includes(product.product_id)) {
+        return {
+          ...product,
+          discount: discountRate
+        };
+      }
+      return product;
+    });
+
+    setProducts(updatedProducts);
+    setShowDiscountModal(false);
+    setDiscountRate(0);
+  };
+
   return (
     <div className="container mx-auto py-8">
       <div className="flex justify-between items-center mb-6">
@@ -268,7 +302,7 @@ export default function CartPage() {
                   </div>
                 )}
               </div>
-              <Button variant="outline" onClick={() => {}}>
+              <Button variant="outline" onClick={() => setShowDiscountModal(true)}>
                 할인 적용
               </Button>
               <Button variant="outline" onClick={() => {}}>
@@ -415,6 +449,36 @@ export default function CartPage() {
           productId={selectedProductId}
           onClose={() => setSelectedProductId(null)}
         />
+      )}
+
+      {/* 할인 적용 모달 */}
+      {showDiscountModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-xl w-[400px]">
+            <h2 className="text-lg font-semibold mb-4">할인율 적용</h2>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                할인율 (%)
+              </label>
+              <input
+                type="number"
+                min="0"
+                max="100"
+                value={discountRate}
+                onChange={(e) => setDiscountRate(Number(e.target.value))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowDiscountModal(false)}>
+                취소
+              </Button>
+              <Button onClick={handleApplyDiscount}>
+                적용
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
