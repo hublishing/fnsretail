@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { v4 as uuidv4 } from 'uuid';
 
 interface Product {
   product_id: string;
@@ -73,6 +74,20 @@ export default function CartPage() {
   const [showDiscountModal, setShowDiscountModal] = useState(false);
   const [discountUnit, setDiscountUnit] = useState<'원' | '%'>('%');
   const [showDiscountInput, setShowDiscountInput] = useState(false);
+  const [listUuid, setListUuid] = useState<string>('');
+  const [usedUuids] = useState<Set<string>>(new Set());
+
+  // UUID 생성 함수
+  const generateUniqueId = () => {
+    let newUuid: string;
+    do {
+      // UUID v4에서 숫자와 알파벳만 추출
+      newUuid = uuidv4().replace(/[^a-zA-Z0-9]/g, '').substring(0, 10);
+    } while (usedUuids.has(newUuid));
+    
+    usedUuids.add(newUuid);
+    return newUuid;
+  };
 
   // 사용자 세션 로드
   useEffect(() => {
@@ -80,6 +95,8 @@ export default function CartPage() {
       try {
         const session = await getSession();
         setUser(session);
+        // 새로운 UUID 생성
+        setListUuid(generateUniqueId());
         
         if (session) {
           try {
@@ -260,7 +277,7 @@ export default function CartPage() {
   return (
     <div className="container mx-auto py-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">담은상품</h1>
+        <h1 className="text-2xl font-bold">리스트 작성</h1>
       </div>
 
       {/* 편집 섹션 */}
@@ -301,6 +318,20 @@ export default function CartPage() {
                   </div>
                 )}
               </div>
+              <input
+                type="text"
+                value={user?.uid || ''}
+                readOnly
+                placeholder="UID"
+                className="w-[200px] px-3 py-2 border-[1px] rounded-md shadow-sm bg-gray-50 text-sm text-gray-500"
+              />
+              <input
+                type="text"
+                value={listUuid}
+                readOnly
+                placeholder="UUID"
+                className="w-[200px] px-3 py-2 border-[1px] rounded-md shadow-sm bg-gray-50 text-sm text-gray-500"
+              />
               <Button variant="outline" onClick={() => {}}>
                 리스트 생성
               </Button>
