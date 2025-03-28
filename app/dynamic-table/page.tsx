@@ -163,6 +163,7 @@ export default function DynamicTable() {
   const [filters, setFilters] = useState(INITIAL_FILTERS);
   const [isFilterOptionsLoading, setIsFilterOptionsLoading] = useState(true);
   const [filterOptionsError, setFilterOptionsError] = useState<string | null>(null);
+  const [isSessionLoaded, setIsSessionLoaded] = useState(false);
 
   // 동적 필터 옵션
   const [dynamicFilterOptions, setDynamicFilterOptions] = useState({
@@ -307,19 +308,18 @@ export default function DynamicTable() {
     const loadSession = async () => {
       try {
         const session = await getSession();
-        console.log('세션 로드 결과:', session);
         if (session) {
           setUser(session);
-          console.log('사용자 세션 설정 완료:', {
-            uid: session.uid,
-            email: session.email
-          });
+          setIsSessionLoaded(true);
+          // 세션 로드 후 바로 검색 상태 불러오기
+          await loadSearchState(session, setSearchTerm, setSearchType, setFilters, setData);
         } else {
-          console.log('세션이 없습니다.');
+          setIsSessionLoaded(true);
           await resetState();
         }
       } catch (error) {
         console.error('세션 로드 오류:', error);
+        setIsSessionLoaded(true);
         await resetState();
       } finally {
         setLoading(false);
@@ -331,20 +331,22 @@ export default function DynamicTable() {
 
   // 저장된 검색 상태 불러오기
   useEffect(() => {
-    loadSearchState(user, setSearchTerm, setSearchType, setFilters, setData);
-  }, [user]);
+    if (isSessionLoaded && user) {
+      loadSearchState(user, setSearchTerm, setSearchType, setFilters, setData);
+    }
+  }, [isSessionLoaded, user]);
 
   // 페이지 포커스 시 검색 상태 다시 불러오기
   useEffect(() => {
-    const handleFocus = () => {
-      if (user) {
-        loadSearchState(user, setSearchTerm, setSearchType, setFilters, setData);
+    const handleFocus = async () => {
+      if (isSessionLoaded && user) {
+        await loadSearchState(user, setSearchTerm, setSearchType, setFilters, setData);
       }
     };
 
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
-  }, [user]);
+  }, [isSessionLoaded, user]);
 
   // 필터 옵션 로딩 함수 수정
   useEffect(() => {
