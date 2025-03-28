@@ -55,6 +55,8 @@ export default function CartPage() {
   const [sortOption, setSortOption] = useState<'default' | 'qty_desc' | 'qty_asc' | 'stock_desc' | 'stock_asc'>('qty_desc');
   const [sortedProducts, setSortedProducts] = useState<Product[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+  const [channels, setChannels] = useState<string[]>([]);
+  const [selectedChannel, setSelectedChannel] = useState<string>('');
 
   // 사용자 세션 로드
   useEffect(() => {
@@ -90,6 +92,22 @@ export default function CartPage() {
     };
     
     loadSession();
+  }, []);
+
+  // 채널 정보 로드
+  useEffect(() => {
+    const loadChannels = async () => {
+      try {
+        const response = await fetch('/api/channels');
+        const data = await response.json();
+        if (data.channels) {
+          setChannels(data.channels);
+        }
+      } catch (error) {
+        console.error('채널 정보 로드 오류:', error);
+      }
+    };
+    loadChannels();
   }, []);
 
   const handleRemoveFromCart = async (productId: string) => {
@@ -159,13 +177,30 @@ export default function CartPage() {
           <CardTitle>편집</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4">
-            <Button variant="outline" onClick={() => {}}>
-              할인 적용
-            </Button>
-            <Button variant="outline" onClick={() => {}}>
-              리스트 생성
-            </Button>
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-4">
+              <Select
+                value={selectedChannel}
+                onValueChange={setSelectedChannel}
+              >
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="채널 선택" />
+                </SelectTrigger>
+                <SelectContent>
+                  {channels.map((channel) => (
+                    <SelectItem key={channel} value={channel}>
+                      {channel}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button variant="outline" onClick={() => {}}>
+                할인 적용
+              </Button>
+              <Button variant="outline" onClick={() => {}}>
+                리스트 생성
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
