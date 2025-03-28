@@ -44,6 +44,8 @@ interface Product {
   category_1?: string;
   total_order_qty?: number;
   discount?: number;
+  discount_unit?: '원' | '%';
+  discount_price?: number;
   selected?: boolean;
 }
 
@@ -69,6 +71,8 @@ export default function CartPage() {
   });
   const [discountRate, setDiscountRate] = useState<number>(0);
   const [showDiscountModal, setShowDiscountModal] = useState(false);
+  const [discountUnit, setDiscountUnit] = useState<'원' | '%'>('%');
+  const [showDiscountInput, setShowDiscountInput] = useState(false);
 
   // 사용자 세션 로드
   useEffect(() => {
@@ -231,9 +235,18 @@ export default function CartPage() {
 
     const updatedProducts = products.map(product => {
       if (selectedProducts.includes(product.product_id)) {
+        let discountPrice = product.shop_price;
+        if (discountUnit === '원') {
+          discountPrice = product.shop_price - discountRate;
+        } else {
+          discountPrice = Math.round(product.shop_price * (1 - discountRate / 100));
+        }
+
         return {
           ...product,
-          discount: discountRate
+          discount: discountRate,
+          discount_unit: discountUnit,
+          discount_price: discountPrice
         };
       }
       return product;
@@ -335,6 +348,7 @@ export default function CartPage() {
               <TableHead className="text-center">상품명</TableHead>
               <TableHead className="text-center">원가</TableHead>
               <TableHead className="text-center">판매가</TableHead>
+              <TableHead className="text-center">할인가</TableHead>
               <TableHead className="text-center">할인율</TableHead>
               <TableHead className="text-center">카테고리</TableHead>
               <TableHead className="text-center">원가율</TableHead>
@@ -409,7 +423,12 @@ export default function CartPage() {
                 </TableCell>
                 <TableCell className="text-center">{product.org_price?.toLocaleString() || '-'}</TableCell>
                 <TableCell className="text-center">{product.shop_price?.toLocaleString() || '-'}</TableCell>
-                <TableCell className="text-center">{product.discount || 0}%</TableCell>
+                <TableCell className="text-center">{product.discount_price?.toLocaleString() || '-'}</TableCell>
+                <TableCell className="text-center">
+                  {product.discount_price && product.shop_price 
+                    ? `${Math.round(((product.shop_price - product.discount_price) / product.shop_price) * 100)}%`
+                    : product.discount ? `${product.discount}%` : '-'}
+                </TableCell>
                 <TableCell className="text-center">{product.category_3 || '-'}</TableCell>
                 <TableCell className="text-center">{product.cost_ratio ? `${product.cost_ratio}%` : '-'}</TableCell>
                 <TableCell className="text-center">
@@ -455,27 +474,34 @@ export default function CartPage() {
       {showDiscountModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-xl w-[400px]">
-            <h2 className="text-lg font-semibold mb-4">할인율 적용</h2>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                할인율 (%)
-              </label>
-              <input
-                type="number"
-                min="0"
-                max="100"
-                value={discountRate}
-                onChange={(e) => setDiscountRate(Number(e.target.value))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowDiscountModal(false)}>
-                취소
-              </Button>
-              <Button onClick={handleApplyDiscount}>
-                적용
-              </Button>
+            <h2 className="text-lg font-semibold mb-4">할인</h2>
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min="0"
+                  value={discountRate}
+                  onChange={(e) => setDiscountRate(Number(e.target.value))}
+                  className="w-32 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                />
+                <Select value={discountUnit} onValueChange={(value: '원' | '%') => setDiscountUnit(value)}>
+                  <SelectTrigger className="w-[80px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="원">원</SelectItem>
+                    <SelectItem value="%">%</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setShowDiscountModal(false)}>
+                  닫기
+                </Button>
+                <Button onClick={handleApplyDiscount}>
+                  변경
+                </Button>
+              </div>
             </div>
           </div>
         </div>
