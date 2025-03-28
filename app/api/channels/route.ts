@@ -50,7 +50,6 @@ export async function GET() {
         declaration_fee,
         innerbox_fee,
         packingbox_fee,
-        brand_type,
         free_shipping,
         conditional_shipping
       FROM \`third-current-410914.project_m.channel_db\`
@@ -176,9 +175,8 @@ export async function GET() {
       declaration_fee: row.f[28].v,
       innerbox_fee: row.f[29].v,
       packingbox_fee: row.f[30].v,
-      brand_type: row.f[31].v,
-      free_shipping: parseFloat(row.f[32].v),
-      conditional_shipping: parseFloat(row.f[33].v)
+      free_shipping: row.f[31].v ? parseFloat(row.f[31].v) : 0,
+      conditional_shipping: row.f[32].v ? parseFloat(row.f[32].v) : 0
     })) || [];
     console.log('처리된 채널 목록:', channels);
     
