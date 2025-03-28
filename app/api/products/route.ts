@@ -21,6 +21,23 @@ export async function GET(request: Request) {
   const channel_category_3 = searchParams.get('channel_category_3');
   const sort_by_qty = searchParams.get('sort_by_qty'); // 'asc' or 'desc' or 'default'
 
+  console.log('받은 파라미터:', {
+    searchTerm,
+    searchType,
+    extra_column2,
+    category_3,
+    drop_yn,
+    supply_name,
+    exclusive2,
+    order_date_from,
+    order_date_to,
+    code30,
+    channel_name,
+    channel_category_2,
+    channel_category_3,
+    sort_by_qty
+  });
+
   // 검색어나 필터 중 하나라도 있어야 검색 실행
   const hasSearchTerm = searchTerm.trim().length > 0;
   const hasFilter = [extra_column2, category_3, drop_yn, supply_name, exclusive2, 
@@ -42,7 +59,7 @@ export async function GET(request: Request) {
     // 검색어 조건 추가
     if (searchTerm) {
       if (searchType === 'name') {
-        productConditions.push(`name LIKE '%${searchTerm}%'`);
+        productConditions.push(`LOWER(name) LIKE LOWER('%${searchTerm}%')`);
       } else {
         const productIds = searchTerm.split(',').map(id => id.trim()).filter(Boolean);
         if (productIds.length > 0) {
@@ -52,19 +69,46 @@ export async function GET(request: Request) {
     }
 
     // 상품 필터 조건 추가
-    if (extra_column2 && extra_column2 !== 'all') productConditions.push(`extra_column2 = '${extra_column2}'`);
-    if (category_3 && category_3 !== 'all') productConditions.push(`category_3 = '${category_3}'`);
-    if (drop_yn && drop_yn !== 'all') productConditions.push(`drop_yn = '${drop_yn}'`);
-    if (supply_name && supply_name !== 'all') productConditions.push(`supply_name = '${supply_name}'`);
-    if (exclusive2 && exclusive2 !== 'all') productConditions.push(`exclusive2 = '${exclusive2}'`);
+    if (extra_column2 && extra_column2 !== 'all') {
+      productConditions.push(`extra_column2 = '${extra_column2}'`);
+    }
+    if (category_3 && category_3 !== 'all') {
+      productConditions.push(`category_3 = '${category_3}'`);
+    }
+    if (drop_yn && drop_yn !== 'all') {
+      productConditions.push(`drop_yn = '${drop_yn}'`);
+    }
+    if (supply_name && supply_name !== 'all') {
+      productConditions.push(`supply_name = '${supply_name}'`);
+    }
+    if (exclusive2 && exclusive2 !== 'all') {
+      productConditions.push(`exclusive2 = '${exclusive2}'`);
+    }
 
     // 주문 데이터 필터 조건 추가
-    if (order_date_from) orderConditions.push(`order_date >= '${order_date_from}'`);
-    if (order_date_to) orderConditions.push(`order_date <= '${order_date_to}'`);
-    if (code30 && code30 !== 'all') orderConditions.push(`code30 = '${code30}'`);
-    if (channel_name && channel_name !== 'all') orderConditions.push(`channel_name = '${channel_name}'`);
-    if (channel_category_2 && channel_category_2 !== 'all') orderConditions.push(`channel_category_2 = '${channel_category_2}'`);
-    if (channel_category_3 && channel_category_3 !== 'all') orderConditions.push(`channel_category_3 = '${channel_category_3}'`);
+    if (order_date_from) {
+      orderConditions.push(`order_date >= '${order_date_from}'`);
+    }
+    if (order_date_to) {
+      orderConditions.push(`order_date <= '${order_date_to}'`);
+    }
+    if (code30 && code30 !== 'all') {
+      orderConditions.push(`code30 = '${code30}'`);
+    }
+    if (channel_name && channel_name !== 'all') {
+      orderConditions.push(`channel_name = '${channel_name}'`);
+    }
+    if (channel_category_2 && channel_category_2 !== 'all') {
+      orderConditions.push(`channel_category_2 = '${channel_category_2}'`);
+    }
+    if (channel_category_3 && channel_category_3 !== 'all') {
+      orderConditions.push(`channel_category_3 = '${channel_category_3}'`);
+    }
+
+    console.log('SQL 조건:', {
+      productConditions,
+      orderConditions
+    });
 
     const productWhereClause = productConditions.length > 0 ? `WHERE ${productConditions.join(' AND ')}` : '';
     const orderWhereClause = orderConditions.length > 0 ? `WHERE ${orderConditions.join(' AND ')}` : '';

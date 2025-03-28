@@ -89,6 +89,40 @@ interface Column {
 
 type SearchType = 'name' | 'product_id';
 
+// 필터 초기 상태를 상수로 정의
+const INITIAL_FILTERS = {
+  extra_column2: 'all',
+  category_3: 'all',
+  drop_yn: 'all',
+  supply_name: 'all',
+  exclusive2: 'all',
+  code30: 'all',
+  channel_name: 'all',
+  channel_category_2: 'all',
+  channel_category_3: 'all',
+  order_date_from: '',
+  order_date_to: '',
+  sort_by_qty: 'desc'
+};
+
+// 정렬 함수 추가
+const sortData = (data: Product[], sortType: string) => {
+  return [...data].sort((a, b) => {
+    switch (sortType) {
+      case 'stock_desc':
+        return (b.total_stock || 0) - (a.total_stock || 0);
+      case 'stock_asc':
+        return (a.total_stock || 0) - (b.total_stock || 0);
+      case 'asc':
+        return (a.total_order_qty || 0) - (b.total_order_qty || 0);
+      case 'desc':
+        return (b.total_order_qty || 0) - (a.total_order_qty || 0);
+      default:
+        return 0;
+    }
+  });
+};
+
 export default function DynamicTable() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -97,20 +131,9 @@ export default function DynamicTable() {
   const [searchType, setSearchType] = useState<SearchType>('name')
   const [error, setError] = useState<string | null>(null)
   const [cartItems, setCartItems] = useState<Set<string>>(new Set())
-  const [filters, setFilters] = useState({
-    extra_column2: 'all',
-    category_3: 'all',
-    drop_yn: 'all',
-    supply_name: 'all',
-    exclusive2: 'all',
-    code30: 'all',
-    channel_name: 'all',
-    channel_category_2: 'all',
-    channel_category_3: 'all',
-    order_date_from: '',
-    order_date_to: '',
-    sort_by_qty: 'desc'
-  })
+  const [filters, setFilters] = useState(INITIAL_FILTERS);
+  const [isFilterOptionsLoading, setIsFilterOptionsLoading] = useState(true);
+  const [filterOptionsError, setFilterOptionsError] = useState<string | null>(null);
 
   // 동적 필터 옵션
   const [dynamicFilterOptions, setDynamicFilterOptions] = useState({
@@ -229,52 +252,24 @@ export default function DynamicTable() {
   const resetState = async () => {
     try {
       if (user) {
-        // Firestore에서 사용자의 검색 상태 삭제
         const docRef = doc(db, 'userSearchStates', user.uid);
         await setDoc(docRef, {
           searchTerm: '',
           searchType: 'name',
-          filters: {
-            extra_column2: 'all',
-            category_3: 'all',
-            drop_yn: 'all',
-            supply_name: 'all',
-            exclusive2: 'all',
-            code30: 'all',
-            channel_name: 'all',
-            channel_category_2: 'all',
-            channel_category_3: 'all',
-            order_date_from: '',
-            order_date_to: '',
-            sort_by_qty: 'desc'
-          },
+          filters: INITIAL_FILTERS,
           searchResults: [],
           updatedAt: new Date().toISOString()
         });
       }
       
-      // 상태 초기화
       setData([]);
       setSearchTerm("");
       setSearchType('name');
-      setFilters({
-        extra_column2: 'all',
-        category_3: 'all',
-        drop_yn: 'all',
-        supply_name: 'all',
-        exclusive2: 'all',
-        code30: 'all',
-        channel_name: 'all',
-        channel_category_2: 'all',
-        channel_category_3: 'all',
-        order_date_from: '',
-        order_date_to: '',
-        sort_by_qty: 'desc'
-      });
-
-      // 컬럼 상태는 변경하지 않습니다 - 컬럼 정의는 columns 변수에 정의되어 있으며 이 함수에서는 수정하지 않습니다.
+      setFilters(INITIAL_FILTERS);
+      setError(null);
     } catch (error) {
       console.error('상태 초기화 오류:', error);
+      setError('상태 초기화 중 오류가 발생했습니다.');
     }
   };
 
@@ -330,20 +325,7 @@ export default function DynamicTable() {
           console.log('저장된 데이터:', data);
           setSearchTerm(data.searchTerm || '');
           setSearchType(data.searchType || 'name');
-          setFilters(data.filters || {
-            extra_column2: 'all',
-            category_3: 'all',
-            drop_yn: 'all',
-            supply_name: 'all',
-            exclusive2: 'all',
-            code30: 'all',
-            channel_name: 'all',
-            channel_category_2: 'all',
-            channel_category_3: 'all',
-            order_date_from: '',
-            order_date_to: '',
-            sort_by_qty: 'desc'
-          });
+          setFilters(data.filters || INITIAL_FILTERS);
           if (data.searchResults) {
             // 저장된 검색 결과를 불러올 때 필요한 필드가 없으면 기본값 추가
             const processedResults = data.searchResults.map((item: any) => ({
@@ -370,10 +352,12 @@ export default function DynamicTable() {
     }
   }, [user, loading]);
 
-  // 필터 옵션 초기화
+  // 필터 옵션 로딩 함수 수정
   useEffect(() => {
     const loadFilterOptions = async () => {
       try {
+        setIsFilterOptionsLoading(true);
+        setFilterOptionsError(null);
         const response = await fetch('/api/filter-options');
         const result = await response.json();
         
@@ -392,6 +376,9 @@ export default function DynamicTable() {
         });
       } catch (err) {
         console.error('필터 옵션 로딩 오류:', err);
+        setFilterOptionsError(err instanceof Error ? err.message : '필터 옵션을 불러오는데 실패했습니다.');
+      } finally {
+        setIsFilterOptionsLoading(false);
       }
     };
 
@@ -420,7 +407,7 @@ export default function DynamicTable() {
     loadCartItems();
   }, [user]);
 
-  const fetchData = async () => {
+  const fetchData = async (currentFilters = filters) => {
     try {
       if (loading) return;
       setLoading(true);
@@ -430,8 +417,14 @@ export default function DynamicTable() {
       if (searchTerm) params.append('search', searchTerm);
       params.append('type', searchType);
       
-      Object.entries(filters).forEach(([key, value]) => {
-        if ((value !== 'all' && value !== '') || key === 'sort_by_qty') {
+      // 필터 값 전달 로직 수정
+      Object.entries(currentFilters).forEach(([key, value]) => {
+        // 빈 값이나 'all'이 아닌 경우에만 파라미터 추가
+        if (value && value !== 'all') {
+          // 날짜 필드는 빈 문자열 체크 추가
+          if ((key === 'order_date_from' || key === 'order_date_to') && value === '') {
+            return;
+          }
           params.append(key, value);
         }
       });
@@ -446,7 +439,7 @@ export default function DynamicTable() {
       if (!Array.isArray(result)) {
         throw new Error('잘못된 데이터 형식입니다.');
       }
-
+      
       const processedResults = result.map((item: any) => ({
         ...item,
         total_stock: item.total_stock !== undefined ? item.total_stock : 0,
@@ -457,13 +450,11 @@ export default function DynamicTable() {
       // 검색 결과만 업데이트
       if (user) {
         const docRef = doc(db, 'userSearchStates', user.uid);
-        
-        // 새로운 검색 결과만 저장
         await setDoc(docRef, {
           searchTerm: searchTerm || null,
           searchType: searchType || null,
-          filters: filters || null,
-          searchResults: processedResults,  // 이전 결과와 합치지 않고 새로운 결과만 저장
+          filters: currentFilters || null,
+          searchResults: processedResults,
           updatedAt: new Date().toISOString()
         });
       }
@@ -476,71 +467,74 @@ export default function DynamicTable() {
     }
   };
 
-  // 필터 변경 핸들러
-  const handleFilterChange = (key: keyof typeof filters, value: string) => {
-    const safeValue = value === undefined ? '' : value;
-    setFilters(prev => {
-      const newFilters = { ...prev, [key]: safeValue };
-      // 필터 상태를 먼저 Firestore에 저장
+  // 필터 변경 핸들러 수정
+  const handleFilterChange = async (key: keyof typeof filters, value: string) => {
+    try {
+      const safeValue = value === undefined ? '' : value;
+      const newFilters = { ...filters, [key]: safeValue };
+      
+      // 필터 상태 업데이트
+      setFilters(newFilters);
+
+      // API 호출
+      await fetchData(newFilters);
+
+      // Firestore 저장
       if (user) {
         const docRef = doc(db, 'userSearchStates', user.uid);
-        setDoc(docRef, {
+        await setDoc(docRef, {
           searchTerm,
           searchType,
           filters: newFilters,
           updatedAt: new Date().toISOString()
-        }, { merge: true })
-        .then(() => {
-          // 저장 성공 후 데이터 fetch
-          if (!loading) {
-            fetchData();
-          }
-        })
-        .catch(error => {
-          console.error('필터 상태 저장 실패:', error);
         });
-      } else {
-        // 로그인하지 않은 경우 바로 fetch
-        if (!loading) {
-          fetchData();
-        }
       }
-      return newFilters;
-    });
+    } catch (error) {
+      console.error('필터 변경 오류:', error);
+      // 에러 발생 시 이전 상태로 복구
+      setFilters(filters);
+    }
   };
 
   // 날짜 필드 핸들러
-  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'order_date_from' | 'order_date_to') => {
+  const handleDateChange = async (e: React.ChangeEvent<HTMLInputElement>, field: 'order_date_from' | 'order_date_to') => {
+    console.log('날짜 변경 시작:', { field, value: e.target.value });
     const value = e.target.value || '';
-    setFilters(prev => {
-      const newFilters = { ...prev, [field]: value };
-      if (user) {
+    
+    const newFilters = { ...filters, [field]: value };
+    console.log('새로운 필터 상태:', newFilters);
+
+    // Firestore 저장 로직을 별도로 처리
+    if (user) {
+      try {
         const docRef = doc(db, 'userSearchStates', user.uid);
-        setDoc(docRef, {
+        await setDoc(docRef, {
           searchTerm,
           searchType,
           filters: newFilters,
           updatedAt: new Date().toISOString()
-        }, { merge: true })
-        .then(() => {
-          if (!loading) {
-            fetchData();
-          }
-        })
-        .catch(error => {
-          console.error('필터 상태 저장 실패:', error);
         });
-      } else {
-        if (!loading) {
-          fetchData();
-        }
+        console.log('Firestore 저장 성공');
+      } catch (error) {
+        console.error('Firestore 저장 실패:', error);
       }
-      return newFilters;
-    });
+    }
+
+    // 필터 상태 업데이트
+    setFilters(newFilters);
+    
+    // API 호출
+    try {
+      console.log('API 호출 시작');
+      await fetchData();
+      console.log('API 호출 완료');
+    } catch (error) {
+      console.error('API 호출 실패:', error);
+    }
   };
 
-  // 날짜 퀵 선택 버튼 핸들러
-  const handleQuickDateSelect = (period: 'week' | 'month' | 'all') => {
+  // 날짜 퀵 선택 버튼 핸들러 수정
+  const handleQuickDateSelect = async (period: 'week' | 'month' | 'all') => {
     const today = new Date();
     const endDate = today.toISOString().split('T')[0];
     let startDate = '';
@@ -555,35 +549,23 @@ export default function DynamicTable() {
       startDate = monthAgo.toISOString().split('T')[0];
     }
     
-    setFilters(prev => {
-      const newFilters = { 
-        ...prev, 
-        order_date_from: startDate,
-        order_date_to: period === 'all' ? '' : endDate 
-      };
-      if (user) {
-        const docRef = doc(db, 'userSearchStates', user.uid);
-        setDoc(docRef, {
-          searchTerm,
-          searchType,
-          filters: newFilters,
-          updatedAt: new Date().toISOString()
-        }, { merge: true })
-        .then(() => {
-          if (!loading) {
-            fetchData();
-          }
-        })
-        .catch(error => {
-          console.error('필터 상태 저장 실패:', error);
-        });
-      } else {
-        if (!loading) {
-          fetchData();
-        }
-      }
-      return newFilters;
-    });
+    const newFilters = { 
+      ...filters, 
+      order_date_from: startDate,
+      order_date_to: period === 'all' ? '' : endDate 
+    };
+
+    // 필터 상태 업데이트
+    setFilters(newFilters);
+    
+    // API 호출
+    try {
+      await fetchData(newFilters);
+    } catch (error) {
+      console.error('API 호출 실패:', error);
+      // 에러 발생 시 이전 상태로 복구
+      setFilters(filters);
+    }
   };
 
   const handleSearch = () => {
@@ -691,6 +673,13 @@ export default function DynamicTable() {
     }
   }, [user]); // user가 변경될 때만 실행
 
+  // 정렬 핸들러 수정
+  const handleSortChange = (value: string) => {
+    const newFilters = { ...filters, sort_by_qty: value };
+    setFilters(newFilters);
+    setData(prevData => sortData(prevData, value));
+  };
+
   return (
     <div className="container mx-auto py-10">
       <h1 className="text-2xl font-bold mb-6">상품 검색</h1>
@@ -738,82 +727,88 @@ export default function DynamicTable() {
         </div>
 
         <div className="flex items-center gap-4">
-          <Select
-            value={filters.category_3}
-            onValueChange={(value) => handleFilterChange('category_3', value)}
-          >
-            <SelectTrigger className={`w-[140px] ${filters.category_3 !== 'all' ? 'bg-blue-50 border-blue-200' : ''} h-10`}>
-              <SelectValue placeholder="카테고리" />
-            </SelectTrigger>
-            <SelectContent className="min-w-[140px]">
-              <SelectItem value="all">카테고리</SelectItem>
-              {STATIC_FILTER_OPTIONS.category_3.map(({ value, label }) => (
-                <SelectItem key={value} value={value}>{label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {isFilterOptionsLoading ? (
+            <div className="text-sm text-gray-500">필터 옵션을 불러오는 중...</div>
+          ) : (
+            <>
+              <Select
+                value={filters.category_3}
+                onValueChange={(value) => handleFilterChange('category_3', value)}
+              >
+                <SelectTrigger className={`w-[140px] ${filters.category_3 !== 'all' ? 'bg-blue-50 border-blue-200' : ''} h-10`}>
+                  <SelectValue placeholder="카테고리" />
+                </SelectTrigger>
+                <SelectContent className="min-w-[140px]">
+                  <SelectItem value="all">카테고리</SelectItem>
+                  {STATIC_FILTER_OPTIONS.category_3.map(({ value, label }) => (
+                    <SelectItem key={value} value={value}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-          <Select
-            value={filters.extra_column2}
-            onValueChange={(value) => handleFilterChange('extra_column2', value)}
-          >
-            <SelectTrigger className={`w-[140px] ${filters.extra_column2 !== 'all' ? 'bg-blue-50 border-blue-200' : ''} h-10`}>
-              <SelectValue placeholder="출시시즌" />
-            </SelectTrigger>
-            <SelectContent className="min-w-[140px]">
-              <SelectItem value="all">시즌</SelectItem>
-              {Array.from(dynamicFilterOptions.extra_column2).map((option) => (
-                <SelectItem key={option} value={option}>{option}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+              <Select
+                value={filters.extra_column2}
+                onValueChange={(value) => handleFilterChange('extra_column2', value)}
+              >
+                <SelectTrigger className={`w-[140px] ${filters.extra_column2 !== 'all' ? 'bg-blue-50 border-blue-200' : ''} h-10`}>
+                  <SelectValue placeholder="출시시즌" />
+                </SelectTrigger>
+                <SelectContent className="min-w-[140px]">
+                  <SelectItem value="all">시즌</SelectItem>
+                  {Array.from(dynamicFilterOptions.extra_column2).map((option) => (
+                    <SelectItem key={option} value={option}>{option}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-          <Select
-            value={filters.drop_yn}
-            onValueChange={(value) => handleFilterChange('drop_yn', value)}
-          >
-            <SelectTrigger className={`w-[140px] ${filters.drop_yn !== 'all' ? 'bg-blue-50 border-blue-200' : ''} h-10`}>
-              <SelectValue placeholder="드랍여부" />
-            </SelectTrigger>
-            <SelectContent className="min-w-[140px]">
-              <SelectItem value="all">드랍상태</SelectItem>
-              {STATIC_FILTER_OPTIONS.drop_yn.map(({ value, label }) => (
-                <SelectItem key={value} value={value}>{label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+              <Select
+                value={filters.drop_yn}
+                onValueChange={(value) => handleFilterChange('drop_yn', value)}
+              >
+                <SelectTrigger className={`w-[140px] ${filters.drop_yn !== 'all' ? 'bg-blue-50 border-blue-200' : ''} h-10`}>
+                  <SelectValue placeholder="드랍여부" />
+                </SelectTrigger>
+                <SelectContent className="min-w-[140px]">
+                  <SelectItem value="all">드랍상태</SelectItem>
+                  {STATIC_FILTER_OPTIONS.drop_yn.map(({ value, label }) => (
+                    <SelectItem key={value} value={value}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-          <Select
-            value={filters.supply_name}
-            onValueChange={(value) => handleFilterChange('supply_name', value)}
-          >
-            <SelectTrigger className={`w-[140px] ${filters.supply_name !== 'all' ? 'bg-blue-50 border-blue-200' : ''} h-10`}>
-              <SelectValue placeholder="공급처명" />
-            </SelectTrigger>
-            <SelectContent className="min-w-[140px]">
-              <SelectItem value="all">공급처</SelectItem>
-              {Array.from(dynamicFilterOptions.supply_name).map((option) => (
-                <SelectItem key={option} value={option}>{option}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+              <Select
+                value={filters.supply_name}
+                onValueChange={(value) => handleFilterChange('supply_name', value)}
+              >
+                <SelectTrigger className={`w-[140px] ${filters.supply_name !== 'all' ? 'bg-blue-50 border-blue-200' : ''} h-10`}>
+                  <SelectValue placeholder="공급처명" />
+                </SelectTrigger>
+                <SelectContent className="min-w-[140px]">
+                  <SelectItem value="all">공급처</SelectItem>
+                  {Array.from(dynamicFilterOptions.supply_name).map((option) => (
+                    <SelectItem key={option} value={option}>{option}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-          <Select
-            value={filters.exclusive2}
-            onValueChange={(value) => handleFilterChange('exclusive2', value)}
-          >
-            <SelectTrigger className={`w-[140px] ${filters.exclusive2 !== 'all' ? 'bg-blue-50 border-blue-200' : ''} h-10`}>
-              <SelectValue placeholder="단독여부" />
-            </SelectTrigger>
-            <SelectContent className="min-w-[140px]">
-              <SelectItem value="all">단독상태</SelectItem>
-              {Array.from(dynamicFilterOptions.exclusive2).map((option) => (
-                <SelectItem key={option} value={option}>
-                  {option === 'Y' ? '단독' : option === 'N' ? '단독아님' : option}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+              <Select
+                value={filters.exclusive2}
+                onValueChange={(value) => handleFilterChange('exclusive2', value)}
+              >
+                <SelectTrigger className={`w-[140px] ${filters.exclusive2 !== 'all' ? 'bg-blue-50 border-blue-200' : ''} h-10`}>
+                  <SelectValue placeholder="단독여부" />
+                </SelectTrigger>
+                <SelectContent className="min-w-[140px]">
+                  <SelectItem value="all">단독상태</SelectItem>
+                  {Array.from(dynamicFilterOptions.exclusive2).map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {option === 'Y' ? '단독' : option === 'N' ? '단독아님' : option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </>
+          )}
         </div>
 
         <div className="flex items-center gap-4">
@@ -930,35 +925,16 @@ export default function DynamicTable() {
         </div>
       )}
 
+      {filterOptionsError && (
+        <div className="p-3 text-sm text-red-500 bg-red-50 rounded-md mb-2">
+          {filterOptionsError}
+        </div>
+      )}
+
       <div className="flex justify-end mb-2">
         <Select
           value={filters.sort_by_qty}
-          onValueChange={(value) => {
-            handleFilterChange('sort_by_qty', value);
-            // 로컬에서 바로 정렬하는 로직 추가
-            const sortedData = [...data].sort((a, b) => {
-              if (value === 'stock_desc') {
-                const aStock = a.total_stock || 0;
-                const bStock = b.total_stock || 0;
-                return bStock - aStock;
-              } else if (value === 'stock_asc') {
-                const aStock = a.total_stock || 0;
-                const bStock = b.total_stock || 0;
-                return aStock - bStock;
-              } else if (value === 'asc') {
-                const aQty = a.total_order_qty || 0;
-                const bQty = b.total_order_qty || 0;
-                return aQty - bQty;
-              } else if (value === 'desc') {
-                const aQty = a.total_order_qty || 0;
-                const bQty = b.total_order_qty || 0;
-                return bQty - aQty;
-              }
-              return 0; // default 정렬은 변경하지 않음
-            });
-            
-            setData(sortedData);
-          }}
+          onValueChange={handleSortChange}
         >
           <SelectTrigger className="w-[140px] border-none focus:ring-0 focus:ring-offset-0 shadow-none h-10">
             <SelectValue placeholder="정렬 기준" />
