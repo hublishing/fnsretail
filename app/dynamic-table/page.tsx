@@ -123,6 +123,35 @@ const sortData = (data: Product[], sortType: string) => {
   });
 };
 
+// 검색 상태 불러오기 함수
+const loadSearchState = async (user: any, setSearchTerm: (term: string) => void, setSearchType: (type: SearchType) => void, setFilters: (filters: any) => void, setData: (data: Product[]) => void) => {
+  if (!user) {
+    console.log('사용자가 로그인되지 않았습니다.');
+    return;
+  }
+  
+  try {
+    const docRef = doc(db, 'userSearchStates', user.uid);
+    const docSnap = await getDoc(docRef);
+    
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      setSearchTerm(data.searchTerm || '');
+      setSearchType(data.searchType || 'name');
+      setFilters(data.filters || INITIAL_FILTERS);
+      if (data.searchResults) {
+        const processedResults = data.searchResults.map((item: any) => ({
+          ...item,
+          total_stock: item.total_stock || 0,
+        }));
+        setData(processedResults);
+      }
+    }
+  } catch (error) {
+    console.error('검색 상태 불러오기 실패:', error);
+  }
+};
+
 export default function DynamicTable() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -302,55 +331,20 @@ export default function DynamicTable() {
 
   // 저장된 검색 상태 불러오기
   useEffect(() => {
-    const loadSearchState = async () => {
-      if (!user) {
-        console.log('사용자가 로그인되지 않았습니다.');
-        return;
-      }
-      
-      try {
-        console.log('검색 상태 불러오기 시작:', {
-          userId: user.uid,
-          userEmail: user.email
-        });
-        
-        const docRef = doc(db, 'userSearchStates', user.uid);
-        console.log('문서 참조 생성:', docRef.path);
-        
-        const docSnap = await getDoc(docRef);
-        console.log('문서 존재 여부:', docSnap.exists());
-        
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          console.log('저장된 데이터:', data);
-          setSearchTerm(data.searchTerm || '');
-          setSearchType(data.searchType || 'name');
-          setFilters(data.filters || INITIAL_FILTERS);
-          if (data.searchResults) {
-            // 저장된 검색 결과를 불러올 때 필요한 필드가 없으면 기본값 추가
-            const processedResults = data.searchResults.map((item: any) => ({
-              ...item,
-              total_stock: item.total_stock || 0, // total_stock이 없는 경우 기본값 설정
-            }));
-            setData(processedResults);
-          }
-        } else {
-          console.log('저장된 데이터가 없습니다.');
-        }
-      } catch (error: any) {
-        console.error('검색 상태 불러오기 실패:', error);
-        console.error('오류 상세:', {
-          message: error.message,
-          code: error.code,
-          stack: error.stack
-        });
+    loadSearchState(user, setSearchTerm, setSearchType, setFilters, setData);
+  }, [user]);
+
+  // 페이지 포커스 시 검색 상태 다시 불러오기
+  useEffect(() => {
+    const handleFocus = () => {
+      if (user) {
+        loadSearchState(user, setSearchTerm, setSearchType, setFilters, setData);
       }
     };
 
-    if (!loading) {
-      loadSearchState();
-    }
-  }, [user, loading]);
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [user]);
 
   // 필터 옵션 로딩 함수 수정
   useEffect(() => {
