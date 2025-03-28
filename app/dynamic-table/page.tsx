@@ -457,53 +457,13 @@ export default function DynamicTable() {
       // 검색 결과만 업데이트
       if (user) {
         const docRef = doc(db, 'userSearchStates', user.uid);
-        const docSnap = await getDoc(docRef);
         
-        let existingResults: Product[] = [];
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          existingResults = data.searchResults || [];
-        }
-
-        // 새로운 검색 결과를 기존 결과에 추가
-        const updatedResults = [...existingResults, ...processedResults];
-        
-        // undefined 값을 null로 변환하여 저장
-        const sanitizedResults = updatedResults.map(result => ({
-          ...result,
-          product_id: result.product_id || null,
-          name: result.name || null,
-          org_price: result.org_price || null,
-          shop_price: result.shop_price || null,
-          img_desc1: result.img_desc1 || null,
-          product_desc: result.product_desc || null,
-          extra_column2: result.extra_column2 || null,
-          cost_ratio: result.cost_ratio || null,
-          category_1: result.category_1 || null,
-          category_3: result.category_3 || null,
-          main_wh_available_stock_excl_production_stock: result.main_wh_available_stock_excl_production_stock || null,
-          total_stock: result.total_stock || null,
-          drop_yn: result.drop_yn || null,
-          soldout_rate: result.soldout_rate || null,
-          supply_name: result.supply_name || null,
-          exclusive2: result.exclusive2 || null,
-          options_product_id: result.options_product_id || null,
-          brand: result.brand || null,
-          line: result.line || null,
-          season: result.season || null,
-          total_order_qty: result.total_order_qty || null,
-          recent_order_dates: result.recent_order_dates || null,
-          order_countries: result.order_countries || null,
-          order_channels: result.order_channels || null,
-          order_categories: result.order_categories || null,
-          order_types: result.order_types || null
-        }));
-        
+        // 새로운 검색 결과만 저장
         await setDoc(docRef, {
           searchTerm: searchTerm || null,
           searchType: searchType || null,
           filters: filters || null,
-          searchResults: sanitizedResults,
+          searchResults: processedResults,  // 이전 결과와 합치지 않고 새로운 결과만 저장
           updatedAt: new Date().toISOString()
         });
       }
