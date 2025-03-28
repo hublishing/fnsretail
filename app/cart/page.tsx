@@ -440,241 +440,6 @@ export default function CartPage() {
               />
             </div>
 
-            {/* 채널 상세 정보 두 번째 줄 */}
-            <div className="flex items-center gap-4">
-              <input
-                type="text"
-                value={selectedChannelInfo?.shop_id || ''}
-                readOnly
-                placeholder="이지어드민채널코드"
-                className="w-[200px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-gray-50 text-sm text-gray-500"
-              />
-              <input
-                type="text"
-                value={selectedChannelInfo?.shop_name || ''}
-                readOnly
-                placeholder="이지어드민채널명"
-                className="w-[200px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-gray-50 text-sm text-gray-500"
-              />
-              <input
-                type="text"
-                value={selectedChannelInfo?.used || ''}
-                readOnly
-                placeholder="사용여부"
-                className="w-[200px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-gray-50 text-sm text-gray-500"
-              />
-              <input
-                type="text"
-                value={selectedChannelInfo?.price_formula || ''}
-                readOnly
-                placeholder="매출액수식"
-                className="w-[200px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-gray-50 text-sm text-gray-500"
-              />
-            </div>
-
-            {/* 채널 상세 정보 세 번째 줄 */}
-            <div className="flex items-center gap-4">
-              <input
-                type="text"
-                value={selectedChannelInfo?.shipping_formula || ''}
-                readOnly
-                placeholder="배송비수식"
-                className="w-[200px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-gray-50 text-sm text-gray-500"
-              />
-              <input
-                type="text"
-                value={selectedChannelInfo?.exchange_rate || ''}
-                readOnly
-                placeholder="주문일자환율"
-                className="w-[200px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-gray-50 text-sm text-gray-500"
-              />
-              <input
-                type="text"
-                value={selectedChannelInfo?.currency || ''}
-                readOnly
-                placeholder="화폐통화(주문)"
-                className="w-[200px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-gray-50 text-sm text-gray-500"
-              />
-              <input
-                type="text"
-                value={selectedChannelInfo?.correction_rate || ''}
-                readOnly
-                placeholder="보정률"
-                className="w-[200px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-gray-50 text-sm text-gray-500"
-              />
-            </div>
-
-            {/* 채널 상세 정보 네 번째 줄 */}
-            <div className="flex items-center gap-4">
-              <input
-                type="text"
-                value={selectedChannelInfo?.amount || ''}
-                readOnly
-                placeholder="최종매출액수식"
-                className="w-[200px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-gray-50 text-sm text-gray-500"
-              />
-              <input
-                type="text"
-                value={selectedChannelInfo?.comment || ''}
-                readOnly
-                placeholder="코멘트"
-                className="w-[200px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-gray-50 text-sm text-gray-500"
-              />
-              <input
-                type="text"
-                value={selectedChannelInfo?.use_yn || ''}
-                readOnly
-                placeholder="운영여부"
-                className="w-[200px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-gray-50 text-sm text-gray-500"
-              />
-              <input
-                type="text"
-                value={selectedChannelInfo?.type || ''}
-                readOnly
-                placeholder="유형"
-                className="w-[200px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-gray-50 text-sm text-gray-500"
-              />
-            </div>
-
-            {/* 채널 상세 정보 다섯 번째 줄 */}
-            <div className="flex items-center gap-4">
-              <input
-                type="text"
-                value={selectedChannelInfo?.markup_ratio || ''}
-                readOnly
-                placeholder="가산비율/금액"
-                className="w-[200px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-gray-50 text-sm text-gray-500"
-              />
-              <input
-                type="text"
-                value={selectedChannelInfo?.applied_exchange_rate || ''}
-                readOnly
-                placeholder="적용환율"
-                className="w-[200px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-gray-50 text-sm text-gray-500"
-              />
-              <input
-                type="text"
-                value={selectedChannelInfo?.rounddown || ''}
-                readOnly
-                placeholder="반올림수식"
-                className="w-[200px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-gray-50 text-sm text-gray-500"
-              />
-              <input
-                type="text"
-                value={selectedChannelInfo?.digit_adjustment || ''}
-                readOnly
-                placeholder="자릿수조정"
-                className="w-[200px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-gray-50 text-sm text-gray-500"
-              />
-            </div>
-
-            {/* 채널 상세 정보 여섯 번째 줄 */}
-            <div className="flex items-center gap-4">
-              <input
-                type="text"
-                value={selectedChannelInfo?.currency_2 || ''}
-                readOnly
-                placeholder="화폐통화(상품)"
-                className="w-[200px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-gray-50 text-sm text-gray-500"
-              />
-              <input
-                type="text"
-                value={selectedChannelInfo?.average_fee_rate || ''}
-                readOnly
-                placeholder="평균수수료"
-                className="w-[200px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-gray-50 text-sm text-gray-500"
-              />
-              <input
-                type="text"
-                value={selectedChannelInfo?.shipping_condition || ''}
-                readOnly
-                placeholder="배송조건"
-                className="w-[200px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-gray-50 text-sm text-gray-500"
-              />
-              <input
-                type="text"
-                value={selectedChannelInfo?.outerbox_fee || ''}
-                readOnly
-                placeholder="아웃박스비용"
-                className="w-[200px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-gray-50 text-sm text-gray-500"
-              />
-            </div>
-
-            {/* 채널 상세 정보 일곱 번째 줄 */}
-            <div className="flex items-center gap-4">
-              <input
-                type="text"
-                value={selectedChannelInfo?.domestic_delivery_fee || ''}
-                readOnly
-                placeholder="국내택배비용"
-                className="w-[200px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-gray-50 text-sm text-gray-500"
-              />
-              <input
-                type="text"
-                value={selectedChannelInfo?.shipping_fee || ''}
-                readOnly
-                placeholder="배송비용"
-                className="w-[200px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-gray-50 text-sm text-gray-500"
-              />
-              <input
-                type="text"
-                value={selectedChannelInfo?.customs_fee || ''}
-                readOnly
-                placeholder="통관대행비"
-                className="w-[200px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-gray-50 text-sm text-gray-500"
-              />
-              <input
-                type="text"
-                value={selectedChannelInfo?.declaration_fee || ''}
-                readOnly
-                placeholder="기적신고비용"
-                className="w-[200px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-gray-50 text-sm text-gray-500"
-              />
-            </div>
-
-            {/* 채널 상세 정보 여덟 번째 줄 */}
-            <div className="flex items-center gap-4">
-              <input
-                type="text"
-                value={selectedChannelInfo?.innerbox_fee || ''}
-                readOnly
-                placeholder="인박스비용"
-                className="w-[200px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-gray-50 text-sm text-gray-500"
-              />
-              <input
-                type="text"
-                value={selectedChannelInfo?.packingbox_fee || ''}
-                readOnly
-                placeholder="배송상자비용"
-                className="w-[200px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-gray-50 text-sm text-gray-500"
-              />
-              <input
-                type="text"
-                value={selectedChannelInfo?.brand_type || ''}
-                readOnly
-                placeholder="브랜드구분"
-                className="w-[200px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-gray-50 text-sm text-gray-500"
-              />
-              <input
-                type="text"
-                value={selectedChannelInfo?.free_shipping || ''}
-                readOnly
-                placeholder="무료배송"
-                className="w-[200px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-gray-50 text-sm text-gray-500"
-              />
-            </div>
-
-            {/* 채널 상세 정보 마지막 줄 */}
-            <div className="flex items-center gap-4">
-              <input
-                type="text"
-                value={selectedChannelInfo?.conditional_shipping || ''}
-                readOnly
-                placeholder="조건부배송"
-                className="w-[200px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-gray-50 text-sm text-gray-500"
-              />
-            </div>
-
             {/* 메모 입력창 */}
             <div className="w-full">
               <input
@@ -774,7 +539,7 @@ export default function CartPage() {
                       <img 
                         src={product.img_desc1} 
                         alt="상품 이미지" 
-                        className="w-20 h-20 object-cover rounded-md"
+                        className="w-12 h-12 object-cover rounded-md"
                         style={{ borderRadius: '5px' }}
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
@@ -785,11 +550,11 @@ export default function CartPage() {
                         }}
                       />
                     ) : (
-                      <div className="w-20 h-20 flex items-center justify-center">
+                      <div className="w-12 h-12 flex items-center justify-center">
                         <img 
                           src="/no-image.png" 
                           alt="이미지 없음" 
-                          className="w-20 h-20 object-contain rounded-md"
+                          className="w-12 h-12 object-contain rounded-md"
                           style={{ borderRadius: '5px' }}
                         />
                       </div>
@@ -801,8 +566,10 @@ export default function CartPage() {
                     onClick={() => setSelectedProductId(product.product_id)}
                     className="text-left hover:text-blue-600 transition-colors w-full"
                   >
-                    <div className="font-medium">{product.name}</div>
-                    <div className="text-sm text-gray-500 mt-1">
+                    <div className="font-medium truncate" title={product.name}>
+                      {product.name.length > 20 ? `${product.name.slice(0, 20)}...` : product.name}
+                    </div>
+                    <div className="text-sm text-gray-500 mt-1 truncate">
                       {[
                         product.brand,
                         product.category_1,
