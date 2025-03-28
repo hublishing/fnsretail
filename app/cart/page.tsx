@@ -179,7 +179,20 @@ export default function CartPage() {
         }
         const data = await response.json();
         if (data.channels) {
-          setChannels(data.channels);
+          // 중복 제거: channel_name이 같은 경우 use_yn이 '운영중'인 것만 선택
+          const uniqueChannels = data.channels.reduce((acc: ChannelInfo[], curr: ChannelInfo) => {
+            const existingChannel = acc.find(c => c.channel_name === curr.channel_name);
+            if (!existingChannel || (curr.use_yn === '운영중' && existingChannel.use_yn !== '운영중')) {
+              if (existingChannel) {
+                const index = acc.findIndex(c => c.channel_name === curr.channel_name);
+                acc[index] = curr;
+              } else {
+                acc.push(curr);
+              }
+            }
+            return acc;
+          }, []);
+          setChannels(uniqueChannels);
         }
       } catch (error) {
         console.error('채널 정보 로딩 실패:', error);
@@ -678,9 +691,9 @@ export default function CartPage() {
       <div className="mb-4">
         <div className="flex justify-between items-center">
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setShowDiscountModal(true)}>
-              할인 적용
-            </Button>
+          <Button variant="outline" onClick={() => setShowDiscountModal(true)}>
+            할인 적용
+          </Button>
             <Button className="bg-blue-500 text-white hover:bg-blue-600">
               리스트저장
             </Button>
@@ -705,139 +718,139 @@ export default function CartPage() {
       {/* 상품 테이블 */}
       <div className="rounded-md border">
         <div className="max-h-[calc(100vh-500px)] overflow-auto">
-          <Table>
+        <Table>
             <TableHeader className="sticky top-0 bg-white z-10">
-              <TableRow>
-                <TableHead className="w-[50px]">
+            <TableRow>
+              <TableHead className="w-[50px]">
+                <Checkbox 
+                  checked={selectedProducts.length === products.length}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      setSelectedProducts(products.map(p => p.product_id));
+                    } else {
+                      setSelectedProducts([]);
+                    }
+                  }}
+                />
+              </TableHead>
+              <TableHead className="text-center">상품코드</TableHead>
+              <TableHead className="text-center">상품이미지</TableHead>
+              <TableHead className="text-center">상품명</TableHead>
+              <TableHead className="text-center">원가</TableHead>
+              <TableHead className="text-center">판매가</TableHead>
+              <TableHead className="text-center">할인가</TableHead>
+              <TableHead className="text-center">할인율</TableHead>
+              <TableHead className="text-center">카테고리</TableHead>
+              <TableHead className="text-center">원가율</TableHead>
+              <TableHead className="text-center">재고</TableHead>
+              <TableHead className="text-center">품절률</TableHead>
+              <TableHead className="text-center">드랍여부</TableHead>
+              <TableHead className="text-center">공급처명</TableHead>
+              <TableHead className="text-center">단독여부</TableHead>
+              <TableHead className="text-center">판매수량</TableHead>
+              <TableHead className="text-center">URL</TableHead>
+              <TableHead className="text-center">관리</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {sortedProducts.map((product) => (
+              <TableRow key={product.product_id}>
+                <TableCell>
                   <Checkbox 
-                    checked={selectedProducts.length === products.length}
+                    checked={selectedProducts.includes(product.product_id)}
                     onCheckedChange={(checked) => {
                       if (checked) {
-                        setSelectedProducts(products.map(p => p.product_id));
+                        setSelectedProducts([...selectedProducts, product.product_id]);
                       } else {
-                        setSelectedProducts([]);
+                        setSelectedProducts(selectedProducts.filter(id => id !== product.product_id));
                       }
                     }}
                   />
-                </TableHead>
-                <TableHead className="text-center">상품코드</TableHead>
-                <TableHead className="text-center">상품이미지</TableHead>
-                <TableHead className="text-center">상품명</TableHead>
-                <TableHead className="text-center">원가</TableHead>
-                <TableHead className="text-center">판매가</TableHead>
-                <TableHead className="text-center">할인가</TableHead>
-                <TableHead className="text-center">할인율</TableHead>
-                <TableHead className="text-center">카테고리</TableHead>
-                <TableHead className="text-center">원가율</TableHead>
-                <TableHead className="text-center">재고</TableHead>
-                <TableHead className="text-center">품절률</TableHead>
-                <TableHead className="text-center">드랍여부</TableHead>
-                <TableHead className="text-center">공급처명</TableHead>
-                <TableHead className="text-center">단독여부</TableHead>
-                <TableHead className="text-center">판매수량</TableHead>
-                <TableHead className="text-center">URL</TableHead>
-                <TableHead className="text-center">관리</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sortedProducts.map((product) => (
-                <TableRow key={product.product_id}>
-                  <TableCell>
-                    <Checkbox 
-                      checked={selectedProducts.includes(product.product_id)}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setSelectedProducts([...selectedProducts, product.product_id]);
-                        } else {
-                          setSelectedProducts(selectedProducts.filter(id => id !== product.product_id));
-                        }
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell className="text-center">{product.product_id}</TableCell>
-                  <TableCell className="text-center">
-                    <div className="flex justify-center">
-                      {product.img_desc1 ? (
+                </TableCell>
+                <TableCell className="text-center">{product.product_id}</TableCell>
+                <TableCell className="text-center">
+                  <div className="flex justify-center">
+                    {product.img_desc1 ? (
+                      <img 
+                        src={product.img_desc1} 
+                        alt="상품 이미지" 
+                        className="w-20 h-20 object-cover rounded-md"
+                        style={{ borderRadius: '5px' }}
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.src = '/no-image.png';
+                          target.alt = '이미지 없음';
+                          target.style.objectFit = 'contain';
+                          target.style.backgroundColor = 'transparent';
+                        }}
+                      />
+                    ) : (
+                      <div className="w-20 h-20 flex items-center justify-center">
                         <img 
-                          src={product.img_desc1} 
-                          alt="상품 이미지" 
-                          className="w-20 h-20 object-cover rounded-md"
+                          src="/no-image.png" 
+                          alt="이미지 없음" 
+                          className="w-20 h-20 object-contain rounded-md"
                           style={{ borderRadius: '5px' }}
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.src = '/no-image.png';
-                            target.alt = '이미지 없음';
-                            target.style.objectFit = 'contain';
-                            target.style.backgroundColor = 'transparent';
-                          }}
                         />
-                      ) : (
-                        <div className="w-20 h-20 flex items-center justify-center">
-                          <img 
-                            src="/no-image.png" 
-                            alt="이미지 없음" 
-                            className="w-20 h-20 object-contain rounded-md"
-                            style={{ borderRadius: '5px' }}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <button
-                      onClick={() => setSelectedProductId(product.product_id)}
-                      className="text-left hover:text-blue-600 transition-colors w-full"
-                    >
-                      <div className="font-medium">{product.name}</div>
-                      <div className="text-sm text-gray-500 mt-1">
-                        {[
-                          product.brand,
-                          product.category_1,
-                          product.extra_column2
-                        ].filter(Boolean).join(' ')}
                       </div>
-                    </button>
-                  </TableCell>
-                  <TableCell className="text-center">{product.org_price?.toLocaleString() || '-'}</TableCell>
-                  <TableCell className="text-center">{product.shop_price?.toLocaleString() || '-'}</TableCell>
-                  <TableCell className="text-center">{product.discount_price?.toLocaleString() || '-'}</TableCell>
-                  <TableCell className="text-center">
-                    {product.discount_price && product.shop_price 
-                      ? `${Math.round(((product.shop_price - product.discount_price) / product.shop_price) * 100)}%`
-                      : product.discount ? `${product.discount}%` : '-'}
-                  </TableCell>
-                  <TableCell className="text-center">{product.category_3 || '-'}</TableCell>
-                  <TableCell className="text-center">{product.cost_ratio ? `${product.cost_ratio}%` : '-'}</TableCell>
-                  <TableCell className="text-center">
-                    {(product.total_stock !== undefined 
-                      ? product.total_stock 
-                      : product.main_wh_available_stock_excl_production_stock)?.toLocaleString() || '-'}
-                  </TableCell>
-                  <TableCell className="text-center">{product.soldout_rate ? `${product.soldout_rate}%` : '-'}</TableCell>
-                  <TableCell className="text-center">{product.drop_yn || '-'}</TableCell>
-                  <TableCell className="text-center">{product.supply_name || '-'}</TableCell>
-                  <TableCell className="text-center">{product.exclusive2 || '-'}</TableCell>
-                  <TableCell className="text-center">{product.total_order_qty?.toLocaleString() || '-'}</TableCell>
-                  <TableCell className="text-center">
-                    {product.product_desc ? (
-                      <a href={product.product_desc} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
-                        링크
-                      </a>
-                    ) : '링크 없음'}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleRemoveFromCart(product.product_id)}
-                    >
-                      삭제
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell className="text-center">
+                  <button
+                    onClick={() => setSelectedProductId(product.product_id)}
+                    className="text-left hover:text-blue-600 transition-colors w-full"
+                  >
+                    <div className="font-medium">{product.name}</div>
+                    <div className="text-sm text-gray-500 mt-1">
+                      {[
+                        product.brand,
+                        product.category_1,
+                        product.extra_column2
+                      ].filter(Boolean).join(' ')}
+                    </div>
+                  </button>
+                </TableCell>
+                <TableCell className="text-center">{product.org_price?.toLocaleString() || '-'}</TableCell>
+                <TableCell className="text-center">{product.shop_price?.toLocaleString() || '-'}</TableCell>
+                <TableCell className="text-center">{product.discount_price?.toLocaleString() || '-'}</TableCell>
+                <TableCell className="text-center">
+                  {product.discount_price && product.shop_price 
+                    ? `${Math.round(((product.shop_price - product.discount_price) / product.shop_price) * 100)}%`
+                    : product.discount ? `${product.discount}%` : '-'}
+                </TableCell>
+                <TableCell className="text-center">{product.category_3 || '-'}</TableCell>
+                <TableCell className="text-center">{product.cost_ratio ? `${product.cost_ratio}%` : '-'}</TableCell>
+                <TableCell className="text-center">
+                  {(product.total_stock !== undefined 
+                    ? product.total_stock 
+                    : product.main_wh_available_stock_excl_production_stock)?.toLocaleString() || '-'}
+                </TableCell>
+                <TableCell className="text-center">{product.soldout_rate ? `${product.soldout_rate}%` : '-'}</TableCell>
+                <TableCell className="text-center">{product.drop_yn || '-'}</TableCell>
+                <TableCell className="text-center">{product.supply_name || '-'}</TableCell>
+                <TableCell className="text-center">{product.exclusive2 || '-'}</TableCell>
+                <TableCell className="text-center">{product.total_order_qty?.toLocaleString() || '-'}</TableCell>
+                <TableCell className="text-center">
+                  {product.product_desc ? (
+                    <a href={product.product_desc} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+                      링크
+                    </a>
+                  ) : '링크 없음'}
+                </TableCell>
+                <TableCell className="text-center">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleRemoveFromCart(product.product_id)}
+                  >
+                    삭제
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
         </div>
       </div>
 
