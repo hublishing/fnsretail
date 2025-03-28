@@ -460,7 +460,7 @@ export default function DynamicTable() {
           filters,
           searchResults: processedResults,
           updatedAt: new Date().toISOString()
-        });
+        }, { merge: true });
       }
     } catch (err) {
       console.error('데이터 로딩 오류:', err);
