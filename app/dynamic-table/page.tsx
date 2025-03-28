@@ -455,9 +455,12 @@ export default function DynamicTable() {
       if (user) {
         const docRef = doc(db, 'userSearchStates', user.uid);
         await setDoc(docRef, {
+          searchTerm,
+          searchType,
+          filters,
           searchResults: processedResults,
           updatedAt: new Date().toISOString()
-        }, { merge: true });
+        });
       }
     } catch (err) {
       console.error('데이터 로딩 오류:', err);
