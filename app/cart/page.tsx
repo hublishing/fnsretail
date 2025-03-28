@@ -246,9 +246,11 @@ export default function CartPage() {
                   onFocus={handleChannelSearchFocus}
                   onBlur={handleChannelSearchBlur}
                   placeholder="채널명을 입력하세요"
-                  className={`w-[200px] px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm ${
+                  className={`w-[200px] px-3 py-2 border-[1px] rounded-md shadow-sm focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
                     channelSearchTerm && !isValidChannel 
-                      ? 'border-red-500 focus:ring-red-500 focus:border-red-500 bg-red-50' 
+                      ? 'border-red-500 focus:ring-[1px] focus:ring-red-500 focus:border-red-500 bg-red-50' 
+                      : channelSearchTerm && isValidChannel
+                      ? 'border-blue-500 focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 bg-blue-50'
                       : 'border-gray-300'
                   }`}
                 />
