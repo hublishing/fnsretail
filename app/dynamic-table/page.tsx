@@ -138,7 +138,7 @@ export default function DynamicTable() {
           <img 
             src={value} 
             alt="상품 이미지" 
-            className="w-20 h-20 object-cover rounded-md"
+            className="w-12 h-12 object-cover rounded-md"
             style={{ borderRadius: '5px' }}
             onError={(e) => {
               const target = e.target as HTMLImageElement;
@@ -146,17 +146,20 @@ export default function DynamicTable() {
               target.alt = '이미지 없음';
               target.style.objectFit = 'contain';
               target.style.backgroundColor = 'transparent';
+              target.parentElement?.classList.add('flex', 'justify-center');
             }}
           />
         </div>
       ) : (
         <div className="flex justify-center">
-          <img 
-            src="/no-image.png" 
-            alt="이미지 없음" 
-            className="w-20 h-20 object-contain rounded-md"
-            style={{ borderRadius: '5px' }}
-          />
+          <div className="w-12 h-12 flex items-center justify-center">
+            <img 
+              src="/no-image.png" 
+              alt="이미지 없음" 
+              className="w-12 h-12 object-contain rounded-md"
+              style={{ borderRadius: '5px' }}
+            />
+          </div>
         </div>
       )
     },

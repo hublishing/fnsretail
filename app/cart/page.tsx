@@ -547,6 +547,7 @@ export default function CartPage() {
                           target.alt = '이미지 없음';
                           target.style.objectFit = 'contain';
                           target.style.backgroundColor = 'transparent';
+                          target.parentElement?.classList.add('flex', 'justify-center');
                         }}
                       />
                     ) : (
