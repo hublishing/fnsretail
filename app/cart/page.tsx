@@ -52,6 +52,7 @@ interface Product {
 
 interface Filters {
   channel_name: string;
+  delivery_type: string;
 }
 
 export default function CartPage() {
@@ -68,7 +69,8 @@ export default function CartPage() {
   const [filteredChannels, setFilteredChannels] = useState<string[]>([]);
   const [isValidChannel, setIsValidChannel] = useState(true);
   const [filters, setFilters] = useState<Filters>({
-    channel_name: ''
+    channel_name: '',
+    delivery_type: ''
   });
   const [discountRate, setDiscountRate] = useState<number>(0);
   const [showDiscountModal, setShowDiscountModal] = useState(false);
@@ -76,6 +78,8 @@ export default function CartPage() {
   const [showDiscountInput, setShowDiscountInput] = useState(false);
   const [listUuid, setListUuid] = useState<string>('');
   const [usedUuids] = useState<Set<string>>(new Set());
+  const [deliveryType, setDeliveryType] = useState<string>('');
+  const [isValidDeliveryType, setIsValidDeliveryType] = useState(true);
 
   // UUID 생성 함수
   const generateUniqueId = () => {
@@ -132,12 +136,28 @@ export default function CartPage() {
     const loadChannels = async () => {
       try {
         const response = await fetch('/api/channels');
+        if (!response.ok) {
+          throw new Error('채널 정보를 가져오는데 실패했습니다.');
+        }
         const data = await response.json();
         if (data.channels) {
-          setChannels(data.channels);
+          setChannels(data.channels.filter((channel: string) => channel !== 'nan'));
         }
       } catch (error) {
         console.error('채널 정보 로딩 실패:', error);
+        // 기본 채널 목록 설정
+        setChannels([
+          'SD_쿠팡',
+          'SD_쿠팡로켓',
+          'SD_티몬',
+          'SD_11번가',
+          'SD_29CM',
+          'SD_CJ온스타일',
+          'SD_GS샵',
+          'SD_SSF',
+          'SD_W컨셉',
+          'SD_국내자사몰'
+        ]);
       }
     };
 
@@ -277,17 +297,27 @@ export default function CartPage() {
   return (
     <div className="container mx-auto py-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">리스트 작성</h1>
+        <div className="flex flex-col">
+          <h1 className="text-2xl font-bold">리스트 작성</h1>
+          <div className="text-sm text-gray-500 mt-1">
+            <span className="mr-4">작성자: {user?.uid === 'a8mwwycqhaZLIb9iOcshPbpAVrj2' ? '한재훈' :
+             user?.uid === 'MhMI2KxbxkPHIAJP0o4sPSZG35e2' ? '이세명' :
+             user?.uid === '6DnflkbFSifLCNVQGWGv7aqJ2w72' ? '박연수' : ''}</span>
+            <span>UUID: {listUuid}</span>
+          </div>
+        </div>
       </div>
 
       {/* 편집 섹션 */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>편집</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <Card className="mb-12 border-0 bg-transparent shadow-none">
+        <CardContent className="p-0">
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-4">
+              <input
+                type="text"
+                placeholder="타이틀을 입력해주세요"
+                className="w-[300px] h-10 px-3 border-[1px] rounded-md shadow-sm focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm border-gray-300"
+              />
               <div className="relative">
                 <input
                   type="text"
@@ -296,7 +326,7 @@ export default function CartPage() {
                   onFocus={handleChannelSearchFocus}
                   onBlur={handleChannelSearchBlur}
                   placeholder="채널명을 입력하세요"
-                  className={`w-[200px] px-3 py-2 border-[1px] rounded-md shadow-sm focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
+                  className={`w-[200px] h-10 px-3 border-[1px] rounded-md shadow-sm focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
                     channelSearchTerm && !isValidChannel 
                       ? 'border-red-500 focus:ring-[1px] focus:ring-red-500 focus:border-red-500 bg-red-50' 
                       : channelSearchTerm && isValidChannel
@@ -318,20 +348,29 @@ export default function CartPage() {
                   </div>
                 )}
               </div>
-              <input
-                type="text"
-                value={user?.uid || ''}
-                readOnly
-                placeholder="UID"
-                className="w-[200px] px-3 py-2 border-[1px] rounded-md shadow-sm bg-gray-50 text-sm text-gray-500"
-              />
-              <input
-                type="text"
-                value={listUuid}
-                readOnly
-                placeholder="UUID"
-                className="w-[200px] px-3 py-2 border-[1px] rounded-md shadow-sm bg-gray-50 text-sm text-gray-500"
-              />
+              <Select 
+                value={deliveryType} 
+                onValueChange={(value) => {
+                  setDeliveryType(value);
+                  setIsValidDeliveryType(true);
+                  setFilters(prev => ({
+                    ...prev,
+                    delivery_type: value
+                  }));
+                }}
+              >
+                <SelectTrigger 
+                  className={`w-[200px] h-10 ${
+                    deliveryType ? 'border-blue-500 focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 bg-blue-50' : ''
+                  }`}
+                >
+                  <SelectValue placeholder="배송조건을 선택하세요" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="conditional">조건부배송</SelectItem>
+                  <SelectItem value="free">무료배송</SelectItem>
+                </SelectContent>
+              </Select>
               <Button variant="outline" onClick={() => {}}>
                 리스트 생성
               </Button>
@@ -341,17 +380,17 @@ export default function CartPage() {
       </Card>
 
       {/* 할인 적용 섹션 */}
-      <div className="mb-6">
+      <div className="mb-4">
         <div className="flex justify-between items-center">
           <Button variant="outline" onClick={() => setShowDiscountModal(true)}>
             할인 적용
           </Button>
           <div className="flex gap-2">
             <Select value={sortOption} onValueChange={(value: 'default' | 'qty_desc' | 'qty_asc' | 'stock_desc' | 'stock_asc') => setSortOption(value)}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="정렬" />
+              <SelectTrigger className="w-[140px] border-none focus:ring-0 focus:ring-offset-0 shadow-none h-10">
+                <SelectValue placeholder="정렬 기준" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="min-w-[140px]">
                 <SelectItem value="default">기본</SelectItem>
                 <SelectItem value="qty_desc">판매 많은순</SelectItem>
                 <SelectItem value="qty_asc">판매 적은순</SelectItem>
