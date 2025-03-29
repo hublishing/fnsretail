@@ -90,6 +90,7 @@ export function Sidebar() {
                       pathname === item.href ? "bg-accent" : "transparent"
                     )}
                   >
+                    {item.icon && <item.icon className="mr-2 h-4 w-4" />}
                     <span>{item.label}</span>
                   </Link>
                 ))}
@@ -137,6 +138,7 @@ export function Sidebar() {
                       : 'text-[hsl(var(--primary)/.9)] hover:text-white hover:bg-gray-700'
                   )}
                 >
+                  {item.icon && <item.icon className="mr-2 h-4 w-4" />}
                   {item.label}
                 </Link>
               ))}
