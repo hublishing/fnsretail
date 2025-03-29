@@ -22,7 +22,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className="h-screen">
+    <html lang="ko" className="h-screen">
       <head>
         <link rel="icon" href="/favicon.ico" />
         <link rel="icon" href="/favicon.ico" sizes="16x16" />
@@ -30,6 +30,7 @@ export default function RootLayout({
         <link rel="icon" href="/favicon.ico" sizes="48x48" />
         <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
         <link rel="shortcut icon" href="/favicon.ico" />
+        <link rel="stylesheet" as="style" crossOrigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
       </head>
       <body className={cn(inter.className, "h-screen")}>
         <ClientLayout>{children}</ClientLayout>
