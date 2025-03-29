@@ -14,7 +14,7 @@ export async function GET() {
         description,
         updated_at
       FROM \`third-current-410914.project_m.admin_db\`
-      ORDER BY commit_date DESC
+      ORDER BY commit_date DESC, updated_at DESC
     `
 
     // JWT 토큰 생성
@@ -117,8 +117,8 @@ export async function POST(request: Request) {
     // 데이터 삽입 쿼리
     const insertQuery = `
       INSERT INTO \`third-current-410914.project_m.admin_db\`
-      (commit_date, commit_title, description)
-      VALUES (@commit_date, @commit_title, @description)
+      (commit_date, commit_title, description, updated_at)
+      VALUES (@commit_date, @commit_title, @description, CURRENT_TIMESTAMP())
     `
 
     // JWT 토큰 생성

@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 interface PatchNote {
   commit_date: string
@@ -55,6 +56,15 @@ export default function PatchNotesPage() {
   // 날짜 목록 (중복 제거)
   const dates = Object.keys(groupedPatchNotes).sort((a, b) => b.localeCompare(a))
 
+  // 각 날짜별 패치노트를 작성 순서대로 정렬
+  Object.keys(groupedPatchNotes).forEach(date => {
+    groupedPatchNotes[date].sort((a, b) => {
+      const dateA = new Date(a.updated_at)
+      const dateB = new Date(b.updated_at)
+      return dateB.getTime() - dateA.getTime()
+    })
+  })
+
   if (loading) {
     return <div className="p-4">로딩 중...</div>
   }
@@ -104,8 +114,8 @@ export default function PatchNotesPage() {
                     {groupedPatchNotes[selectedDate].map((note, index) => (
                       <div key={index} className="border-b pb-4 last:border-b-0">
                         <h3 className="font-medium mb-2">{note.commit_title}</h3>
-                        <div className="text-sm text-muted-foreground prose prose-sm max-w-none">
-                          <ReactMarkdown>{note.description}</ReactMarkdown>
+                        <div className="text-sm text-muted-foreground prose prose-sm dark:prose-invert max-w-none prose-headings:mt-4 prose-headings:mb-2 prose-h1:text-xl prose-h2:text-lg prose-h3:text-base prose-p:my-2 prose-ul:my-2 prose-li:my-1 prose-ul:list-disc prose-ul:pl-4 prose-h1:font-bold prose-h2:font-bold prose-h3:font-bold">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>{note.description}</ReactMarkdown>
                         </div>
                       </div>
                     ))}
