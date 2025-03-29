@@ -4,7 +4,7 @@ import * as React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { usePathname } from "next/navigation"
-import { Menu, LogOut } from "lucide-react"
+import { Menu, LogOut, History } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -24,6 +24,11 @@ const menuItems = [
   {
     href: '/cart',
     label: '리스트 작성',
+  },
+  {
+    href: '/patch-notes',
+    label: '패치노트',
+    icon: History,
   },
 ]
 
