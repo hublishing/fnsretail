@@ -751,8 +751,16 @@ export default function DynamicTable() {
     // 워크시트를 워크북에 추가
     XLSX.utils.book_append_sheet(wb, ws, "검색결과");
 
+    // 현재 날짜와 시간을 YYYYMMDDHHmm 형식으로 변환
+    const now = new Date();
+    const dateStr = now.getFullYear().toString() +
+      String(now.getMonth() + 1).padStart(2, '0') +
+      String(now.getDate()).padStart(2, '0') +
+      String(now.getHours()).padStart(2, '0') +
+      String(now.getMinutes()).padStart(2, '0');
+
     // 파일 저장
-    XLSX.writeFile(wb, `검색결과_${new Date().toISOString().split('T')[0]}.xlsx`);
+    XLSX.writeFile(wb, `검색결과_${dateStr}.xlsx`);
   };
 
   return (
