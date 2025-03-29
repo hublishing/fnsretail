@@ -4,7 +4,7 @@ import * as React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { usePathname } from "next/navigation"
-import { Menu, LogOut, History } from "lucide-react"
+import { Menu, LogOut, History, LayoutDashboard, ShoppingCart, Search, FileText, PlusCircle, NotebookText } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -14,21 +14,29 @@ import { signOut, getSession } from "@/app/actions/auth"
 
 const menuItems = [
   {
-    href: '/dashboard',
-    label: '대시보드',
+    title: "대시보드",
+    href: "/dashboard",
+    icon: LayoutDashboard,
   },
   {
-    href: '/dynamic-table',
-    label: '상품 검색',
+    title: "상품검색",
+    href: "/dynamic-table",
+    icon: Search,
   },
   {
-    href: '/cart',
-    label: '리스트 작성',
+    title: "리스트작성",
+    href: "/cart",
+    icon: NotebookText,
   },
   {
-    href: '/patch-notes',
-    label: '패치노트',
+    title: "패치노트",
+    href: "/patch-notes",
     icon: History,
+  },
+  {
+    title: "패치정보",
+    href: "/patch-info",
+    icon: PlusCircle,
   },
 ]
 
@@ -91,7 +99,7 @@ export function Sidebar() {
                     )}
                   >
                     {item.icon && <item.icon className="mr-2 h-4 w-4" />}
-                    <span>{item.label}</span>
+                    <span>{item.title}</span>
                   </Link>
                 ))}
               </nav>
@@ -139,7 +147,7 @@ export function Sidebar() {
                   )}
                 >
                   {item.icon && <item.icon className="mr-2 h-4 w-4" />}
-                  {item.label}
+                  {item.title}
                 </Link>
               ))}
             </nav>
