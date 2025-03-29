@@ -6,6 +6,9 @@ import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { Button } from '@/components/ui/button'
+import { getSession } from '@/app/actions/auth'
+import { Trash2 } from 'lucide-react'
 
 interface PatchNote {
   commit_date: string
@@ -19,29 +22,61 @@ export default function PatchNotesPage() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
-    const fetchPatchNotes = async () => {
-      try {
-        const response = await fetch('/api/patch-notes')
-        if (!response.ok) {
-          throw new Error('패치노트를 불러오는데 실패했습니다.')
-        }
-        const data = await response.json()
-        setPatchNotes(data)
-        // 가장 최근 날짜 선택
-        if (data.length > 0) {
-          setSelectedDate(data[0].commit_date)
-        }
-      } catch (error) {
-        setError(error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.')
-      } finally {
-        setLoading(false)
-      }
+    const checkAuth = async () => {
+      const session = await getSession()
+      setIsAdmin(session?.uid === 'a8mwwycqhaZLIb9iOcshPbpAVrj2')
     }
+    checkAuth()
+  }, [])
 
+  const fetchPatchNotes = async () => {
+    try {
+      const response = await fetch('/api/patch-notes')
+      if (!response.ok) {
+        throw new Error('패치노트를 불러오는데 실패했습니다.')
+      }
+      const data = await response.json()
+      setPatchNotes(data)
+      // 가장 최근 날짜 선택
+      if (data.length > 0) {
+        setSelectedDate(data[0].commit_date)
+      }
+    } catch (error) {
+      setError(error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
     fetchPatchNotes()
   }, [])
+
+  const handleDelete = async (commit_date: string, commit_title: string) => {
+    if (!isAdmin) return
+
+    if (!confirm('이 패치노트를 삭제하시겠습니까?')) return
+
+    try {
+      const session = await getSession()
+      const response = await fetch(`/api/patch-notes?commit_date=${commit_date}&commit_title=${commit_title}&uid=${session?.uid}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || '패치노트 삭제에 실패했습니다.')
+      }
+
+      alert('패치노트가 삭제되었습니다.')
+      fetchPatchNotes() // 목록 새로고침
+    } catch (error) {
+      alert(error instanceof Error ? error.message : '패치노트 삭제에 실패했습니다.')
+    }
+  }
 
   // 날짜별로 패치노트 그룹화
   const groupedPatchNotes = patchNotes.reduce((acc, note) => {
@@ -113,9 +148,38 @@ export default function PatchNotesPage() {
                   <div className="space-y-4">
                     {groupedPatchNotes[selectedDate].map((note, index) => (
                       <div key={index} className="border-b pb-4 last:border-b-0">
-                        <h3 className="font-medium mb-2">{note.commit_title}</h3>
-                        <div className="text-sm text-muted-foreground prose prose-sm dark:prose-invert max-w-none prose-headings:mt-4 prose-headings:mb-2 prose-h1:text-xl prose-h2:text-lg prose-h3:text-base prose-p:my-2 prose-ul:my-2 prose-li:my-1 prose-ul:list-disc prose-ul:pl-4 prose-h1:font-bold prose-h2:font-bold prose-h3:font-bold">
-                          <ReactMarkdown remarkPlugins={[remarkGfm]}>{note.description}</ReactMarkdown>
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="font-medium">{note.commit_title}</h3>
+                          {isAdmin && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-muted-foreground"
+                              onClick={() => handleDelete(note.commit_date, note.commit_title)}
+                            >
+                              ×
+                            </Button>
+                          )}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          <ReactMarkdown 
+                            remarkPlugins={[remarkGfm]}
+                            components={{
+                              h1: ({node, ...props}) => <h1 className="text-xl font-bold mt-4 mb-2" {...props} />,
+                              h2: ({node, ...props}) => <h2 className="text-lg font-bold mt-4 mb-2" {...props} />,
+                              h3: ({node, ...props}) => <h3 className="text-base font-bold mt-4 mb-2" {...props} />,
+                              p: ({node, ...props}) => <p className="my-2" {...props} />,
+                              ul: ({node, ...props}) => <ul className="list-disc pl-4 my-2" {...props} />,
+                              ol: ({node, ...props}) => <ol className="list-decimal pl-4 my-2" {...props} />,
+                              li: ({node, ...props}) => <li className="my-1" {...props} />,
+                              blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-primary pl-4 italic my-2" {...props} />,
+                              code: ({node, ...props}: any) => props.inline ? 
+                                <code className="bg-muted px-1 py-0.5 rounded" {...props} /> :
+                                <code className="block bg-muted p-4 rounded-lg my-2" {...props} />
+                            }}
+                          >
+                            {note.description}
+                          </ReactMarkdown>
                         </div>
                       </div>
                     ))}
