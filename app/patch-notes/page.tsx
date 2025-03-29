@@ -23,11 +23,14 @@ export default function PatchNotesPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [newDate, setNewDate] = useState('')
 
   useEffect(() => {
     const checkAuth = async () => {
       const session = await getSession()
+      console.log('현재 세션:', session)
       setIsAdmin(session?.uid === 'a8mwwycqhaZLIb9iOcshPbpAVrj2')
+      console.log('관리자 여부:', session?.uid === 'a8mwwycqhaZLIb9iOcshPbpAVrj2')
     }
     checkAuth()
   }, [])
@@ -58,11 +61,21 @@ export default function PatchNotesPage() {
   const handleDelete = async (commit_date: string, commit_title: string) => {
     if (!isAdmin) return
 
+    if (!commit_date || !commit_title) {
+      alert('삭제할 패치노트 정보가 올바르지 않습니다.')
+      return
+    }
+
     if (!confirm('이 패치노트를 삭제하시겠습니까?')) return
 
     try {
       const session = await getSession()
-      const response = await fetch(`/api/patch-notes?commit_date=${commit_date}&commit_title=${commit_title}&uid=${session?.uid}`, {
+      const params = new URLSearchParams({
+        commit_date,
+        commit_title,
+        uid: session?.user_id || ''
+      })
+      const response = await fetch(`/api/patch-notes?${params.toString()}`, {
         method: 'DELETE',
       })
 
@@ -116,7 +129,6 @@ export default function PatchNotesPage() {
         <div className="col-span-3">
           <Card>
             <CardContent className="p-4">
-              <h2 className="text-lg font-semibold mb-4">날짜</h2>
               <div className="space-y-2">
                 {dates.map((date) => (
                   <button
@@ -142,9 +154,6 @@ export default function PatchNotesPage() {
             <CardContent className="p-4">
               {selectedDate ? (
                 <div>
-                  <h2 className="text-lg font-semibold mb-4">
-                    {format(new Date(selectedDate), 'yyyy년 MM월 dd일', { locale: ko })}
-                  </h2>
                   <div className="space-y-4">
                     {groupedPatchNotes[selectedDate].map((note, index) => (
                       <div key={index} className="border-b pb-4 last:border-b-0">

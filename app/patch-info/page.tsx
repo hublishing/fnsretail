@@ -26,7 +26,7 @@ export default function PatchInfoPage() {
   useEffect(() => {
     const checkAuth = async () => {
       const session = await getSession()
-      if (!session || session.uid !== 'a8mwwycqhaZLIb9iOcshPbpAVrj2') {
+      if (!session || session.user_id !== 'a8mwwycqhaZLIb9iOcshPbpAVrj2') {
         router.push('/')
         return
       }
@@ -40,12 +40,16 @@ export default function PatchInfoPage() {
     setError(null)
 
     try {
+      const session = await getSession()
       const response = await fetch('/api/patch-notes', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          uid: session?.user_id
+        }),
       })
 
       if (!response.ok) {

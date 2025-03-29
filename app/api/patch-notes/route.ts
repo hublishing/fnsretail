@@ -107,7 +107,14 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { commit_date, commit_title, description } = body
+    const { commit_date, commit_title, description, uid } = body
+
+    if (!uid || uid !== 'a8mwwycqhaZLIb9iOcshPbpAVrj2') {
+      return NextResponse.json(
+        { error: '권한이 없습니다.' },
+        { status: 403 }
+      )
+    }
 
     console.log('받은 데이터:', { commit_date, commit_title, description })
 
@@ -230,7 +237,11 @@ export async function DELETE(request: Request) {
     const commit_title = searchParams.get('commit_title')
     const uid = searchParams.get('uid')
 
+    console.log('삭제 요청 UID:', uid)
+    console.log('필요한 UID:', 'a8mwwycqhaZLIb9iOcshPbpAVrj2')
+
     if (!uid || uid !== 'a8mwwycqhaZLIb9iOcshPbpAVrj2') {
+      console.log('권한 없음:', { uid, required: 'a8mwwycqhaZLIb9iOcshPbpAVrj2' })
       return NextResponse.json(
         { error: '권한이 없습니다.' },
         { status: 403 }
