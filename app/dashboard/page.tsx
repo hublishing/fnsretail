@@ -60,6 +60,47 @@ export default function DashboardPage() {
   const [selectedCategory3, setSelectedCategory3] = useState<string>('');
   const [selectedChannel, setSelectedChannel] = useState<string>('');
 
+  // 초기화 핸들러
+  const handleReset = async () => {
+    setIsLoading(true);
+    try {
+      // 날짜 초기화 (어제 날짜로)
+      setStartDate(yesterdayStr);
+      setEndDate(yesterdayStr);
+      
+      // 필터 초기화
+      setSelectedCategory2('');
+      setSelectedCategory3('');
+      setSelectedChannel('');
+      
+      // 데이터 초기화
+      const params = new URLSearchParams();
+      params.append('startDate', yesterdayStr);
+      params.append('endDate', yesterdayStr);
+      
+      // 필터 데이터 로드
+      const filterRes = await fetch(`/api/dashboard/filters?${params.toString()}`);
+      const filterData = await filterRes.json();
+      setFilterData(filterData);
+      
+      // 대시보드 데이터 로드
+      const response = await fetch(`/api/dashboard/channel-sales?${params.toString()}`);
+      const data = await response.json();
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      setChannelData(data.channelData || []);
+      setCategoryData(data.categoryData || []);
+    } catch (err: any) {
+      console.error('초기화 오류:', err);
+      setError(err.message || '초기화 중 오류가 발생했습니다.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // 데이터 로드 함수
   const loadDashboardData = async () => {
     setIsLoading(true);
@@ -131,8 +172,12 @@ export default function DashboardPage() {
 
   // 초기 로드 및 날짜 변경 시 데이터 다시 로드
   useEffect(() => {
-    loadDashboardData();
-  }, [startDate, endDate]);
+    const loadData = async () => {
+      await loadFilterData();
+      await loadDashboardData();
+    };
+    loadData();
+  }, [startDate, endDate]); // 필터 상태는 제거
 
   // 필터 데이터 로드
   useEffect(() => {
@@ -141,45 +186,111 @@ export default function DashboardPage() {
 
   // 필터 선택 핸들러
   const handleCategory2Change = async (value: string) => {
-    setSelectedCategory2(value);
-    setSelectedCategory3('');
-    setSelectedChannel('');
-    
-    // 상태 업데이트가 완료될 때까지 잠시 대기
-    await new Promise(resolve => setTimeout(resolve, 0));
-    
-    // 필터 데이터와 판매 데이터를 병렬로 로드
-    await Promise.all([
-      loadFilterData(),
-      loadDashboardData()
-    ]);
+    setIsLoading(true);
+    try {
+      // 상태 업데이트
+      setSelectedCategory2(value);
+      setSelectedCategory3('');
+      setSelectedChannel('');
+      
+      // 필터 데이터 로드
+      const params = new URLSearchParams();
+      if (value) params.append('category2', value);
+      const res = await fetch(`/api/dashboard/filters?${params.toString()}`);
+      const filterData = await res.json();
+      setFilterData(filterData);
+      
+      // 대시보드 데이터 로드
+      const dashboardParams = new URLSearchParams();
+      dashboardParams.append('startDate', startDate);
+      dashboardParams.append('endDate', endDate);
+      if (value) dashboardParams.append('category2', value);
+      
+      const response = await fetch(`/api/dashboard/channel-sales?${dashboardParams.toString()}`);
+      const data = await response.json();
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      setChannelData(data.channelData || []);
+      setCategoryData(data.categoryData || []);
+    } catch (err: any) {
+      console.error('데이터 로드 오류:', err);
+      setError(err.message || '데이터를 불러오는 중 오류가 발생했습니다.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleCategory3Change = async (value: string) => {
-    setSelectedCategory3(value);
-    setSelectedChannel('');
-    
-    // 상태 업데이트가 완료될 때까지 잠시 대기
-    await new Promise(resolve => setTimeout(resolve, 0));
-    
-    // 필터 데이터와 판매 데이터를 병렬로 로드
-    await Promise.all([
-      loadFilterData(),
-      loadDashboardData()
-    ]);
+    setIsLoading(true);
+    try {
+      // 상태 업데이트
+      setSelectedCategory3(value);
+      setSelectedChannel('');
+      
+      // 필터 데이터 로드
+      const params = new URLSearchParams();
+      if (selectedCategory2) params.append('category2', selectedCategory2);
+      if (value) params.append('category3', value);
+      const res = await fetch(`/api/dashboard/filters?${params.toString()}`);
+      const filterData = await res.json();
+      setFilterData(filterData);
+      
+      // 대시보드 데이터 로드
+      const dashboardParams = new URLSearchParams();
+      dashboardParams.append('startDate', startDate);
+      dashboardParams.append('endDate', endDate);
+      if (selectedCategory2) dashboardParams.append('category2', selectedCategory2);
+      if (value) dashboardParams.append('category3', value);
+      
+      const response = await fetch(`/api/dashboard/channel-sales?${dashboardParams.toString()}`);
+      const data = await response.json();
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      setChannelData(data.channelData || []);
+      setCategoryData(data.categoryData || []);
+    } catch (err: any) {
+      console.error('데이터 로드 오류:', err);
+      setError(err.message || '데이터를 불러오는 중 오류가 발생했습니다.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleChannelChange = async (value: string) => {
-    setSelectedChannel(value);
-    
-    // 상태 업데이트가 완료될 때까지 잠시 대기
-    await new Promise(resolve => setTimeout(resolve, 0));
-    
-    // 필터 데이터와 판매 데이터를 병렬로 로드
-    await Promise.all([
-      loadFilterData(),
-      loadDashboardData()
-    ]);
+    setIsLoading(true);
+    try {
+      // 상태 업데이트
+      setSelectedChannel(value);
+      
+      // 대시보드 데이터 로드
+      const params = new URLSearchParams();
+      params.append('startDate', startDate);
+      params.append('endDate', endDate);
+      if (selectedCategory2) params.append('category2', selectedCategory2);
+      if (selectedCategory3) params.append('category3', selectedCategory3);
+      if (value) params.append('channel', value);
+      
+      const response = await fetch(`/api/dashboard/channel-sales?${params.toString()}`);
+      const data = await response.json();
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      setChannelData(data.channelData || []);
+      setCategoryData(data.categoryData || []);
+    } catch (err: any) {
+      console.error('데이터 로드 오류:', err);
+      setError(err.message || '데이터를 불러오는 중 오류가 발생했습니다.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // 날짜 필드 핸들러
@@ -313,6 +424,14 @@ export default function DashboardPage() {
                   ))}
                 </SelectContent>
               </Select>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleReset}
+                className="h-10 px-4 text-sm"
+              >
+                초기화
+              </Button>
             </div>
           </div>
         </div>
