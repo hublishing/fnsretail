@@ -23,31 +23,91 @@ export async function GET(request: NextRequest) {
   try {
     // URL에서 날짜 파라미터 가져오기
     const searchParams = request.nextUrl.searchParams;
-    const date = searchParams.get('date');
+    const startDate = searchParams.get('startDate');
+    const endDate = searchParams.get('endDate');
+    const category2 = searchParams.get('category2');
+    const category3 = searchParams.get('category3');
+    const channel = searchParams.get('channel');
     
     // 날짜가 없으면 어제 날짜 사용
-    const targetDate = date || new Date(new Date().setDate(new Date().getDate() - 1)).toISOString().split('T')[0];
+    const targetStartDate = startDate || new Date(new Date().setDate(new Date().getDate() - 1)).toISOString().split('T')[0];
+    const targetEndDate = endDate || targetStartDate;
     
-    logDebug('날짜 필터링', { targetDate });
+    logDebug('요청 파라미터', { 
+      startDate, 
+      endDate, 
+      category2, 
+      category3, 
+      channel,
+      targetStartDate,
+      targetEndDate
+    });
 
     // 채널별 판매 데이터를 가져오는 쿼리
     const query = `
+      WITH channel_sales AS (
+        SELECT 
+          channel_name AS channel,
+          SUM(qty) AS quantity,
+          SUM(final_calculated_amount) AS revenue
+        FROM 
+          \`third-current-410914.project_m.order_db\`
+        WHERE 
+          channel_name IS NOT NULL
+          AND CAST(order_date AS STRING) >= '${targetStartDate}'
+          AND CAST(order_date AS STRING) <= '${targetEndDate}'
+          ${category2 ? `AND channel_category_2 = '${category2}'` : ''}
+          ${category3 ? `AND channel_category_3 = '${category3}'` : ''}
+          ${channel ? `AND channel_name = '${channel}'` : ''}
+        GROUP BY 
+          channel_name
+      ),
+      category_sales AS (
+        SELECT 
+          p.category_3 AS category,
+          SUM(o.qty) AS quantity,
+          SUM(o.final_calculated_amount) AS revenue
+        FROM 
+          \`third-current-410914.project_m.order_db\` o
+        JOIN 
+          \`third-current-410914.project_m.product_db\` p
+        ON 
+          o.options_product_id = p.options_product_id
+        WHERE 
+          CAST(o.order_date AS STRING) >= '${targetStartDate}'
+          AND CAST(o.order_date AS STRING) <= '${targetEndDate}'
+          ${category2 ? `AND o.channel_category_2 = '${category2}'` : ''}
+          ${category3 ? `AND o.channel_category_3 = '${category3}'` : ''}
+          ${channel ? `AND o.channel_name = '${channel}'` : ''}
+        GROUP BY 
+          p.category_3
+      )
       SELECT 
-        channel_name AS channel,
-        SUM(qty) AS quantity,
-        SUM(final_calculated_amount) AS revenue
-      FROM 
-        \`third-current-410914.project_m.order_db\`
-      WHERE 
-        channel_name IS NOT NULL
-        AND CAST(order_date AS STRING) LIKE '${targetDate}%'
-      GROUP BY 
-        channel_name
+        'channel' as type,
+        channel as name,
+        quantity,
+        revenue
+      FROM channel_sales
+      UNION ALL
+      SELECT 
+        'category' as type,
+        category as name,
+        quantity,
+        revenue
+      FROM category_sales
       ORDER BY 
+        type,
         revenue DESC
     `;
 
-    logDebug('실행할 쿼리:', { query });
+    logDebug('실행할 쿼리:', { 
+      query,
+      filters: {
+        category2,
+        category3,
+        channel
+      }
+    });
 
     // Google Cloud API 엔드포인트
     const url = `https://bigquery.googleapis.com/bigquery/v2/projects/${process.env.GOOGLE_CLOUD_PROJECT_ID}/queries`;
@@ -155,24 +215,42 @@ export async function GET(request: NextRequest) {
 
     // 결과 변환
     const results = data.rows.map((row: any) => {
-      const channel = row.f[0].v;
-      const quantity = Number(row.f[1].v);
-      const revenue = Number(row.f[2].v);
+      const type = row.f[0].v;
+      const name = row.f[1].v;
+      const quantity = Number(row.f[2].v);
+      const revenue = Number(row.f[3].v);
       
       return {
-        channel,
+        type,
+        name,
         quantity,
         revenue,
       };
     });
 
+    // 채널별과 카테고리별 데이터 분리
+    const channelData = results.filter((item: { type: string; name: string; quantity: number; revenue: number }) => item.type === 'channel');
+    const categoryData = results.filter((item: { type: string; name: string; quantity: number; revenue: number }) => item.type === 'category');
+
     logDebug('데이터 변환 완료', { 
-      resultCount: results.length,
-      firstItem: results[0],
+      channelCount: channelData.length,
+      categoryCount: categoryData.length,
+      firstChannel: channelData[0],
+      firstCategory: categoryData[0],
+      channelData: channelData.slice(0, 3), // 처음 3개 채널 데이터
+      categoryData: categoryData.slice(0, 3), // 처음 3개 카테고리 데이터
+      appliedFilters: {
+        category2,
+        category3,
+        channel
+      }
     });
 
     // 결과 반환
-    return NextResponse.json({ data: results }, { status: 200 });
+    return NextResponse.json({ 
+      channelData,
+      categoryData 
+    }, { status: 200 });
   } catch (error: any) {
     logDebug('채널별 판매 데이터 조회 오류', { 
       message: error.message,
