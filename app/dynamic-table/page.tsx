@@ -947,22 +947,22 @@ export default function DynamicTable() {
                       key={column.key} 
                       className="text-center bg-white border-b whitespace-nowrap"
                       style={{ 
-                        width: column.key === 'actions' ? '3%' :
-                               column.key === 'img_desc1' ? '4%' :
-                               column.key === 'product_id' ? '4%' :
-                               column.key === 'name' ? '15%' :
-                               column.key === 'product_desc' ? '5%' :
-                               column.key === 'org_price' ? '4%' :
-                               column.key === 'shop_price' ? '4%' :
-                               column.key === 'category_3' ? '4%' :
-                               column.key === 'cost_ratio' ? '4%' :
-                               column.key === 'total_stock' ? '4%' :
-                               column.key === 'soldout_rate' ? '4%' :
-                               column.key === 'drop_yn' ? '4%' :
-                               column.key === 'supply_name' ? '4%' :
-                               column.key === 'exclusive2' ? '4%' :
-                               column.key === 'total_order_qty' ? '4%' :
-                               '4%'
+                        width: column.key === 'actions' ? '60px' :
+                               column.key === 'img_desc1' ? '80px' :
+                               column.key === 'product_id' ? '100px' :
+                               column.key === 'name' ? '300px' :
+                               column.key === 'product_desc' ? '100px' :
+                               column.key === 'org_price' ? '80px' :
+                               column.key === 'shop_price' ? '80px' :
+                               column.key === 'category_3' ? '80px' :
+                               column.key === 'cost_ratio' ? '80px' :
+                               column.key === 'total_stock' ? '80px' :
+                               column.key === 'soldout_rate' ? '80px' :
+                               column.key === 'drop_yn' ? '80px' :
+                               column.key === 'supply_name' ? '120px' :
+                               column.key === 'exclusive2' ? '80px' :
+                               column.key === 'total_order_qty' ? '80px' :
+                               '80px'
                       }}
                     >
                       {column.label}
@@ -995,22 +995,22 @@ export default function DynamicTable() {
                           key={column.key} 
                           className="text-center whitespace-nowrap"
                           style={{ 
-                            width: column.key === 'actions' ? '3%' :
-                                   column.key === 'img_desc1' ? '4%' :
-                                   column.key === 'product_id' ? '4%' :
-                                   column.key === 'name' ? '15%' :
-                                   column.key === 'product_desc' ? '5%' :
-                                   column.key === 'org_price' ? '4%' :
-                                   column.key === 'shop_price' ? '4%' :
-                                   column.key === 'category_3' ? '4%' :
-                                   column.key === 'cost_ratio' ? '4%' :
-                                   column.key === 'total_stock' ? '4%' :
-                                   column.key === 'soldout_rate' ? '4%' :
-                                   column.key === 'drop_yn' ? '4%' :
-                                   column.key === 'supply_name' ? '4%' :
-                                   column.key === 'exclusive2' ? '4%' :
-                                   column.key === 'total_order_qty' ? '4%' :
-                                   '4%'
+                            width: column.key === 'actions' ? '60px' :
+                                   column.key === 'img_desc1' ? '80px' :
+                                   column.key === 'product_id' ? '100px' :
+                                   column.key === 'name' ? '300px' :
+                                   column.key === 'product_desc' ? '100px' :
+                                   column.key === 'org_price' ? '80px' :
+                                   column.key === 'shop_price' ? '80px' :
+                                   column.key === 'category_3' ? '80px' :
+                                   column.key === 'cost_ratio' ? '80px' :
+                                   column.key === 'total_stock' ? '80px' :
+                                   column.key === 'soldout_rate' ? '80px' :
+                                   column.key === 'drop_yn' ? '80px' :
+                                   column.key === 'supply_name' ? '120px' :
+                                   column.key === 'exclusive2' ? '80px' :
+                                   column.key === 'total_order_qty' ? '80px' :
+                                   '80px'
                           }}
                         >
                           {column.key === 'actions' ? (
