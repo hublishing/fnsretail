@@ -936,8 +936,8 @@ export default function DynamicTable() {
         </Select>
       </div>
 
-      <div className="rounded-md border">
-        <div className="w-full">
+      <div className="rounded-md border overflow-hidden">
+        <div className="w-[1334px]">
           <div className="bg-white sticky top-0 z-10">
             <Table className="w-full">
               <TableHeader>
@@ -947,22 +947,22 @@ export default function DynamicTable() {
                       key={column.key} 
                       className="text-center bg-white border-b whitespace-nowrap"
                       style={{ 
-                        width: column.key === 'actions' ? '60px' :
-                               column.key === 'img_desc1' ? '80px' :
-                               column.key === 'product_id' ? '100px' :
-                               column.key === 'name' ? '300px' :
-                               column.key === 'product_desc' ? '100px' :
-                               column.key === 'org_price' ? '80px' :
-                               column.key === 'shop_price' ? '80px' :
-                               column.key === 'category_3' ? '80px' :
-                               column.key === 'cost_ratio' ? '80px' :
-                               column.key === 'total_stock' ? '80px' :
-                               column.key === 'soldout_rate' ? '80px' :
-                               column.key === 'drop_yn' ? '80px' :
-                               column.key === 'supply_name' ? '120px' :
-                               column.key === 'exclusive2' ? '80px' :
-                               column.key === 'total_order_qty' ? '80px' :
-                               '80px'
+                        width: column.key === 'actions' ? '44px' :
+                               column.key === 'img_desc1' ? '64px' :
+                               column.key === 'product_id' ? '84px' :
+                               column.key === 'name' ? '284px' :
+                               column.key === 'product_desc' ? '84px' :
+                               column.key === 'org_price' ? '64px' :
+                               column.key === 'shop_price' ? '64px' :
+                               column.key === 'category_3' ? '64px' :
+                               column.key === 'cost_ratio' ? '64px' :
+                               column.key === 'total_stock' ? '64px' :
+                               column.key === 'soldout_rate' ? '64px' :
+                               column.key === 'drop_yn' ? '64px' :
+                               column.key === 'supply_name' ? '104px' :
+                               column.key === 'exclusive2' ? '64px' :
+                               column.key === 'total_order_qty' ? '64px' :
+                               '64px'
                       }}
                     >
                       {column.label}
@@ -995,22 +995,22 @@ export default function DynamicTable() {
                           key={column.key} 
                           className="text-center whitespace-nowrap"
                           style={{ 
-                            width: column.key === 'actions' ? '60px' :
-                                   column.key === 'img_desc1' ? '80px' :
-                                   column.key === 'product_id' ? '100px' :
-                                   column.key === 'name' ? '300px' :
-                                   column.key === 'product_desc' ? '100px' :
-                                   column.key === 'org_price' ? '80px' :
-                                   column.key === 'shop_price' ? '80px' :
-                                   column.key === 'category_3' ? '80px' :
-                                   column.key === 'cost_ratio' ? '80px' :
-                                   column.key === 'total_stock' ? '80px' :
-                                   column.key === 'soldout_rate' ? '80px' :
-                                   column.key === 'drop_yn' ? '80px' :
-                                   column.key === 'supply_name' ? '120px' :
-                                   column.key === 'exclusive2' ? '80px' :
-                                   column.key === 'total_order_qty' ? '80px' :
-                                   '80px'
+                            width: column.key === 'actions' ? '44px' :
+                                   column.key === 'img_desc1' ? '64px' :
+                                   column.key === 'product_id' ? '84px' :
+                                   column.key === 'name' ? '284px' :
+                                   column.key === 'product_desc' ? '84px' :
+                                   column.key === 'org_price' ? '64px' :
+                                   column.key === 'shop_price' ? '64px' :
+                                   column.key === 'category_3' ? '64px' :
+                                   column.key === 'cost_ratio' ? '64px' :
+                                   column.key === 'total_stock' ? '64px' :
+                                   column.key === 'soldout_rate' ? '64px' :
+                                   column.key === 'drop_yn' ? '64px' :
+                                   column.key === 'supply_name' ? '104px' :
+                                   column.key === 'exclusive2' ? '64px' :
+                                   column.key === 'total_order_qty' ? '64px' :
+                                   '64px'
                           }}
                         >
                           {column.key === 'actions' ? (
