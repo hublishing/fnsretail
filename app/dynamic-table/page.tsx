@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Search } from "lucide-react"
+import { Search, FileDown, Plus, Settings } from "lucide-react"
 import {
   Select,
   SelectContent,
@@ -25,6 +25,8 @@ import { useAuth } from '@/lib/auth';
 import { getSession } from '@/app/actions/auth';
 import { useRouter } from "next/navigation"
 import { ProductDetailModal } from "@/components/product-detail-modal"
+import * as XLSX from 'xlsx';
+import { ExcelSettingsModal } from "@/components/excel-settings-modal"
 
 // 고정 필터 옵션
 const STATIC_FILTER_OPTIONS = {
@@ -78,6 +80,8 @@ interface Product {
   order_channels?: string[]
   order_categories?: string[]
   order_types?: string[]
+  discount_price?: number
+  discount?: number
 }
 
 interface Column {
@@ -164,6 +168,13 @@ export default function DynamicTable() {
   const [isFilterOptionsLoading, setIsFilterOptionsLoading] = useState(true);
   const [filterOptionsError, setFilterOptionsError] = useState<string | null>(null);
   const [isSessionLoaded, setIsSessionLoaded] = useState(false);
+  const [showExcelSettings, setShowExcelSettings] = useState(false);
+  const [excelSettings, setExcelSettings] = useState({
+    includeImage: true,
+    includeUrl: true,
+    includeCost: true,
+    includeDiscount: true
+  });
 
   // 동적 필터 옵션
   const [dynamicFilterOptions, setDynamicFilterOptions] = useState({
@@ -676,6 +687,74 @@ export default function DynamicTable() {
     setData(prevData => sortData(prevData, value));
   };
 
+  // 엑셀 다운로드 함수 수정
+  const handleExcelDownload = () => {
+    // 엑셀 데이터 준비
+    const excelData = data.map(item => {
+      const baseData: any = {
+        '이지어드민': item.product_id,
+        '상품명': item.name,
+        '판매가': item.shop_price?.toLocaleString() || '-',
+        '카테고리': item.category_3 || '-',
+        '원가율': item.cost_ratio ? `${item.cost_ratio}%` : '-',
+        '재고': item.total_stock?.toLocaleString() || '-',
+        '품절률': item.soldout_rate ? `${item.soldout_rate}%` : '-',
+        '드랍여부': item.drop_yn || '-',
+        '공급처명': item.supply_name || '-',
+        '단독여부': item.exclusive2 || '-',
+        '판매수량': item.total_order_qty?.toLocaleString() || '-'
+      };
+
+      if (excelSettings.includeImage) {
+        baseData['이미지'] = item.img_desc1 || '';
+      }
+      if (excelSettings.includeUrl) {
+        baseData['URL'] = item.product_desc || '-';
+      }
+      if (excelSettings.includeCost) {
+        baseData['원가'] = item.org_price?.toLocaleString() || '-';
+      }
+      if (excelSettings.includeDiscount) {
+        baseData['할인가'] = item.discount_price?.toLocaleString() || '-';
+        baseData['할인율'] = item.discount_price && item.shop_price 
+          ? `${Math.round(((item.shop_price - item.discount_price) / item.shop_price) * 100)}%`
+          : item.discount ? `${item.discount}%` : '-';
+      }
+
+      return baseData;
+    });
+
+    // 워크북 생성
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(excelData);
+
+    // 컬럼 너비 설정
+    const colWidths = [
+      { wch: 15 }, // 이지어드민
+      ...(excelSettings.includeImage ? [{ wch: 20 }] : []), // 이미지
+      { wch: 40 }, // 상품명
+      ...(excelSettings.includeCost ? [{ wch: 15 }] : []), // 원가
+      { wch: 15 }, // 판매가
+      ...(excelSettings.includeDiscount ? [{ wch: 15 }, { wch: 10 }] : []), // 할인가, 할인율
+      { wch: 15 }, // 카테고리
+      { wch: 10 }, // 원가율
+      { wch: 10 }, // 재고
+      { wch: 10 }, // 품절률
+      { wch: 10 }, // 드랍여부
+      { wch: 20 }, // 공급처명
+      { wch: 10 }, // 단독여부
+      { wch: 15 }, // 판매수량
+      ...(excelSettings.includeUrl ? [{ wch: 30 }] : []) // URL
+    ];
+    ws['!cols'] = colWidths;
+
+    // 워크시트를 워크북에 추가
+    XLSX.utils.book_append_sheet(wb, ws, "검색결과");
+
+    // 파일 저장
+    XLSX.writeFile(wb, `검색결과_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
   return (
     <div className="container mx-auto py-10">
       <h1 className="text-2xl font-bold mb-6">상품 검색</h1>
@@ -891,8 +970,8 @@ export default function DynamicTable() {
           </div>
         </div>
 
-        <div className="flex justify-end">
-          <div className="flex items-center gap-4">
+        <div className="flex justify-end items-center mb-4">
+          <div className="flex gap-2">
             <Button 
               onClick={resetState} 
               variant="outline"
@@ -919,7 +998,29 @@ export default function DynamicTable() {
         </div>
       )}
 
+      
       <div className="flex justify-end mb-2">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowExcelSettings(true)}
+            className="border-0 hover:bg-transparent hover:text-primary"
+          >
+            <Settings className="h-4 w-4 mr-2" />
+            양식 변경
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExcelDownload}
+            className="border-0 hover:bg-transparent hover:text-primary"
+          >
+            <FileDown className="h-4 w-4 mr-2" />
+            엑셀 다운로드
+          </Button>
+        </div>
+        
         <Select
           value={filters.sort_by_qty}
           onValueChange={handleSortChange}
@@ -1049,6 +1150,15 @@ export default function DynamicTable() {
         <ProductDetailModal
           productId={selectedProductId}
           onClose={() => setSelectedProductId(null)}
+        />
+      )}
+
+      {showExcelSettings && (
+        <ExcelSettingsModal
+          isOpen={showExcelSettings}
+          onClose={() => setShowExcelSettings(false)}
+          settings={excelSettings}
+          onSettingsChange={setExcelSettings}
         />
       )}
     </div>
