@@ -91,8 +91,8 @@ export default function PatchInfoPage() {
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">설명</label>
-              <Input
-                type="text"
+              <textarea
+                className="w-full min-h-[200px] p-2 border rounded-md"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 required

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
+import ReactMarkdown from 'react-markdown'
 
 interface PatchNote {
   commit_date: string
@@ -27,6 +28,10 @@ export default function PatchNotesPage() {
         }
         const data = await response.json()
         setPatchNotes(data)
+        // 가장 최근 날짜 선택
+        if (data.length > 0) {
+          setSelectedDate(data[0].commit_date)
+        }
       } catch (error) {
         setError(error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.')
       } finally {
@@ -99,7 +104,9 @@ export default function PatchNotesPage() {
                     {groupedPatchNotes[selectedDate].map((note, index) => (
                       <div key={index} className="border-b pb-4 last:border-b-0">
                         <h3 className="font-medium mb-2">{note.commit_title}</h3>
-                        <p className="text-sm text-muted-foreground">{note.description}</p>
+                        <div className="text-sm text-muted-foreground prose prose-sm max-w-none">
+                          <ReactMarkdown>{note.description}</ReactMarkdown>
+                        </div>
                       </div>
                     ))}
                   </div>
