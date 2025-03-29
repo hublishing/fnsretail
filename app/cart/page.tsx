@@ -24,6 +24,9 @@ import {
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { v4 as uuidv4 } from 'uuid';
+import { Search, FileDown, Settings } from "lucide-react"
+import * as XLSX from 'xlsx';
+import { ExcelSettingsModal } from "@/components/excel-settings-modal"
 
 interface Product {
   product_id: string;
@@ -121,6 +124,13 @@ export default function CartPage() {
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
   const [title, setTitle] = useState<string>('');
+  const [showExcelSettings, setShowExcelSettings] = useState(false);
+  const [excelSettings, setExcelSettings] = useState({
+    includeImage: true,
+    includeUrl: true,
+    includeCost: true,
+    includeDiscount: true
+  });
 
   // UUID 생성 함수
   const generateUniqueId = () => {
@@ -367,6 +377,74 @@ export default function CartPage() {
     }
   };
 
+  // 엑셀 다운로드 함수
+  const handleExcelDownload = () => {
+    // 엑셀 데이터 준비
+    const excelData = products.map(item => {
+      const baseData: any = {
+        '이지어드민': item.product_id,
+        '상품명': item.name,
+        '판매가': item.shop_price?.toLocaleString() || '-',
+        '카테고리': item.category_3 || '-',
+        '원가율': item.cost_ratio ? `${item.cost_ratio}%` : '-',
+        '재고': item.total_stock?.toLocaleString() || '-',
+        '품절률': item.soldout_rate ? `${item.soldout_rate}%` : '-',
+        '드랍여부': item.drop_yn || '-',
+        '공급처명': item.supply_name || '-',
+        '단독여부': item.exclusive2 || '-',
+        '판매수량': item.total_order_qty?.toLocaleString() || '-'
+      };
+
+      if (excelSettings.includeImage) {
+        baseData['이미지'] = item.img_desc1 || '';
+      }
+      if (excelSettings.includeUrl) {
+        baseData['URL'] = item.product_desc || '-';
+      }
+      if (excelSettings.includeCost) {
+        baseData['원가'] = item.org_price?.toLocaleString() || '-';
+      }
+      if (excelSettings.includeDiscount) {
+        baseData['할인가'] = item.discount_price?.toLocaleString() || '-';
+        baseData['할인율'] = item.discount_price && item.shop_price 
+          ? `${Math.round(((item.shop_price - item.discount_price) / item.shop_price) * 100)}%`
+          : item.discount ? `${item.discount}%` : '-';
+      }
+
+      return baseData;
+    });
+
+    // 워크북 생성
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(excelData);
+
+    // 컬럼 너비 설정
+    const colWidths = [
+      { wch: 15 }, // 이지어드민
+      ...(excelSettings.includeImage ? [{ wch: 20 }] : []), // 이미지
+      { wch: 40 }, // 상품명
+      ...(excelSettings.includeCost ? [{ wch: 15 }] : []), // 원가
+      { wch: 15 }, // 판매가
+      ...(excelSettings.includeDiscount ? [{ wch: 15 }, { wch: 10 }] : []), // 할인가, 할인율
+      { wch: 15 }, // 카테고리
+      { wch: 10 }, // 원가율
+      { wch: 10 }, // 재고
+      { wch: 10 }, // 품절률
+      { wch: 10 }, // 드랍여부
+      { wch: 20 }, // 공급처명
+      { wch: 10 }, // 단독여부
+      { wch: 15 }, // 판매수량
+      ...(excelSettings.includeUrl ? [{ wch: 30 }] : []) // URL
+    ];
+    ws['!cols'] = colWidths;
+
+    // 워크시트를 워크북에 추가
+    XLSX.utils.book_append_sheet(wb, ws, "상품리스트");
+
+    // 파일 저장
+    XLSX.writeFile(wb, `상품리스트_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
   return (
     <div className="container mx-auto py-8">
       <div className="flex justify-between items-center mb-6">
@@ -523,11 +601,31 @@ export default function CartPage() {
       <div className="mb-4">
         <div className="flex justify-between items-center">
           <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setShowDiscountModal(true)}>
-            할인 적용
-          </Button>
-            <Button className="bg-blue-500 text-white hover:bg-blue-600">
-              리스트저장
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowDiscountModal(true)}
+              className="border-0 hover:bg-transparent hover:text-primary"
+            >
+              할인 적용
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowExcelSettings(true)}
+              className="border-0 hover:bg-transparent hover:text-primary"
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              양식 변경
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExcelDownload}
+              className="border-0 hover:bg-transparent hover:text-primary"
+            >
+              <FileDown className="h-4 w-4 mr-2" />
+              엑셀 다운로드
             </Button>
           </div>
           <div className="flex gap-2">
@@ -695,6 +793,13 @@ export default function CartPage() {
         </div>
       </div>
 
+      {/* 리스트저장 버튼 */}
+      <div className="flex justify-end mt-4">
+        <Button className="bg-blue-500 text-white hover:bg-blue-600">
+          리스트저장
+        </Button>
+      </div>
+
       {selectedProductId && (
         <ProductDetailModal
           productId={selectedProductId}
@@ -737,6 +842,15 @@ export default function CartPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {showExcelSettings && (
+        <ExcelSettingsModal
+          isOpen={showExcelSettings}
+          onClose={() => setShowExcelSettings(false)}
+          settings={excelSettings}
+          onSettingsChange={setExcelSettings}
+        />
       )}
     </div>
   )
