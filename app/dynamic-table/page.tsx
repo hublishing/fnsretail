@@ -185,7 +185,7 @@ export default function DynamicTable() {
     { key: "product_id", label: "이지어드민" },
     { 
       key: "img_desc1", 
-      label: "상품이미지",
+      label: "이미지",
       format: (value: string) => value ? (
         <div className="flex justify-center">
           <img 
@@ -232,8 +232,8 @@ export default function DynamicTable() {
           }}
           className="text-left hover:text-blue-600 transition-colors w-full"
         >
-          <div className="font-medium">{value}</div>
-          <div className="text-sm text-gray-500 mt-1">
+          <div className="font-medium truncate">{value}</div>
+          <div className="text-sm text-gray-500 mt-1 truncate">
             {[
               product.brand,
               product.category_1,
@@ -787,49 +787,6 @@ export default function DynamicTable() {
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <div className="text-sm text-gray-500">주문기간:</div>
-            <Input
-              type="date"
-              value={filters.order_date_from || ''}
-              onChange={(e) => handleDateChange(e, 'order_date_from')}
-              className={`w-40 ${filters.order_date_from ? 'bg-blue-50 border-blue-200' : ''} h-10`}
-            />
-            <span>-</span>
-            <Input
-              type="date"
-              value={filters.order_date_to || ''}
-              onChange={(e) => handleDateChange(e, 'order_date_to')}
-              className={`w-40 ${filters.order_date_to ? 'bg-blue-50 border-blue-200' : ''} h-10`}
-            />
-            <div className="flex gap-1 ml-2">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => handleQuickDateSelect('week')}
-                className="px-2 h-10 text-xs"
-              >
-                일주일
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => handleQuickDateSelect('month')}
-                className="px-2 h-10 text-xs"
-              >
-                한달
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => handleQuickDateSelect('all')}
-                className="px-2 h-10 text-xs"
-              >
-                전체
-              </Button>
-            </div>
-          </div>
-
           <Select
             value={filters.code30}
             onValueChange={(value) => handleFilterChange('code30', value)}
@@ -889,6 +846,49 @@ export default function DynamicTable() {
               ))}
             </SelectContent>
           </Select>
+
+          <div className="flex items-center gap-2 ml-4">
+            <div className="text-sm text-gray-500">주문기간:</div>
+            <Input
+              type="date"
+              value={filters.order_date_from || ''}
+              onChange={(e) => handleDateChange(e, 'order_date_from')}
+              className={`w-40 ${filters.order_date_from ? 'bg-blue-50 border-blue-200' : ''} h-10`}
+            />
+            <span>-</span>
+            <Input
+              type="date"
+              value={filters.order_date_to || ''}
+              onChange={(e) => handleDateChange(e, 'order_date_to')}
+              className={`w-40 ${filters.order_date_to ? 'bg-blue-50 border-blue-200' : ''} h-10`}
+            />
+            <div className="flex gap-1 ml-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => handleQuickDateSelect('week')}
+                className="px-2 h-10 text-xs"
+              >
+                일주일
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => handleQuickDateSelect('month')}
+                className="px-2 h-10 text-xs"
+              >
+                한달
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => handleQuickDateSelect('all')}
+                className="px-2 h-10 text-xs"
+              >
+                전체
+              </Button>
+            </div>
+          </div>
         </div>
 
         <div className="flex justify-end">
@@ -936,61 +936,113 @@ export default function DynamicTable() {
         </Select>
       </div>
 
-      <div className="rounded-md border overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              {columns.map((column) => (
-                <TableHead key={column.key} className="text-center">{column.label}</TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="text-center">
-                  데이터를 불러오는 중...
-                </TableCell>
-              </TableRow>
-            ) : data.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="text-center">
-                  검색어를 입력하거나 필터를 선택하여 검색해주세요.
-                </TableCell>
-              </TableRow>
-            ) : (
-              data.map((item) => (
-                <TableRow key={item.product_id}>
+      <div className="rounded-md border">
+        <div className="w-full">
+          <div className="bg-white sticky top-0 z-10">
+            <Table className="w-full">
+              <TableHeader>
+                <TableRow>
                   {columns.map((column) => (
-                    <TableCell key={column.key} className="text-center">
-                      {column.key === 'actions' ? (
-                        cartItems.has(item.product_id) ? (
-                          <button
-                            onClick={() => handleRemoveFromCart(item)}
-                            className="w-8 h-8 flex items-center justify-center bg-white text-red-500 border border-red-500 hover:bg-red-50 transition-colors rounded-[5px] mx-auto"
-                          >
-                            -
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleAddToCart(item)}
-                            className="w-8 h-8 flex items-center justify-center bg-white text-blue-500 border border-blue-500 hover:bg-blue-50 transition-colors rounded-[5px] mx-auto"
-                          >
-                            +
-                          </button>
-                        )
-                      ) : column.format ? (
-                        column.format(item[column.key as keyof Product], item)
-                      ) : (
-                        item[column.key as keyof Product]
-                      )}
-                    </TableCell>
+                    <TableHead 
+                      key={column.key} 
+                      className="text-center bg-white border-b whitespace-nowrap"
+                      style={{ 
+                        width: column.key === 'actions' ? '3%' :
+                               column.key === 'img_desc1' ? '4%' :
+                               column.key === 'product_id' ? '4%' :
+                               column.key === 'name' ? '15%' :
+                               column.key === 'product_desc' ? '5%' :
+                               column.key === 'org_price' ? '4%' :
+                               column.key === 'shop_price' ? '4%' :
+                               column.key === 'category_3' ? '4%' :
+                               column.key === 'cost_ratio' ? '4%' :
+                               column.key === 'total_stock' ? '4%' :
+                               column.key === 'soldout_rate' ? '4%' :
+                               column.key === 'drop_yn' ? '4%' :
+                               column.key === 'supply_name' ? '4%' :
+                               column.key === 'exclusive2' ? '4%' :
+                               column.key === 'total_order_qty' ? '4%' :
+                               '4%'
+                      }}
+                    >
+                      {column.label}
+                    </TableHead>
                   ))}
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              </TableHeader>
+            </Table>
+          </div>
+          <div className="overflow-y-auto max-h-[calc(100vh-400px)]">
+            <Table className="w-full">
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={columns.length} className="text-center">
+                      데이터를 불러오는 중...
+                    </TableCell>
+                  </TableRow>
+                ) : data.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={columns.length} className="text-center">
+                      검색어를 입력하거나 필터를 선택하여 검색해주세요.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  data.map((item) => (
+                    <TableRow key={item.product_id}>
+                      {columns.map((column) => (
+                        <TableCell 
+                          key={column.key} 
+                          className="text-center whitespace-nowrap"
+                          style={{ 
+                            width: column.key === 'actions' ? '3%' :
+                                   column.key === 'img_desc1' ? '4%' :
+                                   column.key === 'product_id' ? '4%' :
+                                   column.key === 'name' ? '15%' :
+                                   column.key === 'product_desc' ? '5%' :
+                                   column.key === 'org_price' ? '4%' :
+                                   column.key === 'shop_price' ? '4%' :
+                                   column.key === 'category_3' ? '4%' :
+                                   column.key === 'cost_ratio' ? '4%' :
+                                   column.key === 'total_stock' ? '4%' :
+                                   column.key === 'soldout_rate' ? '4%' :
+                                   column.key === 'drop_yn' ? '4%' :
+                                   column.key === 'supply_name' ? '4%' :
+                                   column.key === 'exclusive2' ? '4%' :
+                                   column.key === 'total_order_qty' ? '4%' :
+                                   '4%'
+                          }}
+                        >
+                          {column.key === 'actions' ? (
+                            cartItems.has(item.product_id) ? (
+                              <button
+                                onClick={() => handleRemoveFromCart(item)}
+                                className="w-6 h-6 flex items-center justify-center bg-red-50 text-red-500 hover:bg-red-100 transition-colors rounded-full mx-auto text-sm leading-none"
+                              >
+                                -
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleAddToCart(item)}
+                                className="w-6 h-6 flex items-center justify-center bg-gray-50 text-gray-500 hover:bg-gray-100 transition-colors rounded-full mx-auto text-sm leading-none"
+                              >
+                                +
+                              </button>
+                            )
+                          ) : column.format ? (
+                            column.format(item[column.key as keyof Product], item)
+                          ) : (
+                            item[column.key as keyof Product]
+                          )}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
       </div>
 
       {selectedProductId && (
