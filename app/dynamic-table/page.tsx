@@ -708,106 +708,128 @@ export default function DynamicTable() {
               }}
             />
           </div>
-          <div className="flex items-center gap-4">
-            <Button onClick={handleSearch} disabled={loading} className="h-10">
-              {loading ? '검색 중...' : '검색'}
-            </Button>
-            <Button 
-              onClick={resetState} 
-              variant="outline"
-              className="border-[hsl(var(--border))] text-[hsl(var(--foreground))] hover:bg-gray-100 h-10"
-            >
-              초기화
-            </Button>
+          <Select
+            value={filters.category_3}
+            onValueChange={(value) => handleFilterChange('category_3', value)}
+          >
+            <SelectTrigger className={`w-[140px] ${filters.category_3 !== 'all' ? 'bg-blue-50 border-blue-200' : ''} h-10`}>
+              <SelectValue placeholder="카테고리" />
+            </SelectTrigger>
+            <SelectContent className="min-w-[140px]">
+              <SelectItem value="all">카테고리</SelectItem>
+              {STATIC_FILTER_OPTIONS.category_3.map(({ value, label }) => (
+                <SelectItem key={value} value={value}>{label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={filters.extra_column2}
+            onValueChange={(value) => handleFilterChange('extra_column2', value)}
+          >
+            <SelectTrigger className={`w-[140px] ${filters.extra_column2 !== 'all' ? 'bg-blue-50 border-blue-200' : ''} h-10`}>
+              <SelectValue placeholder="출시시즌" />
+            </SelectTrigger>
+            <SelectContent className="min-w-[140px]">
+              <SelectItem value="all">시즌</SelectItem>
+              {Array.from(dynamicFilterOptions.extra_column2).map((option) => (
+                <SelectItem key={option} value={option}>{option}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={filters.drop_yn}
+            onValueChange={(value) => handleFilterChange('drop_yn', value)}
+          >
+            <SelectTrigger className={`w-[140px] ${filters.drop_yn !== 'all' ? 'bg-blue-50 border-blue-200' : ''} h-10`}>
+              <SelectValue placeholder="드랍여부" />
+            </SelectTrigger>
+            <SelectContent className="min-w-[140px]">
+              <SelectItem value="all">드랍상태</SelectItem>
+              {STATIC_FILTER_OPTIONS.drop_yn.map(({ value, label }) => (
+                <SelectItem key={value} value={value}>{label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={filters.supply_name}
+            onValueChange={(value) => handleFilterChange('supply_name', value)}
+          >
+            <SelectTrigger className={`w-[140px] ${filters.supply_name !== 'all' ? 'bg-blue-50 border-blue-200' : ''} h-10`}>
+              <SelectValue placeholder="공급처명" />
+            </SelectTrigger>
+            <SelectContent className="min-w-[140px]">
+              <SelectItem value="all">공급처</SelectItem>
+              {Array.from(dynamicFilterOptions.supply_name).map((option) => (
+                <SelectItem key={option} value={option}>{option}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={filters.exclusive2}
+            onValueChange={(value) => handleFilterChange('exclusive2', value)}
+          >
+            <SelectTrigger className={`w-[140px] ${filters.exclusive2 !== 'all' ? 'bg-blue-50 border-blue-200' : ''} h-10`}>
+              <SelectValue placeholder="단독여부" />
+            </SelectTrigger>
+            <SelectContent className="min-w-[140px]">
+              <SelectItem value="all">단독상태</SelectItem>
+              {Array.from(dynamicFilterOptions.exclusive2).map((option) => (
+                <SelectItem key={option} value={option}>
+                  {option === 'Y' ? '단독' : option === 'N' ? '단독아님' : option}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <div className="text-sm text-gray-500">주문기간:</div>
+            <Input
+              type="date"
+              value={filters.order_date_from || ''}
+              onChange={(e) => handleDateChange(e, 'order_date_from')}
+              className={`w-40 ${filters.order_date_from ? 'bg-blue-50 border-blue-200' : ''} h-10`}
+            />
+            <span>-</span>
+            <Input
+              type="date"
+              value={filters.order_date_to || ''}
+              onChange={(e) => handleDateChange(e, 'order_date_to')}
+              className={`w-40 ${filters.order_date_to ? 'bg-blue-50 border-blue-200' : ''} h-10`}
+            />
+            <div className="flex gap-1 ml-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => handleQuickDateSelect('week')}
+                className="px-2 h-10 text-xs"
+              >
+                일주일
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => handleQuickDateSelect('month')}
+                className="px-2 h-10 text-xs"
+              >
+                한달
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => handleQuickDateSelect('all')}
+                className="px-2 h-10 text-xs"
+              >
+                전체
+              </Button>
+            </div>
           </div>
-        </div>
 
-        <div className="flex items-center gap-4">
-          {isFilterOptionsLoading ? (
-            <div className="text-sm text-gray-500">필터 옵션을 불러오는 중...</div>
-          ) : (
-            <>
-              <Select
-                value={filters.category_3}
-                onValueChange={(value) => handleFilterChange('category_3', value)}
-              >
-                <SelectTrigger className={`w-[140px] ${filters.category_3 !== 'all' ? 'bg-blue-50 border-blue-200' : ''} h-10`}>
-                  <SelectValue placeholder="카테고리" />
-                </SelectTrigger>
-                <SelectContent className="min-w-[140px]">
-                  <SelectItem value="all">카테고리</SelectItem>
-                  {STATIC_FILTER_OPTIONS.category_3.map(({ value, label }) => (
-                    <SelectItem key={value} value={value}>{label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select
-                value={filters.extra_column2}
-                onValueChange={(value) => handleFilterChange('extra_column2', value)}
-              >
-                <SelectTrigger className={`w-[140px] ${filters.extra_column2 !== 'all' ? 'bg-blue-50 border-blue-200' : ''} h-10`}>
-                  <SelectValue placeholder="출시시즌" />
-                </SelectTrigger>
-                <SelectContent className="min-w-[140px]">
-                  <SelectItem value="all">시즌</SelectItem>
-                  {Array.from(dynamicFilterOptions.extra_column2).map((option) => (
-                    <SelectItem key={option} value={option}>{option}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select
-                value={filters.drop_yn}
-                onValueChange={(value) => handleFilterChange('drop_yn', value)}
-              >
-                <SelectTrigger className={`w-[140px] ${filters.drop_yn !== 'all' ? 'bg-blue-50 border-blue-200' : ''} h-10`}>
-                  <SelectValue placeholder="드랍여부" />
-                </SelectTrigger>
-                <SelectContent className="min-w-[140px]">
-                  <SelectItem value="all">드랍상태</SelectItem>
-                  {STATIC_FILTER_OPTIONS.drop_yn.map(({ value, label }) => (
-                    <SelectItem key={value} value={value}>{label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select
-                value={filters.supply_name}
-                onValueChange={(value) => handleFilterChange('supply_name', value)}
-              >
-                <SelectTrigger className={`w-[140px] ${filters.supply_name !== 'all' ? 'bg-blue-50 border-blue-200' : ''} h-10`}>
-                  <SelectValue placeholder="공급처명" />
-                </SelectTrigger>
-                <SelectContent className="min-w-[140px]">
-                  <SelectItem value="all">공급처</SelectItem>
-                  {Array.from(dynamicFilterOptions.supply_name).map((option) => (
-                    <SelectItem key={option} value={option}>{option}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select
-                value={filters.exclusive2}
-                onValueChange={(value) => handleFilterChange('exclusive2', value)}
-              >
-                <SelectTrigger className={`w-[140px] ${filters.exclusive2 !== 'all' ? 'bg-blue-50 border-blue-200' : ''} h-10`}>
-                  <SelectValue placeholder="단독여부" />
-                </SelectTrigger>
-                <SelectContent className="min-w-[140px]">
-                  <SelectItem value="all">단독상태</SelectItem>
-                  {Array.from(dynamicFilterOptions.exclusive2).map((option) => (
-                    <SelectItem key={option} value={option}>
-                      {option === 'Y' ? '단독' : option === 'N' ? '단독아님' : option}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </>
-          )}
-        </div>
-
-        <div className="flex items-center gap-4">
           <Select
             value={filters.code30}
             onValueChange={(value) => handleFilterChange('code30', value)}
@@ -869,48 +891,18 @@ export default function DynamicTable() {
           </Select>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <div className="text-sm text-gray-500">주문기간:</div>
-            <Input
-              type="date"
-              value={filters.order_date_from || ''}
-              onChange={(e) => handleDateChange(e, 'order_date_from')}
-              className={`w-40 ${filters.order_date_from ? 'bg-blue-50 border-blue-200' : ''} h-10`}
-            />
-            <span>-</span>
-            <Input
-              type="date"
-              value={filters.order_date_to || ''}
-              onChange={(e) => handleDateChange(e, 'order_date_to')}
-              className={`w-40 ${filters.order_date_to ? 'bg-blue-50 border-blue-200' : ''} h-10`}
-            />
-            <div className="flex gap-1 ml-2">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => handleQuickDateSelect('week')}
-                className="px-2 h-10 text-xs"
-              >
-                일주일
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => handleQuickDateSelect('month')}
-                className="px-2 h-10 text-xs"
-              >
-                한달
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => handleQuickDateSelect('all')}
-                className="px-2 h-10 text-xs"
-              >
-                전체
-              </Button>
-            </div>
+        <div className="flex justify-end">
+          <div className="flex items-center gap-4">
+            <Button 
+              onClick={resetState} 
+              variant="outline"
+              className="border-[hsl(var(--border))] text-[hsl(var(--foreground))] hover:bg-gray-100 h-10"
+            >
+              초기화
+            </Button>
+            <Button onClick={handleSearch} disabled={loading} className="h-10">
+              {loading ? '검색 중...' : '검색'}
+            </Button>
           </div>
         </div>
       </div>

@@ -136,44 +136,52 @@ export default function CartPage() {
 
   // 사용자 세션 로드
   useEffect(() => {
+    let isMounted = true;
+
     const loadSession = async () => {
       try {
         const session = await getSession();
+        if (!isMounted) return;
+        
+        if (!session) {
+          setLoading(false);
+          return;
+        }
+        
         setUser(session);
-        // 새로운 UUID 생성
         setListUuid(generateUniqueId());
         
-        if (session) {
-          try {
-            // 장바구니 데이터 불러오기 로직...
-            const docRef = doc(db, 'userCarts', session.uid);
-            const docSnap = await getDoc(docRef);
-            
-            if (docSnap.exists()) {
-              const data = docSnap.data();
-              if (data.products && Array.isArray(data.products)) {
-                setProducts(data.products);
-                // 기본적으로 판매 많은 순으로 정렬
-                const sortedItems = [...data.products].sort((a, b) => (b.total_order_qty || 0) - (a.total_order_qty || 0));
-                setSortedProducts(sortedItems);
-              }
-            }
-          } catch (error) {
-            console.error('장바구니 데이터 불러오기 오류:', error);
+        const docRef = doc(db, 'userCarts', session.uid);
+        const docSnap = await getDoc(docRef);
+        
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data.products && Array.isArray(data.products)) {
+            const sortedItems = [...data.products].sort((a, b) => (b.total_order_qty || 0) - (a.total_order_qty || 0));
+            setProducts(data.products);
+            setSortedProducts(sortedItems);
           }
         }
       } catch (error) {
-        console.error('세션 로드 오류:', error);
+        console.error('세션 또는 장바구니 데이터 로드 오류:', error);
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
     
     loadSession();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // 채널 정보 로드
   useEffect(() => {
+    let isMounted = true;
+
     const loadChannels = async () => {
       try {
         const response = await fetch('/api/channels');
@@ -181,8 +189,8 @@ export default function CartPage() {
           throw new Error('채널 정보를 가져오는데 실패했습니다.');
         }
         const data = await response.json();
-        if (data.channels) {
-          // 중복 제거: channel_name이 같은 경우 use_yn이 '운영중'인 것만 선택
+        if (data.channels && isMounted) {
+          // 채널 정보를 한 번만 처리
           const uniqueChannels = data.channels.reduce((acc: ChannelInfo[], curr: ChannelInfo) => {
             const existingChannel = acc.find(c => c.channel_name === curr.channel_name);
             if (!existingChannel || (curr.use_yn === '운영중' && existingChannel.use_yn !== '운영중')) {
@@ -198,25 +206,33 @@ export default function CartPage() {
           setChannels(uniqueChannels);
         }
       } catch (error) {
-        console.error('채널 정보 로딩 실패:', error);
+        console.error('채널 정보 로드 오류:', error);
       }
     };
-
+    
     loadChannels();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  // 채널 검색어 변경 시 필터링
+  // 채널 검색어 변경 시 필터링 - 디바운스 적용
   useEffect(() => {
-    if (channelSearchTerm.trim()) {
-      const filtered = channels.filter(channel => 
-        channel.channel_name.toLowerCase().includes(channelSearchTerm.toLowerCase())
-      );
-      setFilteredChannels(filtered);
-      setShowChannelSuggestions(true);
-    } else {
-      setFilteredChannels([]);
-      setShowChannelSuggestions(false);
-    }
+    const timer = setTimeout(() => {
+      if (channelSearchTerm.trim()) {
+        const filtered = channels.filter(channel => 
+          channel.channel_name.toLowerCase().includes(channelSearchTerm.toLowerCase())
+        );
+        setFilteredChannels(filtered);
+        setShowChannelSuggestions(true);
+      } else {
+        setFilteredChannels([]);
+        setShowChannelSuggestions(false);
+      }
+    }, 300); // 300ms 디바운스
+
+    return () => clearTimeout(timer);
   }, [channelSearchTerm, channels]);
 
   // 채널 검색 입력 핸들러
@@ -278,20 +294,25 @@ export default function CartPage() {
     }
   }
 
-  // 정렬 상태 변경 시 상품 정렬
+  // 정렬 상태 변경 시 상품 정렬 - 메모이제이션 적용
   useEffect(() => {
     if (!products.length) return;
     
-    let sortedItems = [...products];
-    if (sortOption === 'qty_desc') {
-      sortedItems.sort((a, b) => (b.total_order_qty || 0) - (a.total_order_qty || 0));
-    } else if (sortOption === 'qty_asc') {
-      sortedItems.sort((a, b) => (a.total_order_qty || 0) - (b.total_order_qty || 0));
-    } else if (sortOption === 'stock_desc') {
-      sortedItems.sort((a, b) => (b.total_stock || 0) - (a.total_stock || 0));
-    } else if (sortOption === 'stock_asc') {
-      sortedItems.sort((a, b) => (a.total_stock || 0) - (b.total_stock || 0));
-    }
+    const sortedItems = [...products].sort((a, b) => {
+      switch (sortOption) {
+        case 'qty_desc':
+          return (b.total_order_qty || 0) - (a.total_order_qty || 0);
+        case 'qty_asc':
+          return (a.total_order_qty || 0) - (b.total_order_qty || 0);
+        case 'stock_desc':
+          return (b.total_stock || 0) - (a.total_stock || 0);
+        case 'stock_asc':
+          return (a.total_stock || 0) - (b.total_stock || 0);
+        default:
+          return 0;
+      }
+    });
+    
     setSortedProducts(sortedItems);
   }, [products, sortOption]);
 
