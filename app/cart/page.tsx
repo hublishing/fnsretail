@@ -141,6 +141,22 @@ function SortableTableRow({ product, ...props }: { product: Product } & React.HT
   );
 }
 
+// 체크박스 셀 컴포넌트
+function CheckboxCell({ product, selectedProducts, onSelect }: { 
+  product: Product; 
+  selectedProducts: string[];
+  onSelect: (checked: boolean) => void;
+}) {
+  return (
+    <TableCell className="text-center w-[50px]">
+      <Checkbox 
+        checked={selectedProducts.includes(product.product_id)}
+        onCheckedChange={onSelect}
+      />
+    </TableCell>
+  );
+}
+
 export default function CartPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [user, setUser] = useState<any>(null);
@@ -820,45 +836,25 @@ export default function CartPage() {
                         product={product}
                         className={selectedProducts.includes(product.product_id) ? 'bg-muted' : ''}
                       >
-                        <TableCell className="text-center w-[50px]">
-                          <Checkbox 
-                            checked={selectedProducts.includes(product.product_id)}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setSelectedProducts([...selectedProducts, product.product_id]);
-                              } else {
-                                setSelectedProducts(selectedProducts.filter(id => id !== product.product_id));
-                              }
-                            }}
-                          />
-                        </TableCell>
+                        <CheckboxCell
+                          product={product}
+                          selectedProducts={selectedProducts}
+                          onSelect={(checked) => {
+                            if (checked) {
+                              setSelectedProducts([...selectedProducts, product.product_id]);
+                            } else {
+                              setSelectedProducts(selectedProducts.filter(id => id !== product.product_id));
+                            }
+                          }}
+                        />
                         <TableCell className="text-center w-[80px]">
                           <div className="flex justify-center">
-                            {product.img_desc1 ? (
-                              <img 
-                                src={product.img_desc1} 
-                                alt="상품 이미지" 
-                                className="w-12 h-12 object-cover rounded-md"
-                                style={{ borderRadius: '5px' }}
-                                onError={(e) => {
-                                  const target = e.target as HTMLImageElement;
-                                  target.src = '/no-image.png';
-                                  target.alt = '이미지 없음';
-                                  target.style.objectFit = 'contain';
-                                  target.style.backgroundColor = 'transparent';
-                                  target.parentElement?.classList.add('flex', 'justify-center');
-                                }}
-                              />
-                            ) : (
-                              <div className="w-12 h-12 flex items-center justify-center">
-                                <img 
-                                  src="/no-image.png" 
-                                  alt="이미지 없음" 
-                                  className="w-12 h-12 object-contain rounded-md"
-                                  style={{ borderRadius: '5px' }}
-                                />
-                              </div>
-                            )}
+                            <img
+                              src={product.img_desc1}
+                              alt={product.name}
+                              className="w-16 h-16 object-cover rounded cursor-pointer"
+                              onClick={() => setSelectedProductId(product.product_id)}
+                            />
                           </div>
                         </TableCell>
                         <TableCell className="text-center w-[200px]">
