@@ -134,8 +134,12 @@ function SortableTableRow({ product, children, ...props }: {
   };
 
   // 드래그 속성을 자식 컴포넌트에 전달
-  const childrenWithProps = React.Children.map(children, child => {
+  const childrenWithProps = React.Children.map(children, (child, index) => {
     if (React.isValidElement(child)) {
+      // 상품명 셀(index 4)에는 드래그 속성을 전달하지 않음
+      if (index === 4) {
+        return child;
+      }
       return React.cloneElement(child, { ...attributes, ...listeners });
     }
     return child;
@@ -217,6 +221,7 @@ export default function CartPage() {
     includeCost: true,
     includeDiscount: true
   });
+  const [isDragging, setIsDragging] = useState(false);
 
   // UUID 생성 함수
   const generateUniqueId = () => {
@@ -367,6 +372,7 @@ export default function CartPage() {
   // 드래그 앤 드롭 핸들러
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
+    setIsDragging(false);
     
     if (over && active.id !== over.id) {
       const oldIndex = products.findIndex((item) => item.product_id === active.id);
@@ -390,6 +396,11 @@ export default function CartPage() {
         setProducts(products);
       }
     }
+  };
+
+  // 드래그 시작 핸들러
+  const handleDragStart = () => {
+    setIsDragging(true);
   };
 
   // 드래그 앤 드롭 센서 설정
@@ -610,6 +621,34 @@ export default function CartPage() {
     XLSX.writeFile(wb, `상품리스트_${dateStr}.xlsx`);
   };
 
+  const handleRemoveSelectedProducts = async () => {
+    if (selectedProducts.length === 0) {
+      alert('삭제할 상품을 선택해주세요.');
+      return;
+    }
+
+    if (!confirm(`선택된 ${selectedProducts.length}개의 상품을 삭제하시겠습니까?`)) {
+      return;
+    }
+
+    try {
+      const newProducts = products.filter(p => !selectedProducts.includes(p.product_id));
+      setProducts(newProducts);
+      setSelectedProducts([]);
+      
+      if (user) {
+        const docRef = doc(db, 'userCarts', user.uid);
+        await setDoc(docRef, {
+          products: newProducts,
+          updatedAt: new Date().toISOString()
+        });
+      }
+    } catch (error) {
+      console.error('선택된 상품 삭제 중 오류 발생:', error);
+      alert('상품 삭제 중 오류가 발생했습니다.');
+    }
+  };
+
   return (
     <div className="container mx-auto py-8">
       <div className="flex justify-between items-center mb-6">
@@ -769,6 +808,14 @@ export default function CartPage() {
             <Button
               variant="outline"
               size="sm"
+              onClick={handleRemoveSelectedProducts}
+              className="border-0 hover:bg-transparent hover:text-primary"
+            >
+              선택 삭제
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => setShowDiscountModal(true)}
               className="border-0 hover:bg-transparent hover:text-primary"
             >
@@ -815,6 +862,7 @@ export default function CartPage() {
             sensors={sensors}
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
+            onDragStart={handleDragStart}
           >
             <SortableContext
               items={products.map(p => p.product_id)}
@@ -822,7 +870,7 @@ export default function CartPage() {
             >
               <div className="relative">
                 <Table>
-                  <TableHeader className="bg-background">
+                  <TableHeader className="bg-muted">
                     <TableRow className="hover:bg-muted">
                       <TableHead className="text-center w-[50px]">번호</TableHead>
                       <TableHead className="w-[50px] text-center">
@@ -851,7 +899,6 @@ export default function CartPage() {
                       <TableHead className="text-center w-[80px]">단독여부</TableHead>
                       <TableHead className="text-center w-[100px]">판매수량</TableHead>
                       <TableHead className="text-center w-[80px]">URL</TableHead>
-                      <TableHead className="text-center w-[80px]">삭제</TableHead>
                     </TableRow>
                   </TableHeader>
                 </Table>
@@ -910,9 +957,18 @@ export default function CartPage() {
                               )}
                             </div>
                           </DraggableCell>
-                          <DraggableCell className="text-left w-[200px]">
+                          <TableCell className="text-left w-[200px]">
                             <div className="flex flex-col">
-                              <div className="truncate" title={product.name}>
+                              <div 
+                                className="truncate cursor-pointer hover:underline" 
+                                title={product.name}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setSelectedProductId(product.product_id);
+                                }}
+                                style={{ pointerEvents: 'all', touchAction: 'none' }}
+                              >
                                 {product.name.length > 20 ? `${product.name.substring(0, 20)}...` : product.name}
                               </div>
                               <div className="text-sm text-muted-foreground">
@@ -921,7 +977,7 @@ export default function CartPage() {
                                 {product.extra_column2 && <span className="mx-1">{product.extra_column2}</span>}
                               </div>
                             </div>
-                          </DraggableCell>
+                          </TableCell>
                           <DraggableCell className="text-center">
                             <div>{product.shop_price?.toLocaleString() || '-'}</div>
                             <div className="text-sm text-muted-foreground">{product.org_price?.toLocaleString() || '-'}</div>
@@ -964,16 +1020,6 @@ export default function CartPage() {
                                 링크
                               </a>
                             ) : '링크 없음'}
-                          </DraggableCell>
-                          <DraggableCell className="text-center">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleRemoveFromCart(product.product_id)}
-                              className="hover:bg-muted"
-                            >
-                              삭제
-                            </Button>
                           </DraggableCell>
                         </SortableTableRow>
                       ))}
