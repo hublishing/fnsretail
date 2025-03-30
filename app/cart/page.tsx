@@ -820,10 +820,11 @@ export default function CartPage() {
               items={products.map(p => p.product_id)}
               strategy={verticalListSortingStrategy}
             >
-              <div className="overflow-y-auto max-h-[calc(100vh-400px)] relative">
+              <div className="relative">
                 <Table>
-                  <TableHeader className="sticky top-0 bg-background z-10">
+                  <TableHeader className="bg-background">
                     <TableRow className="hover:bg-muted">
+                      <TableHead className="text-center w-[50px]">번호</TableHead>
                       <TableHead className="w-[50px] text-center">
                         <Checkbox
                           checked={products.length > 0 && selectedProducts.length === products.length}
@@ -853,125 +854,132 @@ export default function CartPage() {
                       <TableHead className="text-center w-[80px]">삭제</TableHead>
                     </TableRow>
                   </TableHeader>
-                  <TableBody>
-                    {products.map((product) => (
-                      <SortableTableRow
-                        key={product.product_id}
-                        product={product}
-                        className={selectedProducts.includes(product.product_id) ? 'bg-muted' : ''}
-                      >
-                        <CheckboxCell
-                          product={product}
-                          selectedProducts={selectedProducts}
-                          onSelect={(checked) => {
-                            if (checked) {
-                              setSelectedProducts([...selectedProducts, product.product_id]);
-                            } else {
-                              setSelectedProducts(selectedProducts.filter(id => id !== product.product_id));
-                            }
-                          }}
-                        />
-                        <DraggableCell className="text-center">
-                          <div>{product.product_id}</div>
-                        </DraggableCell>
-                        <DraggableCell className="text-center w-[80px]">
-                          <div className="flex justify-center">
-                            {product.img_desc1 ? (
-                              <img
-                                src={product.img_desc1}
-                                alt="상품 이미지" 
-                                className="w-12 h-12 object-cover rounded-md"
-                                style={{ borderRadius: '5px' }}
-                                onError={(e) => {
-                                  const target = e.target as HTMLImageElement;
-                                  target.src = '/no-image.png';
-                                  target.alt = '이미지 없음';
-                                  target.style.objectFit = 'contain';
-                                  target.style.backgroundColor = 'transparent';
-                                  target.parentElement?.classList.add('flex', 'justify-center');
-                                }}
-                              />
-                            ) : (
-                              <div className="w-12 h-12 flex items-center justify-center">
-                                <img 
-                                  src="/no-image.png" 
-                                  alt="이미지 없음" 
-                                  className="w-12 h-12 object-contain rounded-md"
-                                  style={{ borderRadius: '5px' }}
-                                />
-                              </div>
-                            )}
-                          </div>
-                        </DraggableCell>
-                        <DraggableCell className="text-left w-[200px]">
-                          <div className="flex flex-col">
-                            <div className="truncate" title={product.name}>
-                              {product.name}
-                            </div>
-                            <div className="text-sm text-muted-foreground">
-                              {product.brand && <span>{product.brand}</span>}
-                              {product.category_1 && <span className="mx-1">{product.category_1}</span>}
-                              {product.extra_column2 && <span className="mx-1">{product.extra_column2}</span>}
-                            </div>
-                          </div>
-                        </DraggableCell>
-                        <DraggableCell className="text-center">
-                          <div>{product.shop_price?.toLocaleString() || '-'}</div>
-                          <div className="text-sm text-muted-foreground">{product.org_price?.toLocaleString() || '-'}</div>
-                        </DraggableCell>
-                        <DraggableCell className="text-center">
-                          <div>{product.discount_price?.toLocaleString() || '-'}</div>
-                        </DraggableCell>
-                        <DraggableCell className="text-center">
-                          {product.discount_price && product.shop_price 
-                            ? `${Math.round(((product.shop_price - product.discount_price) / product.shop_price) * 100)}%`
-                            : product.discount ? `${product.discount}%` : '-'}
-                        </DraggableCell>
-                        <DraggableCell className="text-center">
-                          <div>{product.category_3 || '-'}</div>
-                        </DraggableCell>
-                        <DraggableCell className="text-center">
-                          <div>{product.cost_ratio ? `${product.cost_ratio}%` : '-'}</div>
-                        </DraggableCell>
-                        <DraggableCell className="text-center">
-                          <div>{(product.total_stock !== undefined 
-                            ? product.total_stock 
-                            : product.main_wh_available_stock_excl_production_stock)?.toLocaleString() || '-'}</div>
-                          <div className="text-sm text-gray-500 mt-1">{product.soldout_rate ? `${product.soldout_rate}%` : '-'}</div>
-                        </DraggableCell>
-                        <DraggableCell className="text-center">
-                          <div>{product.drop_yn || '-'}</div>
-                        </DraggableCell>
-                        <DraggableCell className="text-center">
-                          <div>{product.supply_name || '-'}</div>
-                        </DraggableCell>
-                        <DraggableCell className="text-center">
-                          <div>{product.exclusive2 || '-'}</div>
-                        </DraggableCell>
-                        <DraggableCell className="text-center">
-                          <div>{product.total_order_qty?.toLocaleString() || '-'}</div>
-                        </DraggableCell>
-                        <DraggableCell className="text-center">
-                          {product.product_desc ? (
-                            <a href={product.product_desc} target="_blank" rel="noopener noreferrer" className="hover:underline">
-                              링크
-                            </a>
-                          ) : '링크 없음'}
-                        </DraggableCell>
-                        <DraggableCell className="text-center">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRemoveFromCart(product.product_id)}
-                            className="hover:bg-muted"
-                          >
-                            삭제
-                          </Button>
-                        </DraggableCell>
-                      </SortableTableRow>
-                    ))}
-                  </TableBody>
                 </Table>
+                <div className="overflow-y-auto max-h-[calc(100vh-400px)]">
+                  <Table>
+                    <TableBody>
+                      {products.map((product, index) => (
+                        <SortableTableRow
+                          key={product.product_id}
+                          product={product}
+                          className={selectedProducts.includes(product.product_id) ? 'bg-muted' : ''}
+                        >
+                          <DraggableCell className="text-center">
+                            <div>{index + 1}</div>
+                          </DraggableCell>
+                          <CheckboxCell
+                            product={product}
+                            selectedProducts={selectedProducts}
+                            onSelect={(checked) => {
+                              if (checked) {
+                                setSelectedProducts([...selectedProducts, product.product_id]);
+                              } else {
+                                setSelectedProducts(selectedProducts.filter(id => id !== product.product_id));
+                              }
+                            }}
+                          />
+                          <DraggableCell className="text-center">
+                            <div>{product.product_id}</div>
+                          </DraggableCell>
+                          <DraggableCell className="text-center w-[80px]">
+                            <div className="flex justify-center">
+                              {product.img_desc1 ? (
+                                <img
+                                  src={product.img_desc1}
+                                  alt="상품 이미지" 
+                                  className="w-12 h-12 object-cover rounded-md"
+                                  style={{ borderRadius: '5px' }}
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.src = '/no-image.png';
+                                    target.alt = '이미지 없음';
+                                    target.style.objectFit = 'contain';
+                                    target.style.backgroundColor = 'transparent';
+                                    target.parentElement?.classList.add('flex', 'justify-center');
+                                  }}
+                                />
+                              ) : (
+                                <div className="w-12 h-12 flex items-center justify-center">
+                                  <img 
+                                    src="/no-image.png" 
+                                    alt="이미지 없음" 
+                                    className="w-12 h-12 object-contain rounded-md"
+                                    style={{ borderRadius: '5px' }}
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          </DraggableCell>
+                          <DraggableCell className="text-left w-[200px]">
+                            <div className="flex flex-col">
+                              <div className="truncate" title={product.name}>
+                                {product.name.length > 20 ? `${product.name.substring(0, 20)}...` : product.name}
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                {product.brand && <span>{product.brand}</span>}
+                                {product.category_1 && <span className="mx-1">{product.category_1}</span>}
+                                {product.extra_column2 && <span className="mx-1">{product.extra_column2}</span>}
+                              </div>
+                            </div>
+                          </DraggableCell>
+                          <DraggableCell className="text-center">
+                            <div>{product.shop_price?.toLocaleString() || '-'}</div>
+                            <div className="text-sm text-muted-foreground">{product.org_price?.toLocaleString() || '-'}</div>
+                          </DraggableCell>
+                          <DraggableCell className="text-center">
+                            <div>{product.discount_price?.toLocaleString() || '-'}</div>
+                          </DraggableCell>
+                          <DraggableCell className="text-center">
+                            {product.discount_price && product.shop_price 
+                              ? `${Math.round(((product.shop_price - product.discount_price) / product.shop_price) * 100)}%`
+                              : product.discount ? `${product.discount}%` : '-'}
+                          </DraggableCell>
+                          <DraggableCell className="text-center">
+                            <div>{product.category_3 || '-'}</div>
+                          </DraggableCell>
+                          <DraggableCell className="text-center">
+                            <div>{product.cost_ratio ? `${product.cost_ratio}%` : '-'}</div>
+                          </DraggableCell>
+                          <DraggableCell className="text-center">
+                            <div>{(product.total_stock !== undefined 
+                              ? product.total_stock 
+                              : product.main_wh_available_stock_excl_production_stock)?.toLocaleString() || '-'}</div>
+                            <div className="text-sm text-gray-500 mt-1">{product.soldout_rate ? `${product.soldout_rate}%` : '-'}</div>
+                          </DraggableCell>
+                          <DraggableCell className="text-center">
+                            <div>{product.drop_yn || '-'}</div>
+                          </DraggableCell>
+                          <DraggableCell className="text-center">
+                            <div>{product.supply_name || '-'}</div>
+                          </DraggableCell>
+                          <DraggableCell className="text-center">
+                            <div>{product.exclusive2 || '-'}</div>
+                          </DraggableCell>
+                          <DraggableCell className="text-center">
+                            <div>{product.total_order_qty?.toLocaleString() || '-'}</div>
+                          </DraggableCell>
+                          <DraggableCell className="text-center">
+                            {product.product_desc ? (
+                              <a href={product.product_desc} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                                링크
+                              </a>
+                            ) : '링크 없음'}
+                          </DraggableCell>
+                          <DraggableCell className="text-center">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveFromCart(product.product_id)}
+                              className="hover:bg-muted"
+                            >
+                              삭제
+                            </Button>
+                          </DraggableCell>
+                        </SortableTableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               </div>
             </SortableContext>
           </DndContext>
