@@ -1012,20 +1012,18 @@ export default function DynamicTable() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setShowExcelSettings(true)}
+            onClick={handleExcelDownload}
             className="border-0 hover:bg-transparent hover:text-primary"
           >
-            <Settings className="h-4 w-4 mr-2" />
-            양식 변경
+            엑셀 다운로드
           </Button>
           <Button
             variant="outline"
             size="sm"
-            onClick={handleExcelDownload}
+            onClick={() => setShowExcelSettings(true)}
             className="border-0 hover:bg-transparent hover:text-primary"
           >
-            <FileDown className="h-4 w-4 mr-2" />
-            엑셀 다운로드
+            양식 변경
           </Button>
         </div>
         
