@@ -4,7 +4,7 @@ import * as React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { usePathname } from "next/navigation"
-import { Menu, LogOut, History, LayoutDashboard, ShoppingCart, Search, FileText, PlusCircle, NotebookText } from "lucide-react"
+import { Menu, LogOut, History, LayoutDashboard, ShoppingCart, Search, FileText, PlusCircle, NotebookText, List } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
 
 import { cn } from "@/lib/utils"
@@ -27,7 +27,7 @@ const menuItems = [
   {
     title: "리스트작성",
     href: "/cart",
-    icon: NotebookText,
+    icon: List,
   },
   {
     title: "패치노트",
