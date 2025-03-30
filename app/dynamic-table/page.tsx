@@ -270,12 +270,12 @@ export default function DynamicTable() {
       }
     },
     { key: "soldout_rate", label: "품절률", format: (value: number) => (value !== undefined && value !== null) ? `${value}%` : '-' },
-    { key: "drop_yn", label: "드랍여부" },
-    { key: "supply_name", label: "공급처명" },
-    { key: "exclusive2", label: "단독여부" },
+    { key: "drop_yn", label: "드랍" },
+    { key: "supply_name", label: "공급처" },
+    { key: "exclusive2", label: "단독" },
     { 
       key: "total_order_qty", 
-      label: "판매수량", 
+      label: "판매량", 
       format: (value: number) => {
         if (value === undefined || value === null) return '-';
         return value.toLocaleString();
