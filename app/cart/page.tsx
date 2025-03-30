@@ -984,9 +984,9 @@ export default function CartPage() {
                                 {product.name.length > 20 ? `${product.name.substring(0, 20)}...` : product.name}
                               </div>
                               <div className="text-sm text-muted-foreground">
-                                {product.brand && <span>{product.brand}</span>}
-                                {product.category_1 && <span className="mx-1">{product.category_1}</span>}
-                                {product.extra_column2 && <span className="mx-1">{product.extra_column2}</span>}
+                                {product.brand && <span className="mr-1">{product.brand}</span>}
+                                {product.category_1 && <span className="mr-1">{product.category_1}</span>}
+                                {product.extra_column2 && <span className="mr-1">{product.extra_column2}</span>}
                               </div>
                             </div>
                           </TableCell>
