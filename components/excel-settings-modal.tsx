@@ -28,13 +28,13 @@ export function ExcelSettingsModal({
 }: ExcelSettingsModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] bg-background">
         <DialogHeader>
           <DialogTitle>엑셀 다운로드 설정</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="flex items-center justify-between">
-            <Label htmlFor="includeImage">이미지 포함</Label>
+            <Label htmlFor="includeImage" className="text-foreground">이미지 포함</Label>
             <Switch
               id="includeImage"
               checked={settings.includeImage}
@@ -42,7 +42,7 @@ export function ExcelSettingsModal({
             />
           </div>
           <div className="flex items-center justify-between">
-            <Label htmlFor="includeUrl">URL 포함</Label>
+            <Label htmlFor="includeUrl" className="text-foreground">URL 포함</Label>
             <Switch
               id="includeUrl"
               checked={settings.includeUrl}
@@ -50,7 +50,7 @@ export function ExcelSettingsModal({
             />
           </div>
           <div className="flex items-center justify-between">
-            <Label htmlFor="includeCost">원가 포함</Label>
+            <Label htmlFor="includeCost" className="text-foreground">원가 포함</Label>
             <Switch
               id="includeCost"
               checked={settings.includeCost}
@@ -58,7 +58,7 @@ export function ExcelSettingsModal({
             />
           </div>
           <div className="flex items-center justify-between">
-            <Label htmlFor="includeDiscount">할인 정보 포함</Label>
+            <Label htmlFor="includeDiscount" className="text-foreground">할인 정보 포함</Label>
             <Switch
               id="includeDiscount"
               checked={settings.includeDiscount}

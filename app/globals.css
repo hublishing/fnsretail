@@ -80,33 +80,51 @@
   }
  
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 0 0% 15%;  /* #272829 */
+    --foreground: 0 0% 100%;  /* #fff */
  
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 0 0% 16%;  /* #292a2c */
+    --card-foreground: 0 0% 100%;
  
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 0 0% 16%;  /* #292a2c */
+    --popover-foreground: 0 0% 100%;
  
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 0 0% 100%;
+    --primary-foreground: 0 0% 15%;
  
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 0 0% 19%;  /* #313233 */
+    --secondary-foreground: 0 0% 100%;
  
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 0 0% 19%;  /* #313233 */
+    --muted-foreground: 0 0% 80%;  /* #cbcbcb */
  
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 0 0% 19%;  /* #313233 */
+    --accent-foreground: 0 0% 100%;
  
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
- 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 22%;  /* #383c3c */
+    --input: 0 0% 19%;  /* #313233 */
+    --ring: 0 0% 100%;
+
+    /* 추가 색상 변수 */
+    --color-caption1: 0 0% 80%;  /* #cbcbcb */
+    --color-caption2: 0 0% 71%;  /* #b5b5b5 */
+    --color-caption3: 0 0% 80%;  /* #cbcbcb */
+    --color-border-in: 0 0% 20%;  /* #313334 */
+    --color-border-in-divider: 0 0% 24%;  /* #3c3e3e */
+    --color-border-in-exception: 0 0% 28%;  /* #454749 */
+    --color-button-border: 0 0% 32%;  /* #515254 */
+    --color-dot-divider: 0 0% 45%;  /* #747474 */
+    --color-block-bg: 0 0% 15%;  /* #272829 */
+    --color-board-bg: 0 0% 16%;  /* #292a2c */
+    --color-option-bg: 0 0% 19%;  /* #313233 */
+    --color-login-bg: 0 0% 18%;  /* #2d2e2f */
+    --color-menu-widget-bg: 0 0% 21%;  /* #353637 */
+    --color-setting-bg: 0 0% 17%;  /* #2b2c2d */
+    --color-button1-bg: 0 0% 21%;  /* #343638 */
+    --color-button2-bg: 0 0% 28%;  /* #454749 */
   }
 }
 

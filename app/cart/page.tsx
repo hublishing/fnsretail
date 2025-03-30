@@ -478,7 +478,7 @@ export default function CartPage() {
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="타이틀을 입력해주세요"
                 className={`w-[300px] h-10 px-3 border-[1px] rounded-md shadow-sm focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
-                  title ? 'border-blue-500 focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 bg-blue-50' : 'border-gray-300'
+                  title ? 'border-blue-500 focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 bg-muted' : 'border-input bg-background'
                 }`}
               />
               <div className="relative">
@@ -491,18 +491,18 @@ export default function CartPage() {
                   placeholder="채널명을 입력하세요"
                   className={`w-[160px] h-10 px-3 border-[1px] rounded-md shadow-sm focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
                     channelSearchTerm && !isValidChannel 
-                      ? 'border-red-500 focus:ring-[1px] focus:ring-red-500 focus:border-red-500 bg-red-50' 
+                      ? 'border-red-500 focus:ring-[1px] focus:ring-red-500 focus:border-red-500 bg-destructive/10' 
                       : channelSearchTerm && isValidChannel
-                      ? 'border-blue-500 focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 bg-blue-50'
-                      : 'border-gray-300'
+                      ? 'border-blue-500 focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 bg-muted'
+                      : 'border-input bg-background'
                   }`}
                 />
                 {showChannelSuggestions && filteredChannels.length > 0 && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                  <div className="absolute z-10 w-full mt-1 bg-background border border-input rounded-md shadow-lg max-h-60 overflow-auto">
                     {filteredChannels.map((channel) => (
                       <div
                         key={channel.channel_name}
-                        className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                        className="px-3 py-2 hover:bg-muted cursor-pointer text-sm"
                         onClick={() => handleChannelSelect(channel as ChannelInfo)}
                       >
                         {channel.channel_name}
@@ -539,16 +539,16 @@ export default function CartPage() {
                   value={startDate}
                   onChange={(e) => handleDateChange(e, 'start')}
                   className={`w-[150px] h-10 px-3 border-[1px] rounded-md shadow-sm focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
-                    startDate ? 'border-blue-500 focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 bg-blue-50' : 'border-gray-300'
+                    startDate ? 'border-blue-500 focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 bg-muted' : 'border-input bg-background'
                   }`}
                 />
-                <span className="text-gray-500">~</span>
+                <span className="text-muted-foreground">~</span>
                 <input
                   type="date"
                   value={endDate}
                   onChange={(e) => handleDateChange(e, 'end')}
                   className={`w-[150px] h-10 px-3 border-[1px] rounded-md shadow-sm focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
-                    endDate ? 'border-blue-500 focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 bg-blue-50' : 'border-gray-300'
+                    endDate ? 'border-blue-500 focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 bg-muted' : 'border-input bg-background'
                   }`}
                 />
               </div>
@@ -561,35 +561,35 @@ export default function CartPage() {
                 value={selectedChannelInfo?.channel_category_2 || ''}
                 readOnly
                 placeholder="구분"
-                className="w-[120px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-gray-50 text-sm text-gray-500"
+                className="w-[120px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-muted text-sm text-muted-foreground"
               />
               <input
                 type="text"
                 value={selectedChannelInfo?.channel_category_3 || ''}
                 readOnly
                 placeholder="분류"
-                className="w-[120px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-gray-50 text-sm text-gray-500"
+                className="w-[120px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-muted text-sm text-muted-foreground"
               />
               <input
                 type="text"
                 value={selectedChannelInfo?.team || ''}
                 readOnly
                 placeholder="팀"
-                className="w-[80px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-gray-50 text-sm text-gray-500"
+                className="w-[80px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-muted text-sm text-muted-foreground"
               />
               <input
                 type="text"
                 value={selectedChannelInfo?.manager || ''}
                 readOnly
                 placeholder="담당자"
-                className="w-[80px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-gray-50 text-sm text-gray-500"
+                className="w-[80px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-muted text-sm text-muted-foreground"
               />
               <input
                 type="text"
                 value={selectedChannelInfo?.average_fee_rate ? `평균수수료 : ${selectedChannelInfo.average_fee_rate}` : ''}
                 readOnly
                 placeholder="평균수수료"
-                className="w-[160px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-gray-50 text-sm text-gray-500"
+                className="w-[160px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-muted text-sm text-muted-foreground"
               />
             </div>
 
@@ -598,7 +598,7 @@ export default function CartPage() {
               <input
                 type="text"
                 placeholder="메모를 입력해주세요"
-                className="w-full h-10 px-3 border-[1px] rounded-md shadow-sm focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm border-gray-300"
+                className="w-full h-10 px-3 border-[1px] rounded-md shadow-sm focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm border-input bg-background"
               />
             </div>
           </div>
@@ -656,10 +656,10 @@ export default function CartPage() {
       {/* 상품 테이블 */}
       <div className="rounded-md border overflow-hidden">
         <div className="w-[1334px]">
-          <div className="bg-white sticky top-0 z-10">
+          <div className="bg-muted sticky top-0 z-10">
             <Table className="w-full">
               <TableHeader>
-                <TableRow className="hover:bg-white">
+                <TableRow className="hover:bg-muted">
                   <TableHead className="w-[50px] text-center">
                     <Checkbox 
                       checked={selectedProducts.length === products.length}

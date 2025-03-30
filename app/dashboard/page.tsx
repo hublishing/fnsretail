@@ -344,14 +344,14 @@ export default function DashboardPage() {
               type="date"
               value={startDate}
               onChange={handleStartDateChange}
-              className="w-40 bg-blue-50 border-blue-200 h-10"
+              className="w-40 h-10"
             />
             <span className="text-gray-500">-</span>
             <Input
               type="date"
               value={endDate}
               onChange={handleEndDateChange}
-              className="w-40 bg-blue-50 border-blue-200 h-10"
+              className="w-40 h-10"
             />
             <div className="flex gap-1 ml-2">
               <Button 
@@ -389,7 +389,7 @@ export default function DashboardPage() {
             </div>
             <div className="flex gap-2 ml-4">
               <Select value={selectedCategory2} onValueChange={handleCategory2Change}>
-                <SelectTrigger className={`w-[180px] h-10 ${selectedCategory2 ? 'bg-blue-50 border-blue-500 text-blue-700' : ''}`}>
+                <SelectTrigger className={`w-[180px] h-10 ${selectedCategory2 ? 'border-blue-500 text-blue-700 dark:text-blue-300' : ''}`}>
                   <SelectValue placeholder="구분 선택" />
                 </SelectTrigger>
                 <SelectContent>
@@ -401,7 +401,7 @@ export default function DashboardPage() {
                 </SelectContent>
               </Select>
               <Select value={selectedCategory3} onValueChange={handleCategory3Change}>
-                <SelectTrigger className={`w-[180px] h-10 ${selectedCategory3 ? 'bg-blue-50 border-blue-500 text-blue-700' : ''}`}>
+                <SelectTrigger className={`w-[180px] h-10 ${selectedCategory3 ? 'border-blue-500 text-blue-700 dark:text-blue-300' : ''}`}>
                   <SelectValue placeholder="분류 선택" />
                 </SelectTrigger>
                 <SelectContent>
@@ -413,7 +413,7 @@ export default function DashboardPage() {
                 </SelectContent>
               </Select>
               <Select value={selectedChannel} onValueChange={handleChannelChange}>
-                <SelectTrigger className={`w-[180px] h-10 ${selectedChannel ? 'bg-blue-50 border-blue-500 text-blue-700' : ''}`}>
+                <SelectTrigger className={`w-[180px] h-10 ${selectedChannel ? 'border-blue-500 text-blue-700 dark:text-blue-300' : ''}`}>
                   <SelectValue placeholder="채널 선택" />
                 </SelectTrigger>
                 <SelectContent>

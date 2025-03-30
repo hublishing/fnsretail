@@ -22,7 +22,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="ko" className="h-screen">
+    <html lang="ko" className="h-screen" suppressHydrationWarning>
       <head>
         <link rel="icon" href="/favicon.ico" />
         <link rel="icon" href="/favicon.ico" sizes="16x16" />

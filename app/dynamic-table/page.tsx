@@ -1047,14 +1047,14 @@ export default function DynamicTable() {
 
       <div className="rounded-md border overflow-hidden">
         <div className="w-[1334px]">
-          <div className="bg-white sticky top-0 z-10">
+          <div className="sticky top-0 z-10">
             <Table className="w-full">
               <TableHeader>
                 <TableRow>
                   {columns.map((column) => (
                     <TableHead 
                       key={column.key} 
-                      className="text-center bg-white border-b whitespace-nowrap"
+                      className="text-center border-b whitespace-nowrap"
                       style={{ 
                         width: column.key === 'actions' ? '44px' :
                                column.key === 'img_desc1' ? '64px' :

@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { usePathname } from "next/navigation"
 import { Menu, LogOut, History, LayoutDashboard, ShoppingCart, Search, FileText, PlusCircle, NotebookText } from "lucide-react"
+import { Switch } from "@/components/ui/switch"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -45,6 +46,7 @@ export function Sidebar() {
   const router = useRouter()
   const [open, setOpen] = React.useState(false)
   const [userEmail, setUserEmail] = React.useState<string | null>(null)
+  const [isDarkMode, setIsDarkMode] = React.useState(false)
 
   React.useEffect(() => {
     const fetchUserEmail = async () => {
@@ -55,6 +57,22 @@ export function Sidebar() {
     }
     fetchUserEmail()
   }, [])
+
+  React.useEffect(() => {
+    // 다크모드 상태를 localStorage에서 불러오기
+    const savedDarkMode = localStorage.getItem('darkMode')
+    if (savedDarkMode) {
+      setIsDarkMode(savedDarkMode === 'true')
+      document.documentElement.classList.toggle('dark', savedDarkMode === 'true')
+    }
+  }, [])
+
+  const toggleDarkMode = () => {
+    const newDarkMode = !isDarkMode
+    setIsDarkMode(newDarkMode)
+    localStorage.setItem('darkMode', String(newDarkMode))
+    document.documentElement.classList.toggle('dark', newDarkMode)
+  }
 
   const handleLogout = async () => {
     try {
@@ -106,6 +124,13 @@ export function Sidebar() {
             </ScrollArea>
             <div className="border-t p-4">
               <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">다크 모드</span>
+                  <Switch
+                    checked={isDarkMode}
+                    onCheckedChange={toggleDarkMode}
+                  />
+                </div>
                 {userEmail && (
                   <div className="text-sm text-muted-foreground">
                     {userEmail}
@@ -154,6 +179,13 @@ export function Sidebar() {
           </ScrollArea>
           <div className="border-t p-4">
             <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm">다크 모드</span>
+                <Switch
+                  checked={isDarkMode}
+                  onCheckedChange={toggleDarkMode}
+                />
+              </div>
               {userEmail && (
                 <div className="text-sm text-muted-foreground">
                   {userEmail}

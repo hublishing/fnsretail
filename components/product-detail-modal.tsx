@@ -116,16 +116,16 @@ export function ProductDetailModal({ productId, onClose }: ProductDetailModalPro
   if (loading) {
     return (
       <div 
-        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+        className="fixed inset-0 bg-black/80 flex items-center justify-center z-50"
         onClick={onClose}
       >
         <div 
-          className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4"
+          className="bg-background rounded-lg p-6 max-w-4xl w-full mx-4"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold">상품 상세 정보</h2>
-            <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+            <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
               <X size={24} />
             </button>
           </div>
@@ -138,20 +138,20 @@ export function ProductDetailModal({ productId, onClose }: ProductDetailModalPro
   if (error || !product) {
     return (
       <div 
-        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+        className="fixed inset-0 bg-black/80 flex items-center justify-center z-50"
         onClick={onClose}
       >
         <div 
-          className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4"
+          className="bg-background rounded-lg p-6 max-w-4xl w-full mx-4"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold">상품 상세 정보</h2>
-            <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+            <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
               <X size={24} />
             </button>
           </div>
-          <div className="text-center py-8 text-red-500">{error || '상품 정보를 찾을 수 없습니다.'}</div>
+          <div className="text-center py-8 text-destructive">{error || '상품 정보를 찾을 수 없습니다.'}</div>
         </div>
       </div>
     );
@@ -159,16 +159,16 @@ export function ProductDetailModal({ productId, onClose }: ProductDetailModalPro
 
   return (
     <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      className="fixed inset-0 bg-black/80 flex items-center justify-center z-50"
       onClick={onClose}
     >
       <div 
-        className="bg-white rounded-lg p-8 max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+        className="bg-background rounded-lg p-8 max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-800">상품 상세 정보</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 transition-colors">
+          <h2 className="text-2xl font-bold">상품 상세 정보</h2>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
             <X size={28} />
           </button>
         </div>
@@ -197,14 +197,14 @@ export function ProductDetailModal({ productId, onClose }: ProductDetailModalPro
           {/* 상품 정보 섹션 */}
           <div className="space-y-6">
             <div className="border-b pb-4">
-              <h3 className="text-2xl font-semibold mb-2 text-gray-800">{product.name}</h3>
-              <div className="flex items-center gap-3 text-base text-gray-600">
-                <span>브랜드: <strong>{product.brand}</strong></span>
-                <span className="text-gray-300">|</span>
-                <span>상품코드: <strong>{product.product_id}</strong></span>
+              <h3 className="text-2xl font-semibold mb-2">{product.name}</h3>
+              <div className="flex items-center gap-3 text-base text-muted-foreground">
+                <span>브랜드: <strong className="text-foreground">{product.brand}</strong></span>
+                <span className="text-muted-foreground">|</span>
+                <span>상품코드: <strong className="text-foreground">{product.product_id}</strong></span>
               </div>
               {product.extra_column1 && (
-                <p className="mt-3 text-base text-gray-500">{product.extra_column1}</p>
+                <p className="mt-3 text-base text-muted-foreground">{product.extra_column1}</p>
               )}
             </div>
 
@@ -212,60 +212,60 @@ export function ProductDetailModal({ productId, onClose }: ProductDetailModalPro
               {/* 카테고리 정보 */}
               <div className="flex flex-wrap gap-6 mb-6">
                 <div className="flex items-center gap-2">
-                  <span className="text-base font-medium text-gray-500">카테고리:</span>
-                  <span className="text-base text-gray-800">{product.category_3}</span>
+                  <span className="text-base font-medium text-muted-foreground">카테고리:</span>
+                  <span className="text-base text-foreground">{product.category_3}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-base font-medium text-gray-500">라인:</span>
-                  <span className="text-base text-gray-800">{product.category_1}</span>
+                  <span className="text-base font-medium text-muted-foreground">라인:</span>
+                  <span className="text-base text-foreground">{product.category_1}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-base font-medium text-gray-500">출시 시즌:</span>
-                  <span className="text-base text-gray-800">{product.extra_column2}</span>
+                  <span className="text-base font-medium text-muted-foreground">출시 시즌:</span>
+                  <span className="text-base text-foreground">{product.extra_column2}</span>
                 </div>
               </div>
 
               {/* 가격 정보 */}
               <div className="flex flex-wrap gap-6 mb-6">
                 <div className="flex items-center gap-2">
-                  <span className="text-base font-medium text-gray-500">원가:</span>
-                  <span className="text-base text-gray-800">{product.org_price?.toLocaleString()}원</span>
+                  <span className="text-base font-medium text-muted-foreground">원가:</span>
+                  <span className="text-base text-foreground">{product.org_price?.toLocaleString()}원</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-base font-medium text-gray-500">판매가:</span>
-                  <span className="text-base text-gray-800">{product.shop_price?.toLocaleString()}원</span>
+                  <span className="text-base font-medium text-muted-foreground">판매가:</span>
+                  <span className="text-base text-foreground">{product.shop_price?.toLocaleString()}원</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-base font-medium text-gray-500">글로벌 가격:</span>
-                  <span className="text-base text-gray-800">{product.global_price?.toLocaleString()}원</span>
+                  <span className="text-base font-medium text-muted-foreground">글로벌 가격:</span>
+                  <span className="text-base text-foreground">{product.global_price?.toLocaleString()}원</span>
                 </div>
               </div>
 
               {/* 기본 정보 및 상태 정보 */}
               <div className="flex flex-wrap gap-6">
                 <div className="flex items-center gap-2">
-                  <span className="text-base font-medium text-gray-500">원산지:</span>
-                  <span className="text-base text-gray-800">{product.origin}</span>
+                  <span className="text-base font-medium text-muted-foreground">원산지:</span>
+                  <span className="text-base text-foreground">{product.origin}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-base font-medium text-gray-500">무게:</span>
-                  <span className="text-base text-gray-800">{product.weight}</span>
+                  <span className="text-base font-medium text-muted-foreground">무게:</span>
+                  <span className="text-base text-foreground">{product.weight}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-base font-medium text-gray-500">공급사:</span>
-                  <span className="text-base text-gray-800">{product.supply_name}</span>
+                  <span className="text-base font-medium text-muted-foreground">공급사:</span>
+                  <span className="text-base text-foreground">{product.supply_name}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-base font-medium text-gray-500">품절률:</span>
-                  <span className="text-base text-gray-800">{product.soldout_rate}%</span>
+                  <span className="text-base font-medium text-muted-foreground">품절률:</span>
+                  <span className="text-base text-foreground">{product.soldout_rate}%</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-base font-medium text-gray-500">드랍 여부:</span>
-                  <span className="text-base text-gray-800">{product.drop_yn}</span>
+                  <span className="text-base font-medium text-muted-foreground">드랍 여부:</span>
+                  <span className="text-base text-foreground">{product.drop_yn}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-base font-medium text-gray-500">태그:</span>
-                  <span className="text-base text-gray-800">{product.tag || '-'}</span>
+                  <span className="text-base font-medium text-muted-foreground">태그:</span>
+                  <span className="text-base text-foreground">{product.tag || '-'}</span>
                 </div>
               </div>
             </div>
@@ -275,11 +275,11 @@ export function ProductDetailModal({ productId, onClose }: ProductDetailModalPro
         {/* 옵션 상품 목록 */}
         {optionProducts.length > 0 && (
           <div className="mt-10 border-t pt-8">
-            <h3 className="text-xl font-semibold mb-5 text-gray-800">옵션 상품 목록</h3>
+            <h3 className="text-xl font-semibold mb-5">옵션 상품 목록</h3>
             <div className="overflow-x-auto rounded-lg border">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-gray-50">
+                  <TableRow>
                     <TableHead className="text-center">옵션 상품코드</TableHead>
                     <TableHead className="text-left">옵션</TableHead>
                     <TableHead className="text-center">정상 재고</TableHead>
@@ -293,7 +293,7 @@ export function ProductDetailModal({ productId, onClose }: ProductDetailModalPro
                 </TableHeader>
                 <TableBody>
                   {optionProducts.map((option) => (
-                    <TableRow key={option.options_product_id} className="hover:bg-gray-50">
+                    <TableRow key={option.options_product_id} className="hover:bg-muted">
                       <TableCell className="text-center">{option.options_product_id}</TableCell>
                       <TableCell className="text-left font-medium">{option.options_options}</TableCell>
                       <TableCell className="text-center">{option.main_wh_available_stock}</TableCell>
