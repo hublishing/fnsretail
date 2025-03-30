@@ -282,10 +282,10 @@ export default function DynamicTable() {
       key: "product_desc", 
       label: "URL",
       format: (value: string) => value ? (
-        <a href={value} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+        <a href={value} target="_blank" rel="noopener noreferrer">
           링크
         </a>
-      ) : '링크 없음'
+      ) : '-'
     }
   ];
 

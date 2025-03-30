@@ -1031,7 +1031,7 @@ export default function CartPage() {
                               <a href={product.product_desc} target="_blank" rel="noopener noreferrer" className="hover:underline">
                                 링크
                               </a>
-                            ) : '링크 없음'}
+                            ) : '-'}
                           </DraggableCell>
                         </SortableTableRow>
                       ))}
