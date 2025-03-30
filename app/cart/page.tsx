@@ -209,7 +209,7 @@ export default function CartPage() {
   const [selectedChannelInfo, setSelectedChannelInfo] = useState<ChannelInfo | null>(null);
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
-  const [title, setTitle] = useState<string>('리스트작성테스트');
+  const [title, setTitle] = useState<string>('');
   const [showExcelSettings, setShowExcelSettings] = useState(false);
   const [excelSettings, setExcelSettings] = useState({
     includeImage: true,
@@ -614,7 +614,7 @@ export default function CartPage() {
     <div className="container mx-auto py-8">
       <div className="flex justify-between items-center mb-6">
         <div className="flex flex-col">
-          <h1 className="text-2xl font-bold">리스트작성테스트</h1>
+          <h1 className="text-2xl font-bold">리스트작성</h1>
           <div className="text-sm text-gray-500 mt-1">
             <span className="mr-4">작성자: {user?.uid === 'a8mwwycqhaZLIb9iOcshPbpAVrj2' ? '한재훈' :
              user?.uid === 'MhMI2KxbxkPHIAJP0o4sPSZG35e2' ? '이세명' :
@@ -820,9 +820,9 @@ export default function CartPage() {
               items={products.map(p => p.product_id)}
               strategy={verticalListSortingStrategy}
             >
-              <div className="overflow-y-auto max-h-[calc(100vh-400px)]">
+              <div className="overflow-y-auto max-h-[calc(100vh-400px)] relative">
                 <Table>
-                  <TableHeader>
+                  <TableHeader className="sticky top-0 bg-background z-10">
                     <TableRow className="hover:bg-muted">
                       <TableHead className="w-[50px] text-center">
                         <Checkbox
@@ -836,9 +836,9 @@ export default function CartPage() {
                           }}
                         />
                       </TableHead>
+                      <TableHead className="text-center w-[100px]">이지어드민</TableHead>
                       <TableHead className="text-center w-[80px]">이미지</TableHead>
                       <TableHead className="text-left w-[300px]">상품명</TableHead>
-                      <TableHead className="text-center w-[100px]">원가</TableHead>
                       <TableHead className="text-center w-[100px]">판매가</TableHead>
                       <TableHead className="text-center w-[100px]">할인가</TableHead>
                       <TableHead className="text-center w-[80px]">할인율</TableHead>
@@ -871,6 +871,9 @@ export default function CartPage() {
                             }
                           }}
                         />
+                        <DraggableCell className="text-center">
+                          <div>{product.product_id}</div>
+                        </DraggableCell>
                         <DraggableCell className="text-center w-[80px]">
                           <div className="flex justify-center">
                             {product.img_desc1 ? (
@@ -900,23 +903,21 @@ export default function CartPage() {
                             )}
                           </div>
                         </DraggableCell>
-                        <DraggableCell className="text-center w-[200px]">
-                          <button
-                            onClick={() => setSelectedProductId(product.product_id)}
-                            className="hover:underline text-left"
-                          >
-                            <div className="font-medium">{product.name}</div>
-                            <div className="text-sm text-gray-500 mt-1">
-                              <div>원가: {product.org_price?.toLocaleString() || '-'}</div>
-                              <div>판매가: {product.shop_price?.toLocaleString() || '-'}</div>
+                        <DraggableCell className="text-left w-[200px]">
+                          <div className="flex flex-col">
+                            <div className="truncate" title={product.name}>
+                              {product.name}
                             </div>
-                          </button>
-                        </DraggableCell>
-                        <DraggableCell className="text-center">
-                          <div>{product.org_price?.toLocaleString() || '-'}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {product.brand && <span>{product.brand}</span>}
+                              {product.category_1 && <span className="mx-1">{product.category_1}</span>}
+                              {product.extra_column2 && <span className="mx-1">{product.extra_column2}</span>}
+                            </div>
+                          </div>
                         </DraggableCell>
                         <DraggableCell className="text-center">
                           <div>{product.shop_price?.toLocaleString() || '-'}</div>
+                          <div className="text-sm text-muted-foreground">{product.org_price?.toLocaleString() || '-'}</div>
                         </DraggableCell>
                         <DraggableCell className="text-center">
                           <div>{product.discount_price?.toLocaleString() || '-'}</div>
@@ -952,7 +953,7 @@ export default function CartPage() {
                         </DraggableCell>
                         <DraggableCell className="text-center">
                           {product.product_desc ? (
-                            <a href={product.product_desc} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+                            <a href={product.product_desc} target="_blank" rel="noopener noreferrer" className="hover:underline">
                               링크
                             </a>
                           ) : '링크 없음'}
@@ -962,7 +963,7 @@ export default function CartPage() {
                             variant="ghost"
                             size="sm"
                             onClick={() => handleRemoveFromCart(product.product_id)}
-                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                            className="hover:bg-muted"
                           >
                             삭제
                           </Button>
