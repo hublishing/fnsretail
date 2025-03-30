@@ -136,6 +136,24 @@ interface ChannelInfo {
   conditional_shipping: number;
 }
 
+interface CartItem {
+  id: string;
+  productId: string;
+  name: string;
+  price: number;
+  quantity: number;
+  category?: string;
+  brand?: string;
+  url?: string;
+}
+
+interface ExcelSettings {
+  includeImage: boolean;
+  includeUrl: boolean;
+  includeCost: boolean;
+  includeDiscount: boolean;
+}
+
 // 정렬 가능한 행 컴포넌트
 function SortableTableRow({ product, children, ...props }: { 
   product: Product;
@@ -238,15 +256,20 @@ export default function CartPage() {
   const [endDate, setEndDate] = useState<string>('');
   const [title, setTitle] = useState<string>('');
   const [showExcelSettings, setShowExcelSettings] = useState(false);
-  const [excelSettings, setExcelSettings] = useState({
+  const [excelSettings, setExcelSettings] = useState<ExcelSettings>({
     includeImage: true,
     includeUrl: true,
     includeCost: true,
-    includeDiscount: true
+    includeDiscount: true,
   });
   const [isDragging, setIsDragging] = useState(false);
   const [discountType, setDiscountType] = useState<'percentage' | 'fixed'>('percentage');
   const [discountValue, setDiscountValue] = useState<number>(0);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<Product[]>([]);
 
   // UUID 생성 함수
   const generateUniqueId = () => {
@@ -843,7 +866,7 @@ export default function CartPage() {
       </Card>
 
       {/* 할인 적용 섹션 */}
-      <div className="mb-4">
+      <div className="mb-2">
         <div className="flex justify-between items-center">
           <div className="flex gap-2">
             <Button
@@ -878,20 +901,6 @@ export default function CartPage() {
             >
               양식 변경
             </Button>
-          </div>
-          <div className="flex gap-2">
-            <Select value={sortOption} onValueChange={(value: 'default' | 'qty_desc' | 'qty_asc' | 'stock_desc' | 'stock_asc') => setSortOption(value)}>
-              <SelectTrigger className="w-[140px] border-none focus:ring-0 focus:ring-offset-0 shadow-none h-10">
-                <SelectValue placeholder="정렬 기준" />
-              </SelectTrigger>
-              <SelectContent className="min-w-[140px]">
-                <SelectItem value="default">기본</SelectItem>
-                <SelectItem value="qty_desc">판매 많은순</SelectItem>
-                <SelectItem value="qty_asc">판매 적은순</SelectItem>
-                <SelectItem value="stock_desc">재고 많은순</SelectItem>
-                <SelectItem value="stock_asc">재고 적은순</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         </div>
       </div>
