@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import { usePathname } from "next/navigation"
 import { Menu, LogOut, History, LayoutDashboard, ShoppingCart, Search, FileText, PlusCircle, NotebookText, List } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
+import { SheetTitle } from "@/components/ui/sheet"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -47,6 +48,7 @@ export function Sidebar() {
   const [open, setOpen] = React.useState(false)
   const [userEmail, setUserEmail] = React.useState<string | null>(null)
   const [isDarkMode, setIsDarkMode] = React.useState(false)
+  const [isCollapsed, setIsCollapsed] = React.useState(false)
 
   React.useEffect(() => {
     const fetchUserEmail = async () => {
@@ -67,6 +69,22 @@ export function Sidebar() {
     }
   }, [])
 
+  // 화면 너비에 따라 사이드바 상태 변경
+  React.useEffect(() => {
+    const handleResize = () => {
+      setIsCollapsed(window.innerWidth <= 1440)
+    }
+
+    // 초기 상태 설정
+    handleResize()
+
+    // 리사이즈 이벤트 리스너 등록
+    window.addEventListener('resize', handleResize)
+
+    // 클린업 함수
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
   const toggleDarkMode = () => {
     const newDarkMode = !isDarkMode
     setIsDarkMode(newDarkMode)
@@ -85,19 +103,23 @@ export function Sidebar() {
 
   return (
     <>
-      {/* 모바일 메뉴 버튼 */}
+      {/* 메뉴 버튼 - 1440px 이하일 때만 표시 */}
       <Button
         variant="ghost"
-        className="mr-2 px-0 text-base hover:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 md:hidden"
+        className={cn(
+          "fixed left-4 top-4 z-50 px-0 text-base hover:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0",
+          isCollapsed ? "block" : "hidden"
+        )}
         onClick={() => setOpen(true)}
       >
         <Menu className="h-6 w-6" />
         <span className="sr-only">메뉴 열기</span>
       </Button>
 
-      {/* 모바일 사이드바 */}
+      {/* 오버레이 사이드바 - 1440px 이하일 때만 표시 */}
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="left" className="pr-0">
+        <SheetContent side="left" className={cn("pr-0 w-64", isCollapsed ? "block" : "hidden")}>
+          <SheetTitle className="sr-only">메인 메뉴</SheetTitle>
           <div className="flex h-screen flex-col">
             <div className="flex h-14 items-center border-b px-4">
               <Link href="/" className="flex items-center space-x-2">
@@ -150,8 +172,11 @@ export function Sidebar() {
         </SheetContent>
       </Sheet>
 
-      {/* 데스크톱 사이드바 */}
-      <div className="hidden md:block w-64 border-r bg-background">
+      {/* 고정 사이드바 - 1441px 이상일 때만 표시 */}
+      <div className={cn(
+        "hidden border-r bg-background",
+        !isCollapsed ? "block w-64" : ""
+      )}>
         <div className="flex h-screen flex-col">
           <div className="flex h-14 items-center border-b px-4">
             <Link href="/" className="flex items-center space-x-2">
