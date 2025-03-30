@@ -45,6 +45,16 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import React from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
 
 interface Product {
   product_id: string;
@@ -222,6 +232,8 @@ export default function CartPage() {
     includeDiscount: true
   });
   const [isDragging, setIsDragging] = useState(false);
+  const [discountType, setDiscountType] = useState<'percentage' | 'fixed'>('percentage');
+  const [discountValue, setDiscountValue] = useState<number>(0);
 
   // UUID 생성 함수
   const generateUniqueId = () => {
@@ -1047,41 +1059,42 @@ export default function CartPage() {
       )}
 
       {/* 할인 적용 모달 */}
-      {showDiscountModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-xl w-[400px]">
-            <h2 className="text-lg font-semibold mb-4">할인</h2>
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  min="0"
-                  value={discountRate}
-                  onChange={(e) => setDiscountRate(Number(e.target.value))}
-                  className="w-32 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                />
-                <Select value={discountUnit} onValueChange={(value: '원' | '%') => setDiscountUnit(value)}>
-                  <SelectTrigger className="w-[80px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="원">원</SelectItem>
-                    <SelectItem value="%">%</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setShowDiscountModal(false)}>
-                  닫기
-                </Button>
-                <Button onClick={handleApplyDiscount}>
-                  변경
-                </Button>
-              </div>
+      <Dialog open={showDiscountModal} onOpenChange={setShowDiscountModal}>
+        <DialogContent className="sm:max-w-[425px] bg-background">
+          <DialogHeader>
+            <DialogTitle>할인 적용</DialogTitle>
+            <DialogDescription>
+              선택한 상품에 할인을 적용합니다.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                value={discountValue}
+                onChange={(e) => setDiscountValue(Number(e.target.value))}
+                className="w-[150px] h-10"
+                placeholder="할인값 입력"
+              />
+              <Select
+                value={discountType}
+                onValueChange={(value: 'percentage' | 'fixed') => setDiscountType(value)}
+              >
+                <SelectTrigger className="w-[80px] h-10">
+                  <SelectValue placeholder="단위" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="percentage">%</SelectItem>
+                  <SelectItem value="fixed">원</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
-        </div>
-      )}
+          <DialogFooter>
+            <Button onClick={handleApplyDiscount}>적용</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {showExcelSettings && (
         <ExcelSettingsModal
