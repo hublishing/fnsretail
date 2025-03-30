@@ -1014,7 +1014,7 @@ export default function CartPage() {
               size="sm"
               onClick={() => setShowCouponModal(true)}
               className="border-0 hover:bg-transparent hover:text-primary"
-              disabled={!selectedProducts.some(id => {
+              disabled={selectedProducts.length === 0 || !selectedProducts.every(id => {
                 const product = products.find(p => p.product_id === id);
                 return product?.discount_price !== undefined;
               })}
