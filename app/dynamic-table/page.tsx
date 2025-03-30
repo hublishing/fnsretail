@@ -1047,10 +1047,10 @@ export default function DynamicTable() {
 
       <div className="rounded-md border overflow-hidden">
         <div className="w-[1334px]">
-          <div className="sticky top-0 z-10">
+          <div className="bg-muted sticky top-0 z-10">
             <Table className="w-full">
               <TableHeader>
-                <TableRow>
+                <TableRow className="hover:bg-muted">
                   {columns.map((column) => (
                     <TableHead 
                       key={column.key} 
