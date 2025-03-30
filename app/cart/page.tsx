@@ -55,6 +55,7 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
+import { CouponModal } from "../../components/coupon-modal"
 
 interface Product {
   product_id: string;
@@ -86,12 +87,18 @@ interface Product {
   order_types?: string[];
   discount_price?: number;
   discount?: number;
+  discount_rate?: number;
+  coupon1_price?: number;
+  coupon2_price?: number;
+  coupon3_price?: number;
+  isSelected?: boolean;
 }
 
 interface Column {
   key: keyof Product | 'actions';
   label: string;
   format?: (value: any) => React.ReactNode;
+  render?: (product: Product) => React.ReactNode;
 }
 
 interface Filters {
@@ -270,6 +277,16 @@ export default function CartPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<Product[]>([]);
+  const [showCouponModal, setShowCouponModal] = useState(false);
+  const [coupons, setCoupons] = useState<{
+    coupon1: { value: number; type: 'percentage' | 'fixed'; minAmount: number };
+    coupon2: { value: number; type: 'percentage' | 'fixed'; minAmount: number };
+    coupon3: { value: number; type: 'percentage' | 'fixed'; minAmount: number };
+  }>({
+    coupon1: { value: 0, type: 'percentage', minAmount: 0 },
+    coupon2: { value: 0, type: 'percentage', minAmount: 0 },
+    coupon3: { value: 0, type: 'percentage', minAmount: 0 },
+  });
 
   // UUID 생성 함수
   const generateUniqueId = () => {
@@ -554,24 +571,24 @@ export default function CartPage() {
       return;
     }
 
-    if (!discountRate) {
-      alert('할인율을 입력해주세요.');
+    if (!discountValue) {
+      alert('할인값을 입력해주세요.');
       return;
     }
 
     const updatedProducts = products.map(product => {
       if (selectedProducts.includes(product.product_id)) {
         let discountPrice = product.shop_price;
-        if (discountUnit === '원') {
-          discountPrice = product.shop_price - discountRate;
+        if (discountType === 'fixed') {
+          discountPrice = product.shop_price - discountValue;
         } else {
-          discountPrice = Math.round(product.shop_price * (1 - discountRate / 100));
+          discountPrice = Math.round(product.shop_price * (1 - discountValue / 100));
         }
 
         return {
           ...product,
-          discount: discountRate,
-          discount_unit: discountUnit,
+          discount: discountValue,
+          discount_unit: discountType,
           discount_price: discountPrice
         };
       }
@@ -580,7 +597,7 @@ export default function CartPage() {
 
     setProducts(updatedProducts);
     setShowDiscountModal(false);
-    setDiscountRate(0);
+    setDiscountValue(0);
   };
 
   // 날짜 변경 핸들러
@@ -621,7 +638,7 @@ export default function CartPage() {
         baseData['원가'] = item.org_price?.toLocaleString() || '-';
       }
       if (excelSettings.includeDiscount) {
-        baseData['할인가'] = item.discount_price?.toLocaleString() || '-';
+        baseData['즉시할인'] = item.discount_price?.toLocaleString() || '-';
         baseData['할인율'] = item.discount_price && item.shop_price 
           ? `${Math.round(((item.shop_price - item.discount_price) / item.shop_price) * 100)}%`
           : item.discount ? `${item.discount}%` : '-';
@@ -697,6 +714,65 @@ export default function CartPage() {
     }
   };
 
+  // 쿠폰 적용 핸들러
+  const handleApplyCoupons = (newCoupons: typeof coupons) => {
+    setCoupons(newCoupons);
+    
+    if (!selectedProducts.length) {
+      alert('쿠폰을 적용할 상품을 선택해주세요.');
+      return;
+    }
+    
+    const updatedProducts = products.map(product => {
+      if (!selectedProducts.includes(product.product_id)) {
+        return product;
+      }
+
+      if (!product.discount_price) {
+        return product;
+      }
+
+      // 쿠폰1 계산
+      let coupon1Price = product.discount_price;
+      if (product.discount_price >= newCoupons.coupon1.minAmount) {
+        if (newCoupons.coupon1.type === 'percentage') {
+          coupon1Price = Math.round(product.discount_price * (1 - newCoupons.coupon1.value / 100));
+        } else {
+          coupon1Price = product.discount_price - newCoupons.coupon1.value;
+        }
+      }
+
+      // 쿠폰2 계산
+      let coupon2Price = coupon1Price;
+      if (coupon1Price >= newCoupons.coupon2.minAmount) {
+        if (newCoupons.coupon2.type === 'percentage') {
+          coupon2Price = Math.round(coupon1Price * (1 - newCoupons.coupon2.value / 100));
+        } else {
+          coupon2Price = coupon1Price - newCoupons.coupon2.value;
+        }
+      }
+
+      // 쿠폰3 계산
+      let coupon3Price = coupon2Price;
+      if (coupon2Price >= newCoupons.coupon3.minAmount) {
+        if (newCoupons.coupon3.type === 'percentage') {
+          coupon3Price = Math.round(coupon2Price * (1 - newCoupons.coupon3.value / 100));
+        } else {
+          coupon3Price = coupon2Price - newCoupons.coupon3.value;
+        }
+      }
+
+      return {
+        ...product,
+        coupon1_price: coupon1Price,
+        coupon2_price: coupon2Price,
+        coupon3_price: coupon3Price,
+      };
+    });
+
+    setProducts(updatedProducts);
+  };
+
   const columns: Column[] = [
     { key: 'actions', label: '삭제' },
     { key: "img_desc1", label: "이미지" },
@@ -710,7 +786,55 @@ export default function CartPage() {
     { key: "supply_name", label: "공급처명" },
     { key: "exclusive2", label: "단독여부" },
     { key: "total_order_qty", label: "판매수량", format: (value: number) => value?.toLocaleString() || '-' },
-    { key: "product_desc", label: "URL", format: (value: string) => value ? <a href={value} target="_blank" rel="noopener noreferrer">링크</a> : '-' }
+    { key: "product_desc", label: "URL", format: (value: string) => value ? <a href={value} target="_blank" rel="noopener noreferrer">링크</a> : '-' },
+    {
+      key: "discount_price",
+      label: "즉시할인",
+      render: (product) => (
+        <div className="text-right">
+          {product.discount_price ? (
+            <>
+              <div>{product.discount_price.toLocaleString()}원</div>
+              <div className="text-sm text-muted-foreground">
+                {product.discount_rate}%
+              </div>
+            </>
+          ) : (
+            "-"
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "coupon1_price",
+      label: "쿠폰1",
+      render: (product) => (
+        <div className="text-right">
+          {product.coupon1_price ? product.coupon1_price.toLocaleString() : "-"}
+        </div>
+      ),
+    },
+    {
+      key: "coupon2_price",
+      label: "쿠폰2",
+      render: (product) => (
+        <div className="text-right">
+          {product.coupon2_price ? product.coupon2_price.toLocaleString() : "-"}
+        </div>
+      ),
+    },
+    {
+      key: "coupon3_price",
+      label: "쿠폰3",
+      render: (product) => (
+        <div className="text-right">
+          {product.coupon3_price ? product.coupon3_price.toLocaleString() :
+           product.coupon2_price ? product.coupon2_price.toLocaleString() :
+           product.coupon1_price ? product.coupon1_price.toLocaleString() :
+           product.discount_price?.toLocaleString() || '-'}
+        </div>
+      ),
+    },
   ];
 
   return (
@@ -883,7 +1007,15 @@ export default function CartPage() {
               onClick={() => setShowDiscountModal(true)}
               className="border-0 hover:bg-transparent hover:text-primary"
             >
-              할인 적용
+              즉시할인
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowCouponModal(true)}
+              className="border-0 hover:bg-transparent hover:text-primary"
+            >
+              쿠폰
             </Button>
             <Button
               variant="outline"
@@ -939,8 +1071,11 @@ export default function CartPage() {
                       <TableHead className="text-center w-[80px]">이미지</TableHead>
                       <TableHead className="text-left w-[300px]">상품명</TableHead>
                       <TableHead className="text-center w-[100px]">판매가</TableHead>
-                      <TableHead className="text-center w-[100px]">할인가</TableHead>
-                      <TableHead className="text-center w-[80px]">할인율</TableHead>
+                      <TableHead className="text-center w-[100px]">즉시할인</TableHead>
+                      <TableHead className="text-center w-[100px]">쿠폰1</TableHead>
+                      <TableHead className="text-center w-[100px]">쿠폰2</TableHead>
+                      <TableHead className="text-center w-[100px]">쿠폰3</TableHead>
+                      <TableHead className="text-center w-[100px]">최종할인</TableHead>
                       <TableHead className="text-center w-[80px]">원가율</TableHead>
                       <TableHead className="text-center w-[80px]">재고</TableHead>
                       <TableHead className="text-center w-[80px]">드랍여부</TableHead>
@@ -1034,11 +1169,63 @@ export default function CartPage() {
                           </DraggableCell>
                           <DraggableCell className="text-center w-[100px]">
                             <div>{product.discount_price?.toLocaleString() || '-'}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {product.discount_price && product.shop_price 
+                                ? `${Math.round(((product.shop_price - product.discount_price) / product.shop_price) * 100)}%`
+                                : '-'}
+                            </div>
                           </DraggableCell>
-                          <DraggableCell className="text-center w-[80px]">
-                            {product.discount_price && product.shop_price 
-                              ? `${Math.round(((product.shop_price - product.discount_price) / product.shop_price) * 100)}%`
-                              : product.discount ? `${product.discount}%` : '-'}
+                          <DraggableCell className="text-center w-[100px]">
+                            <div>{product.coupon1_price ? product.coupon1_price.toLocaleString() : "-"}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {product.coupon1_price && product.discount_price
+                                ? `${Math.round(((product.discount_price - product.coupon1_price) / product.discount_price) * 100)}%`
+                                : '-'}
+                            </div>
+                          </DraggableCell>
+                          <DraggableCell className="text-center w-[100px]">
+                            <div>
+                              {product.coupon2_price ? product.coupon2_price.toLocaleString() :
+                               product.coupon1_price ? product.coupon1_price.toLocaleString() :
+                               product.discount_price?.toLocaleString() || '-'}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {product.coupon2_price && product.coupon1_price
+                                ? `${Math.round(((product.coupon1_price - product.coupon2_price) / product.coupon1_price) * 100)}%`
+                                : '-'}
+                            </div>
+                          </DraggableCell>
+                          <DraggableCell className="text-center w-[100px]">
+                            <div>
+                              {product.coupon3_price ? product.coupon3_price.toLocaleString() :
+                               product.coupon2_price ? product.coupon2_price.toLocaleString() :
+                               product.coupon1_price ? product.coupon1_price.toLocaleString() :
+                               product.discount_price?.toLocaleString() || '-'}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {product.coupon3_price && product.coupon2_price
+                                ? `${Math.round(((product.coupon2_price - product.coupon3_price) / product.coupon2_price) * 100)}%`
+                                : '-'}
+                            </div>
+                          </DraggableCell>
+                          <DraggableCell className="text-center w-[100px]">
+                            <div> 
+                              {product.coupon3_price ? product.coupon3_price.toLocaleString() :
+                               product.coupon2_price ? product.coupon2_price.toLocaleString() :
+                               product.coupon1_price ? product.coupon1_price.toLocaleString() :
+                               product.discount_price?.toLocaleString() || '-'}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {product.coupon3_price && product.shop_price
+                                ? `${Math.round(((product.shop_price - product.coupon3_price) / product.shop_price) * 100)}%`
+                                : product.coupon2_price && product.shop_price
+                                ? `${Math.round(((product.shop_price - product.coupon2_price) / product.shop_price) * 100)}%`
+                                : product.coupon1_price && product.shop_price
+                                ? `${Math.round(((product.shop_price - product.coupon1_price) / product.shop_price) * 100)}%`
+                                : product.discount_price && product.shop_price
+                                ? `${Math.round(((product.shop_price - product.discount_price) / product.shop_price) * 100)}%`
+                                : '-'}
+                            </div>
                           </DraggableCell>
                           <DraggableCell className="text-center w-[80px]">
                             <div>{product.cost_ratio ? `${product.cost_ratio}%` : '-'}</div>
@@ -1137,6 +1324,15 @@ export default function CartPage() {
           onClose={() => setShowExcelSettings(false)}
           settings={excelSettings}
           onSettingsChange={setExcelSettings}
+        />
+      )}
+
+      {/* 쿠폰 모달 */}
+      {showCouponModal && (
+        <CouponModal
+          isOpen={showCouponModal}
+          onClose={() => setShowCouponModal(false)}
+          onApply={handleApplyCoupons}
         />
       )}
     </div>
