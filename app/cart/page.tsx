@@ -999,7 +999,7 @@ export default function CartPage() {
               onClick={handleRemoveSelectedProducts}
               className="border-0 hover:bg-transparent hover:text-primary"
             >
-              선택 삭제
+              선택삭제
             </Button>
             <Button
               variant="outline"
@@ -1027,7 +1027,7 @@ export default function CartPage() {
               onClick={handleExcelDownload}
               className="border-0 hover:bg-transparent hover:text-primary"
             >
-              엑셀 다운로드
+              다운로드
             </Button>
             <Button
               variant="outline"
@@ -1035,7 +1035,7 @@ export default function CartPage() {
               onClick={() => setShowExcelSettings(true)}
               className="border-0 hover:bg-transparent hover:text-primary"
             >
-              양식 변경
+              양식변경
             </Button>
           </div>
         </div>

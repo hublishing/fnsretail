@@ -1022,7 +1022,7 @@ export default function DynamicTable() {
             disabled={selectedProducts.size === 0}
             className="border-0 hover:bg-transparent text-[hsl(var(--foreground))] hover:text-[hsl(var(--foreground))]"
           >
-            선택 담기
+            선택담기
           </Button>
           <Button
             variant="outline"
@@ -1030,7 +1030,7 @@ export default function DynamicTable() {
             onClick={handleExcelDownload}
             className="border-0 hover:bg-transparent text-[hsl(var(--foreground))] hover:text-[hsl(var(--foreground))]"
           >
-            엑셀 다운로드
+            다운로드
           </Button>
           <Button
             variant="outline"
@@ -1038,7 +1038,7 @@ export default function DynamicTable() {
             onClick={() => setShowExcelSettings(true)}
             className="border-0 hover:bg-transparent text-[hsl(var(--foreground))] hover:text-[hsl(var(--foreground))]"
           >
-            양식 변경
+            양식변경
           </Button>
         </div>
         
