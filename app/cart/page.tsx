@@ -212,7 +212,7 @@ function CheckboxCell({ product, selectedProducts, onSelect }: {
   onSelect: (checked: boolean) => void;
 }) {
   return (
-    <TableCell className="text-center w-[50px]">
+    <TableCell className="text-center w-[30px]">
       <Checkbox 
         checked={selectedProducts.includes(product.product_id)}
         onCheckedChange={onSelect}
@@ -1043,7 +1043,7 @@ export default function CartPage() {
 
       {/* 상품 테이블 */}
       <div className="rounded-md border overflow-hidden">
-        <div className="w-[1330px]">
+        <div className="w-[1334px]">
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
@@ -1058,8 +1058,7 @@ export default function CartPage() {
                 <Table>
                   <TableHeader className="bg-muted">
                     <TableRow className="hover:bg-muted">
-                      <TableHead className="text-center w-[50px]">번호</TableHead>
-                      <TableHead className="w-[50px] text-center">
+                      <TableHead className="w-[30px] text-center">
                         <Checkbox
                           checked={products.length > 0 && selectedProducts.length === products.length}
                           onCheckedChange={(checked) => {
@@ -1071,22 +1070,23 @@ export default function CartPage() {
                           }}
                         />
                       </TableHead>
-                      <TableHead className="text-center w-[100px]">이지어드민</TableHead>
-                      <TableHead className="text-center w-[80px]">이미지</TableHead>
-                      <TableHead className="text-left w-[300px]">상품명</TableHead>
-                      <TableHead className="text-center w-[100px]">판매가</TableHead>
-                      <TableHead className="text-center w-[100px]">즉시할인</TableHead>
-                      <TableHead className="text-center w-[100px]">쿠폰1</TableHead>
-                      <TableHead className="text-center w-[100px]">쿠폰2</TableHead>
-                      <TableHead className="text-center w-[100px]">쿠폰3</TableHead>
-                      <TableHead className="text-center w-[100px]">최종할인</TableHead>
-                      <TableHead className="text-center w-[80px]">원가율</TableHead>
-                      <TableHead className="text-center w-[80px]">재고</TableHead>
-                      <TableHead className="text-center w-[80px]">드랍여부</TableHead>
-                      <TableHead className="text-center w-[100px]">공급처명</TableHead>
-                      <TableHead className="text-center w-[80px]">단독여부</TableHead>
-                      <TableHead className="text-center w-[100px]">판매수량</TableHead>
-                      <TableHead className="text-center w-[80px]">URL</TableHead>
+                      <TableHead className="text-center w-[40px]">번호</TableHead>
+                      <TableHead className="text-center w-[70px]">이지어드민</TableHead>
+                      <TableHead className="text-center w-[70px]">이미지</TableHead>
+                      <TableHead className="text-left w-[195px]">상품명</TableHead>
+                      <TableHead className="text-center w-[65px]">판매가</TableHead>
+                      <TableHead className="text-center w-[65px]">즉시할인</TableHead>
+                      <TableHead className="text-center w-[65px]">쿠폰1</TableHead>
+                      <TableHead className="text-center w-[65px]">쿠폰2</TableHead>
+                      <TableHead className="text-center w-[65px]">쿠폰3</TableHead>
+                      <TableHead className="text-center w-[65px]">최종할인</TableHead>
+                      <TableHead className="text-center w-[60px]">원가율</TableHead>
+                      <TableHead className="text-center w-[60px]">재고</TableHead>
+                      <TableHead className="text-center w-[45px]">드랍</TableHead>
+                      <TableHead className="text-center w-[60px]">공급처</TableHead>
+                      <TableHead className="text-center w-[60px]">단독</TableHead>
+                      <TableHead className="text-center w-[60px]">판매량</TableHead>
+                      <TableHead className="text-center w-[50px]">URL</TableHead>
                     </TableRow>
                   </TableHeader>
                 </Table>
@@ -1099,9 +1099,6 @@ export default function CartPage() {
                           product={product}
                           className={selectedProducts.includes(product.product_id) ? 'bg-muted' : ''}
                         >
-                          <DraggableCell className="text-center w-[50px]">
-                            <div>{index + 1}</div>
-                          </DraggableCell>
                           <CheckboxCell
                             product={product}
                             selectedProducts={selectedProducts}
@@ -1113,10 +1110,13 @@ export default function CartPage() {
                               }
                             }}
                           />
-                          <DraggableCell className="text-center w-[100px]">
+                          <DraggableCell className="text-center w-[40px]">
+                            <div>{index + 1}</div>
+                          </DraggableCell>
+                          <DraggableCell className="text-center w-[65px]">
                             <div>{product.product_id}</div>
                           </DraggableCell>
-                          <DraggableCell className="text-center w-[80px]">
+                          <DraggableCell className="text-center w-[70px]">
                             <div className="flex justify-center">
                               {product.img_desc1 ? (
                                 <img
@@ -1145,7 +1145,7 @@ export default function CartPage() {
                               )}
                             </div>
                           </DraggableCell>
-                          <TableCell className="text-left w-[300px]">
+                          <TableCell className="text-left w-[200px]">
                             <div className="flex flex-col">
                               <div 
                                 className="truncate cursor-pointer hover:underline" 
@@ -1167,11 +1167,11 @@ export default function CartPage() {
                               </div>
                             </div>
                           </TableCell>
-                          <DraggableCell className="text-center w-[100px]">
+                          <DraggableCell className="text-center w-[65px]">
                             <div>{product.shop_price?.toLocaleString() || '-'}</div>
                             <div className="text-sm text-muted-foreground">{product.org_price?.toLocaleString() || '-'}</div>
                           </DraggableCell>
-                          <DraggableCell className="text-center w-[100px]">
+                          <DraggableCell className="text-center w-[65px]">
                             <div>{product.discount_price?.toLocaleString() || '-'}</div>
                             <div className="text-sm text-muted-foreground">
                               {product.discount_price && product.shop_price 
@@ -1179,7 +1179,7 @@ export default function CartPage() {
                                 : '-'}
                             </div>
                           </DraggableCell>
-                          <DraggableCell className="text-center w-[100px]">
+                          <DraggableCell className="text-center w-[65px]">
                             <div>{product.coupon1_price ? product.coupon1_price.toLocaleString() : "-"}</div>
                             <div className="text-sm text-muted-foreground">
                               {product.coupon1_price && product.discount_price
@@ -1187,7 +1187,7 @@ export default function CartPage() {
                                 : '-'}
                             </div>
                           </DraggableCell>
-                          <DraggableCell className="text-center w-[100px]">
+                          <DraggableCell className="text-center w-[65px]">
                             <div>{product.coupon2_price ? product.coupon2_price.toLocaleString() : "-"}</div>
                             <div className="text-sm text-muted-foreground">
                               {product.coupon2_price && product.coupon1_price
@@ -1195,7 +1195,7 @@ export default function CartPage() {
                                 : '-'}
                             </div>
                           </DraggableCell>
-                          <DraggableCell className="text-center w-[100px]">
+                          <DraggableCell className="text-center w-[65px]">
                             <div>{product.coupon3_price ? product.coupon3_price.toLocaleString() : "-"}</div>
                             <div className="text-sm text-muted-foreground">
                               {product.coupon3_price && product.coupon2_price
@@ -1203,7 +1203,7 @@ export default function CartPage() {
                                 : '-'}
                             </div>
                           </DraggableCell>
-                          <DraggableCell className="text-center w-[100px]">
+                          <DraggableCell className="text-center w-[65px]">
                             <div> 
                               {product.coupon3_price ? product.coupon3_price.toLocaleString() :
                                product.coupon2_price ? product.coupon2_price.toLocaleString() :
@@ -1222,28 +1222,28 @@ export default function CartPage() {
                                 : '-'}
                             </div>
                           </DraggableCell>
-                          <DraggableCell className="text-center w-[80px]">
+                          <DraggableCell className="text-center w-[60px]">
                             <div>{product.cost_ratio ? `${product.cost_ratio}%` : '-'}</div>
                           </DraggableCell>
-                          <DraggableCell className="text-center w-[80px]">
+                          <DraggableCell className="text-center w-[60px]">
                             <div>{(product.total_stock !== undefined 
                               ? product.total_stock 
                               : product.main_wh_available_stock_excl_production_stock)?.toLocaleString() || '-'}</div>
                             <div className="text-sm text-gray-500 mt-1">{product.soldout_rate ? `${product.soldout_rate}%` : '-'}</div>
                           </DraggableCell>
-                          <DraggableCell className="text-center w-[80px]">
+                          <DraggableCell className="text-center w-[45px]">
                             <div>{product.drop_yn || '-'}</div>
                           </DraggableCell>
-                          <DraggableCell className="text-center w-[100px]">
+                          <DraggableCell className="text-center w-[60px]">
                             <div>{product.supply_name || '-'}</div>
                           </DraggableCell>
-                          <DraggableCell className="text-center w-[80px]">
+                          <DraggableCell className="text-center w-[60px]">
                             <div>{product.exclusive2 || '-'}</div>
                           </DraggableCell>
-                          <DraggableCell className="text-center w-[100px]">
+                          <DraggableCell className="text-center w-[60px]">
                             <div>{product.total_order_qty?.toLocaleString() || '-'}</div>
                           </DraggableCell>
-                          <DraggableCell className="text-center w-[80px]">
+                          <DraggableCell className="text-center w-[50px]">
                             {product.product_desc ? (
                               <a href={product.product_desc} target="_blank" rel="noopener noreferrer" className="hover:underline">
                                 링크
