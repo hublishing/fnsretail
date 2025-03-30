@@ -1169,6 +1169,8 @@ export default function CartPage() {
             >
               양식변경
             </Button> 
+          </div>
+          <div className="flex gap-2">
             <Button
               variant="outline"
               size="sm"
