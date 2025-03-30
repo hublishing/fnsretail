@@ -1014,6 +1014,10 @@ export default function CartPage() {
               size="sm"
               onClick={() => setShowCouponModal(true)}
               className="border-0 hover:bg-transparent hover:text-primary"
+              disabled={!selectedProducts.some(id => {
+                const product = products.find(p => p.product_id === id);
+                return product?.discount_price !== undefined;
+              })}
             >
               쿠폰
             </Button>
