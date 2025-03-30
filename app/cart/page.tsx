@@ -1188,11 +1188,7 @@ export default function CartPage() {
                             </div>
                           </DraggableCell>
                           <DraggableCell className="text-center w-[100px]">
-                            <div>
-                              {product.coupon2_price ? product.coupon2_price.toLocaleString() :
-                               product.coupon1_price ? product.coupon1_price.toLocaleString() :
-                               product.discount_price?.toLocaleString() || '-'}
-                            </div>
+                            <div>{product.coupon2_price ? product.coupon2_price.toLocaleString() : "-"}</div>
                             <div className="text-sm text-muted-foreground">
                               {product.coupon2_price && product.coupon1_price
                                 ? `${Math.round(((product.coupon1_price - product.coupon2_price) / product.coupon1_price) * 100)}%`
@@ -1200,12 +1196,7 @@ export default function CartPage() {
                             </div>
                           </DraggableCell>
                           <DraggableCell className="text-center w-[100px]">
-                            <div>
-                              {product.coupon3_price ? product.coupon3_price.toLocaleString() :
-                               product.coupon2_price ? product.coupon2_price.toLocaleString() :
-                               product.coupon1_price ? product.coupon1_price.toLocaleString() :
-                               product.discount_price?.toLocaleString() || '-'}
-                            </div>
+                            <div>{product.coupon3_price ? product.coupon3_price.toLocaleString() : "-"}</div>
                             <div className="text-sm text-muted-foreground">
                               {product.coupon3_price && product.coupon2_price
                                 ? `${Math.round(((product.coupon2_price - product.coupon3_price) / product.coupon2_price) * 100)}%`
