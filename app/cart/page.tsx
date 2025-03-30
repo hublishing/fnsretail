@@ -44,6 +44,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import React from 'react';
 
 interface Product {
   product_id: string;
@@ -113,7 +114,10 @@ interface ChannelInfo {
 }
 
 // 정렬 가능한 행 컴포넌트
-function SortableTableRow({ product, ...props }: { product: Product } & React.HTMLAttributes<HTMLTableRowElement>) {
+function SortableTableRow({ product, children, ...props }: { 
+  product: Product;
+  children: React.ReactNode;
+} & React.HTMLAttributes<HTMLTableRowElement>) {
   const {
     attributes,
     listeners,
@@ -129,15 +133,23 @@ function SortableTableRow({ product, ...props }: { product: Product } & React.HT
     opacity: isDragging ? 0.5 : 1,
   };
 
+  // 드래그 속성을 자식 컴포넌트에 전달
+  const childrenWithProps = React.Children.map(children, child => {
+    if (React.isValidElement(child)) {
+      return React.cloneElement(child, { ...attributes, ...listeners });
+    }
+    return child;
+  });
+
   return (
     <TableRow
       ref={setNodeRef}
       style={style}
-      {...attributes}
-      {...listeners}
-      className={`cursor-move ${isDragging ? 'bg-muted' : ''}`}
+      className={`${isDragging ? 'bg-muted' : ''}`}
       {...props}
-    />
+    >
+      {childrenWithProps}
+    </TableRow>
   );
 }
 
@@ -153,6 +165,18 @@ function CheckboxCell({ product, selectedProducts, onSelect }: {
         checked={selectedProducts.includes(product.product_id)}
         onCheckedChange={onSelect}
       />
+    </TableCell>
+  );
+}
+
+// 드래그 가능한 셀 컴포넌트
+function DraggableCell({ children, ...props }: React.HTMLAttributes<HTMLTableCellElement>) {
+  return (
+    <TableCell 
+      className="cursor-move" 
+      {...props}
+    >
+      {children}
     </TableCell>
   );
 }
@@ -185,7 +209,7 @@ export default function CartPage() {
   const [selectedChannelInfo, setSelectedChannelInfo] = useState<ChannelInfo | null>(null);
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
-  const [title, setTitle] = useState<string>('');
+  const [title, setTitle] = useState<string>('리스트작성테스트');
   const [showExcelSettings, setShowExcelSettings] = useState(false);
   const [excelSettings, setExcelSettings] = useState({
     includeImage: true,
@@ -590,7 +614,7 @@ export default function CartPage() {
     <div className="container mx-auto py-8">
       <div className="flex justify-between items-center mb-6">
         <div className="flex flex-col">
-          <h1 className="text-2xl font-bold">리스트 작성</h1>
+          <h1 className="text-2xl font-bold">리스트작성테스트</h1>
           <div className="text-sm text-gray-500 mt-1">
             <span className="mr-4">작성자: {user?.uid === 'a8mwwycqhaZLIb9iOcshPbpAVrj2' ? '한재훈' :
              user?.uid === 'MhMI2KxbxkPHIAJP0o4sPSZG35e2' ? '이세명' :
@@ -847,71 +871,102 @@ export default function CartPage() {
                             }
                           }}
                         />
-                        <TableCell className="text-center w-[80px]">
+                        <DraggableCell className="text-center w-[80px]">
                           <div className="flex justify-center">
-                            <img
-                              src={product.img_desc1}
-                              alt={product.name}
-                              className="w-16 h-16 object-cover rounded cursor-pointer"
-                              onClick={() => setSelectedProductId(product.product_id)}
-                            />
+                            {product.img_desc1 ? (
+                              <img
+                                src={product.img_desc1}
+                                alt="상품 이미지" 
+                                className="w-12 h-12 object-cover rounded-md"
+                                style={{ borderRadius: '5px' }}
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.src = '/no-image.png';
+                                  target.alt = '이미지 없음';
+                                  target.style.objectFit = 'contain';
+                                  target.style.backgroundColor = 'transparent';
+                                  target.parentElement?.classList.add('flex', 'justify-center');
+                                }}
+                              />
+                            ) : (
+                              <div className="w-12 h-12 flex items-center justify-center">
+                                <img 
+                                  src="/no-image.png" 
+                                  alt="이미지 없음" 
+                                  className="w-12 h-12 object-contain rounded-md"
+                                  style={{ borderRadius: '5px' }}
+                                />
+                              </div>
+                            )}
                           </div>
-                        </TableCell>
-                        <TableCell className="text-center w-[200px]">
+                        </DraggableCell>
+                        <DraggableCell className="text-center w-[200px]">
                           <button
                             onClick={() => setSelectedProductId(product.product_id)}
-                            className="text-left hover:text-blue-600 transition-colors w-full"
+                            className="hover:underline text-left"
                           >
-                            <div className="font-medium truncate" title={product.name}>
-                              {product.name.length > 20 ? `${product.name.slice(0, 20)}...` : product.name}
-                            </div>
-                            <div className="text-sm text-gray-500 mt-1 truncate">
-                              {[
-                                product.brand,
-                                product.category_1,
-                                product.extra_column2
-                              ].filter(Boolean).join(' ')}
+                            <div className="font-medium">{product.name}</div>
+                            <div className="text-sm text-gray-500 mt-1">
+                              <div>원가: {product.org_price?.toLocaleString() || '-'}</div>
+                              <div>판매가: {product.shop_price?.toLocaleString() || '-'}</div>
                             </div>
                           </button>
-                        </TableCell>
-                        <TableCell className="text-center w-[80px]">
+                        </DraggableCell>
+                        <DraggableCell className="text-center">
                           <div>{product.org_price?.toLocaleString() || '-'}</div>
-                        </TableCell>
-                        <TableCell className="text-center w-[80px]">{product.shop_price?.toLocaleString() || '-'}</TableCell>
-                        <TableCell className="text-center w-[80px]">{product.discount_price?.toLocaleString() || '-'}</TableCell>
-                        <TableCell className="text-center w-[80px]">
+                        </DraggableCell>
+                        <DraggableCell className="text-center">
+                          <div>{product.shop_price?.toLocaleString() || '-'}</div>
+                        </DraggableCell>
+                        <DraggableCell className="text-center">
+                          <div>{product.discount_price?.toLocaleString() || '-'}</div>
+                        </DraggableCell>
+                        <DraggableCell className="text-center">
                           {product.discount_price && product.shop_price 
                             ? `${Math.round(((product.shop_price - product.discount_price) / product.shop_price) * 100)}%`
                             : product.discount ? `${product.discount}%` : '-'}
-                        </TableCell>
-                        <TableCell className="text-center w-[100px]">{product.category_3 || '-'}</TableCell>
-                        <TableCell className="text-center w-[80px]">{product.cost_ratio ? `${product.cost_ratio}%` : '-'}</TableCell>
-                        <TableCell className="text-center w-[80px]">
+                        </DraggableCell>
+                        <DraggableCell className="text-center">
+                          <div>{product.category_3 || '-'}</div>
+                        </DraggableCell>
+                        <DraggableCell className="text-center">
+                          <div>{product.cost_ratio ? `${product.cost_ratio}%` : '-'}</div>
+                        </DraggableCell>
+                        <DraggableCell className="text-center">
                           <div>{(product.total_stock !== undefined 
                             ? product.total_stock 
                             : product.main_wh_available_stock_excl_production_stock)?.toLocaleString() || '-'}</div>
                           <div className="text-sm text-gray-500 mt-1">{product.soldout_rate ? `${product.soldout_rate}%` : '-'}</div>
-                        </TableCell>
-                        <TableCell className="text-center w-[80px]">{product.drop_yn || '-'}</TableCell>
-                        <TableCell className="text-center w-[100px]">{product.supply_name || '-'}</TableCell>
-                        <TableCell className="text-center w-[80px]">{product.exclusive2 || '-'}</TableCell>
-                        <TableCell className="text-center w-[100px]">{product.total_order_qty?.toLocaleString() || '-'}</TableCell>
-                        <TableCell className="text-center w-[80px]">
+                        </DraggableCell>
+                        <DraggableCell className="text-center">
+                          <div>{product.drop_yn || '-'}</div>
+                        </DraggableCell>
+                        <DraggableCell className="text-center">
+                          <div>{product.supply_name || '-'}</div>
+                        </DraggableCell>
+                        <DraggableCell className="text-center">
+                          <div>{product.exclusive2 || '-'}</div>
+                        </DraggableCell>
+                        <DraggableCell className="text-center">
+                          <div>{product.total_order_qty?.toLocaleString() || '-'}</div>
+                        </DraggableCell>
+                        <DraggableCell className="text-center">
                           {product.product_desc ? (
                             <a href={product.product_desc} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
                               링크
                             </a>
                           ) : '링크 없음'}
-                        </TableCell>
-                        <TableCell className="text-center w-[80px]">
+                        </DraggableCell>
+                        <DraggableCell className="text-center">
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => handleRemoveFromCart(product.product_id)}
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
                           >
                             삭제
                           </Button>
-                        </TableCell>
+                        </DraggableCell>
                       </SortableTableRow>
                     ))}
                   </TableBody>
