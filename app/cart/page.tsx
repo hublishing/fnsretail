@@ -865,6 +865,51 @@ export default function CartPage() {
     }
   };
 
+  // 초기화 핸들러 추가
+  const handleReset = async () => {
+    if (!confirm('리스트를 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+      return;
+    }
+
+    try {
+      if (user) {
+        const docRef = doc(db, 'userCarts', user.uid);
+        await setDoc(docRef, {
+          products: [],
+          title: '',
+          channel_name: '',
+          delivery_type: '',
+          start_date: '',
+          end_date: '',
+          memo: '',
+          updatedAt: new Date().toISOString()
+        });
+
+        // 로컬 상태 초기화
+        setProducts([]);
+        setTitle('');
+        setChannelSearchTerm('');
+        setDeliveryType('');
+        setStartDate('');
+        setEndDate('');
+        setMemo('');
+        setFilters({
+          channel_name: '',
+          delivery_type: ''
+        });
+        setSelectedProducts([]);
+        setSelectedChannelInfo(null);
+        setIsValidChannel(true);
+        setIsValidDeliveryType(true);
+
+        alert('리스트가 초기화되었습니다.');
+      }
+    } catch (error) {
+      console.error('리스트 초기화 중 오류 발생:', error);
+      alert('리스트 초기화 중 오류가 발생했습니다.');
+    }
+  };
+
   const columns: Column[] = [
     { key: 'actions', label: '삭제' },
     { key: "img_desc1", label: "이미지" },
@@ -1123,7 +1168,15 @@ export default function CartPage() {
               className="border-0 hover:bg-transparent hover:text-primary"
             >
               양식변경
-            </Button>
+            </Button> 
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleReset}
+              className="border-0 hover:bg-transparent hover:text-primary"
+            >
+              리스트 초기화
+            </Button> 
           </div>
         </div>
       </div>
@@ -1346,10 +1399,10 @@ export default function CartPage() {
             </SortableContext>
           </DndContext>
         </div>
-      </div>
+      </div> 
 
       {/* 리스트저장 버튼 */}
-      <div className="flex justify-end mt-4">
+      <div className="flex justify-end mt-4">    
         <Button className="bg-blue-500 text-white hover:bg-blue-600">
           리스트저장
         </Button>
