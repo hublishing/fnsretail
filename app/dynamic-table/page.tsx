@@ -27,6 +27,7 @@ import { useRouter } from "next/navigation"
 import { ProductDetailModal } from "@/components/product-detail-modal"
 import * as XLSX from 'xlsx';
 import { ExcelSettingsModal } from "@/components/excel-settings-modal"
+import { Checkbox } from "@/components/ui/checkbox"
 
 // 고정 필터 옵션
 const STATIC_FILTER_OPTIONS = {
@@ -85,7 +86,7 @@ interface Product {
 }
 
 interface Column {
-  key: keyof Product | 'actions' | 'detail';
+  key: keyof Product | 'actions' | 'detail' | 'checkbox';
   label: string;
   format?: (value: any, product?: Product) => React.ReactNode;
   sortable?: boolean;
@@ -164,6 +165,7 @@ export default function DynamicTable() {
   const [searchType, setSearchType] = useState<SearchType>('name')
   const [error, setError] = useState<string | null>(null)
   const [cartItems, setCartItems] = useState<Set<string>>(new Set())
+  const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set())
   const [filters, setFilters] = useState(INITIAL_FILTERS);
   const [isFilterOptionsLoading, setIsFilterOptionsLoading] = useState(true);
   const [filterOptionsError, setFilterOptionsError] = useState<string | null>(null);
@@ -192,6 +194,7 @@ export default function DynamicTable() {
 
   // 컬럼 정의를 상수로 분리
   const columns: Column[] = [
+    { key: 'checkbox', label: '' },
     { key: 'actions', label: '담기' },
     { key: "product_id", label: "이지어드민" },
     { 
@@ -626,8 +629,8 @@ export default function DynamicTable() {
     }
   };
 
-  // 담기 기능 수정
-  const handleAddToCart = async (product: Product) => {
+  // 선택된 상품 담기 기능
+  const handleAddSelectedToCart = async () => {
     try {
       if (!user) {
         alert('장바구니에 담으려면 로그인이 필요합니다.');
@@ -643,19 +646,18 @@ export default function DynamicTable() {
         currentProducts = data.products || [];
       }
 
-      // 이미 장바구니에 있는 상품인지 확인
-      if (currentProducts.some(p => p.product_id === product.product_id)) {
-        alert('이미 장바구니에 담긴 상품입니다.');
+      // 선택된 상품들 중 이미 장바구니에 있는 상품 제외
+      const newProducts = data
+        .filter(product => selectedProducts.has(product.product_id))
+        .filter(product => !currentProducts.some(p => p.product_id === product.product_id));
+
+      if (newProducts.length === 0) {
+        alert('선택한 상품이 모두 이미 장바구니에 있습니다.');
         return;
       }
 
-      // 상품 추가 - total_stock 정보 포함
-      const productWithStock = {
-        ...product,
-        total_stock: product.total_stock || 0 // total_stock이 없는 경우 기본값 설정
-      };
-      
-      currentProducts.push(productWithStock);
+      // 상품 추가
+      currentProducts.push(...newProducts);
       
       // Firestore 업데이트
       await setDoc(docRef, {
@@ -664,12 +666,13 @@ export default function DynamicTable() {
       });
 
       // 로컬 상태 업데이트
-      setCartItems(prev => new Set([...prev, product.product_id]));
+      setCartItems(prev => new Set([...prev, ...newProducts.map(p => p.product_id)]));
+      setSelectedProducts(new Set()); // 선택 초기화
 
-      alert('장바구니에 담았습니다.');
+      alert(`${newProducts.length}개의 상품이 장바구니에 담겼습니다.`);
     } catch (error) {
-      console.error('장바구니 담기 오류:', error);
-      alert('장바구니에 담는 중 오류가 발생했습니다.');
+      console.error('선택 상품 담기 오류:', error);
+      alert('선택한 상품을 장바구니에 담는 중 오류가 발생했습니다.');
     }
   };
 
@@ -1007,13 +1010,22 @@ export default function DynamicTable() {
       )}
 
       
-      <div className="flex justify-end mb-2">
+      <div className="flex justify-between mb-2">
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
             size="sm"
+            onClick={handleAddSelectedToCart}
+            disabled={selectedProducts.size === 0}
+            className="border-0 hover:bg-transparent text-[hsl(var(--foreground))] hover:text-[hsl(var(--foreground))]"
+          >
+            선택 담기
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             onClick={handleExcelDownload}
-            className="border-0 hover:bg-transparent hover:text-primary"
+            className="border-0 hover:bg-transparent text-[hsl(var(--foreground))] hover:text-[hsl(var(--foreground))]"
           >
             엑셀 다운로드
           </Button>
@@ -1021,7 +1033,7 @@ export default function DynamicTable() {
             variant="outline"
             size="sm"
             onClick={() => setShowExcelSettings(true)}
-            className="border-0 hover:bg-transparent hover:text-primary"
+            className="border-0 hover:bg-transparent text-[hsl(var(--foreground))] hover:text-[hsl(var(--foreground))]"
           >
             양식 변경
           </Button>
@@ -1054,7 +1066,8 @@ export default function DynamicTable() {
                       key={column.key} 
                       className="text-center border-b whitespace-nowrap"
                       style={{ 
-                        width: column.key === 'actions' ? '44px' :
+                        width: column.key === 'checkbox' ? '44px' :
+                               column.key === 'actions' ? '44px' :
                                column.key === 'img_desc1' ? '64px' :
                                column.key === 'product_id' ? '84px' :
                                column.key === 'name' ? '284px' :
@@ -1072,7 +1085,18 @@ export default function DynamicTable() {
                                '64px'
                       }}
                     >
-                      {column.label}
+                      {column.key === 'checkbox' ? (
+                        <Checkbox
+                          checked={data.length > 0 && selectedProducts.size === data.length}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedProducts(new Set(data.map(p => p.product_id)));
+                            } else {
+                              setSelectedProducts(new Set());
+                            }
+                          }}
+                        />
+                      ) : column.label}
                     </TableHead>
                   ))}
                 </TableRow>
@@ -1102,7 +1126,8 @@ export default function DynamicTable() {
                           key={column.key} 
                           className="text-center whitespace-nowrap"
                           style={{ 
-                            width: column.key === 'actions' ? '44px' :
+                            width: column.key === 'checkbox' ? '44px' :
+                                   column.key === 'actions' ? '44px' :
                                    column.key === 'img_desc1' ? '64px' :
                                    column.key === 'product_id' ? '84px' :
                                    column.key === 'name' ? '284px' :
@@ -1120,7 +1145,20 @@ export default function DynamicTable() {
                                    '64px'
                           }}
                         >
-                          {column.key === 'actions' ? (
+                          {column.key === 'checkbox' ? (
+                            <Checkbox
+                              checked={selectedProducts.has(item.product_id)}
+                              onCheckedChange={(checked) => {
+                                const newSelected = new Set(selectedProducts);
+                                if (checked) {
+                                  newSelected.add(item.product_id);
+                                } else {
+                                  newSelected.delete(item.product_id);
+                                }
+                                setSelectedProducts(newSelected);
+                              }}
+                            />
+                          ) : column.key === 'actions' ? (
                             cartItems.has(item.product_id) ? (
                               <button
                                 onClick={() => handleRemoveFromCart(item)}
@@ -1130,7 +1168,7 @@ export default function DynamicTable() {
                               </button>
                             ) : (
                               <button
-                                onClick={() => handleAddToCart(item)}
+                                onClick={() => handleAddSelectedToCart()}
                                 className="w-6 h-6 flex items-center justify-center bg-gray-50 text-gray-500 hover:bg-gray-100 transition-colors rounded-full mx-auto text-sm leading-none"
                               >
                                 +
