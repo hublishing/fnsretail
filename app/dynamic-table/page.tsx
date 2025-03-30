@@ -630,7 +630,7 @@ export default function DynamicTable() {
   };
 
   // 선택된 상품 담기 기능
-  const handleAddSelectedToCart = async () => {
+  const handleAddSelectedToCart = async (selectedProducts: Set<string>) => {
     try {
       if (!user) {
         alert('장바구니에 담으려면 로그인이 필요합니다.');
@@ -1015,7 +1015,10 @@ export default function DynamicTable() {
           <Button
             variant="outline"
             size="sm"
-            onClick={handleAddSelectedToCart}
+            onClick={() => {
+              const tempSelected = new Set([...selectedProducts]);
+              handleAddSelectedToCart(tempSelected);
+            }}
             disabled={selectedProducts.size === 0}
             className="border-0 hover:bg-transparent text-[hsl(var(--foreground))] hover:text-[hsl(var(--foreground))]"
           >
@@ -1168,7 +1171,10 @@ export default function DynamicTable() {
                               </button>
                             ) : (
                               <button
-                                onClick={() => handleAddSelectedToCart()}
+                                onClick={() => {
+                                  const tempSelected = new Set([item.product_id]);
+                                  handleAddSelectedToCart(tempSelected);
+                                }}
                                 className="w-6 h-6 flex items-center justify-center bg-gray-50 text-gray-500 hover:bg-gray-100 transition-colors rounded-full mx-auto text-sm leading-none"
                               >
                                 +
