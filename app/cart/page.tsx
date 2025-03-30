@@ -287,6 +287,7 @@ export default function CartPage() {
     coupon2: { value: 0, type: 'percentage', minAmount: 0 },
     coupon3: { value: 0, type: 'percentage', minAmount: 0 },
   });
+  const [memo, setMemo] = useState<string>('');
 
   // UUID 생성 함수
   const generateUniqueId = () => {
@@ -325,6 +326,19 @@ export default function CartPage() {
           if (data.products && Array.isArray(data.products)) {
             setProducts(data.products);
           }
+          // 저장된 정보 로드
+          if (data.title) setTitle(data.title);
+          if (data.channel_name) {
+            setChannelSearchTerm(data.channel_name);
+            setFilters(prev => ({ ...prev, channel_name: data.channel_name }));
+          }
+          if (data.delivery_type) {
+            setDeliveryType(data.delivery_type);
+            setFilters(prev => ({ ...prev, delivery_type: data.delivery_type }));
+          }
+          if (data.start_date) setStartDate(data.start_date);
+          if (data.end_date) setEndDate(data.end_date);
+          if (data.memo) setMemo(data.memo);
         }
       } catch (error) {
         console.error('세션 또는 장바구니 데이터 로드 오류:', error);
@@ -408,7 +422,7 @@ export default function CartPage() {
   };
 
   // 채널 선택 핸들러
-  const handleChannelSelect = (channel: ChannelInfo) => {
+  const handleChannelSelect = async (channel: ChannelInfo) => {
     setChannelSearchTerm(channel.channel_name);
     setShowChannelSuggestions(false);
     setIsValidChannel(true);
@@ -417,6 +431,7 @@ export default function CartPage() {
       channel_name: channel.channel_name
     }));
     setSelectedChannelInfo(channel);
+    await saveCartInfo();
   };
 
   // 채널 검색창 포커스 핸들러
@@ -483,11 +498,20 @@ export default function CartPage() {
       setProducts(newProducts);
       
       if (user) {
+        console.log('파이어스토어 저장 시도:', {
+          userId: user.uid,
+          product: product
+        });
+        
         const docRef = doc(db, 'userCarts', user.uid);
         await setDoc(docRef, {
           products: newProducts,
           updatedAt: new Date().toISOString()
         });
+        
+        console.log('파이어스토어 저장 성공');
+      } else {
+        console.log('사용자가 로그인되어 있지 않음');
       }
     } catch (error) {
       console.error('상품 추가 중 오류 발생:', error);
@@ -514,28 +538,63 @@ export default function CartPage() {
     }
   };
 
-  // 초기 데이터 로드 시 순서 정보도 함께 로드
-  useEffect(() => {
-    const loadCartData = async () => {
-      try {
-        if (user) {
-          const docRef = doc(db, 'userCarts', user.uid);
-          const docSnap = await getDoc(docRef);
-          
-          if (docSnap.exists()) {
-            const data = docSnap.data();
-            if (data.products) {
-              setProducts(data.products);
-            }
-          }
-        }
-      } catch (error) {
-        console.error('장바구니 데이터 로드 중 오류 발생:', error);
-      }
-    };
+  // 정보 저장 함수
+  const saveCartInfo = async () => {
+    if (!user) return;
 
-    loadCartData();
-  }, [user]);
+    try {
+      const docRef = doc(db, 'userCarts', user.uid);
+      await setDoc(docRef, {
+        products,
+        title,
+        channel_name: filters.channel_name,
+        delivery_type: filters.delivery_type,
+        start_date: startDate,
+        end_date: endDate,
+        memo,
+        updatedAt: new Date().toISOString()
+      });
+      console.log('장바구니 정보 저장 성공');
+    } catch (error) {
+      console.error('장바구니 정보 저장 중 오류 발생:', error);
+    }
+  };
+
+  // 타이틀 변경 핸들러
+  const handleTitleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setTitle(value);
+    await saveCartInfo();
+  };
+
+  // 배송조건 변경 핸들러
+  const handleDeliveryTypeChange = async (value: string) => {
+    setDeliveryType(value);
+    setIsValidDeliveryType(true);
+    setFilters(prev => ({
+      ...prev,
+      delivery_type: value
+    }));
+    await saveCartInfo();
+  };
+
+  // 날짜 변경 핸들러 수정
+  const handleDateChange = async (e: React.ChangeEvent<HTMLInputElement>, type: 'start' | 'end') => {
+    const value = e.target.value;
+    if (type === 'start') {
+      setStartDate(value);
+    } else {
+      setEndDate(value);
+    }
+    await saveCartInfo();
+  };
+
+  // 메모 변경 핸들러
+  const handleMemoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setMemo(value);
+    await saveCartInfo();
+  };
 
   // 정렬 상태 변경 시 상품 정렬 - 메모이제이션 적용
   useEffect(() => {
@@ -560,7 +619,7 @@ export default function CartPage() {
   }, [products, sortOption]);
 
   // 할인 적용 핸들러
-  const handleApplyDiscount = () => {
+  const handleApplyDiscount = async () => {
     if (!selectedProducts.length) {
       alert('할인을 적용할 상품을 선택해주세요.');
       return;
@@ -589,25 +648,31 @@ export default function CartPage() {
           ...product,
           discount: discountValue,
           discount_unit: discountType,
-          discount_price: discountPrice
+          discount_price: discountPrice,
+          discount_rate: Math.round(((product.shop_price - discountPrice) / product.shop_price) * 100)
         };
       }
       return product;
     });
 
     setProducts(updatedProducts);
+    
+    // 파이어스토어에 저장
+    if (user) {
+      try {
+        const docRef = doc(db, 'userCarts', user.uid);
+        await setDoc(docRef, {
+          products: updatedProducts,
+          updatedAt: new Date().toISOString()
+        });
+        console.log('할인 정보 저장 성공');
+      } catch (error) {
+        console.error('할인 정보 저장 중 오류 발생:', error);
+      }
+    }
+    
     setShowDiscountModal(false);
     setDiscountValue(0);
-  };
-
-  // 날짜 변경 핸들러
-  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'start' | 'end') => {
-    const value = e.target.value;
-    if (type === 'start') {
-      setStartDate(value);
-    } else {
-      setEndDate(value);
-    }
   };
 
   // 엑셀 다운로드 함수
@@ -715,7 +780,7 @@ export default function CartPage() {
   };
 
   // 쿠폰 적용 핸들러
-  const handleApplyCoupons = (newCoupons: typeof coupons) => {
+  const handleApplyCoupons = async (newCoupons: typeof coupons) => {
     setCoupons(newCoupons);
     
     if (!selectedProducts.length) {
@@ -734,31 +799,40 @@ export default function CartPage() {
 
       // 쿠폰1 계산
       let coupon1Price = product.discount_price;
+      let coupon1Rate = 0;
       if (product.discount_price >= newCoupons.coupon1.minAmount) {
         if (newCoupons.coupon1.type === 'percentage') {
           coupon1Price = Math.round(product.discount_price * (1 - newCoupons.coupon1.value / 100));
+          coupon1Rate = newCoupons.coupon1.value;
         } else {
           coupon1Price = product.discount_price - newCoupons.coupon1.value;
+          coupon1Rate = Math.round((newCoupons.coupon1.value / product.discount_price) * 100);
         }
       }
 
       // 쿠폰2 계산
       let coupon2Price = coupon1Price;
+      let coupon2Rate = 0;
       if (coupon1Price >= newCoupons.coupon2.minAmount) {
         if (newCoupons.coupon2.type === 'percentage') {
           coupon2Price = Math.round(coupon1Price * (1 - newCoupons.coupon2.value / 100));
+          coupon2Rate = newCoupons.coupon2.value;
         } else {
           coupon2Price = coupon1Price - newCoupons.coupon2.value;
+          coupon2Rate = Math.round((newCoupons.coupon2.value / coupon1Price) * 100);
         }
       }
 
       // 쿠폰3 계산
       let coupon3Price = coupon2Price;
+      let coupon3Rate = 0;
       if (coupon2Price >= newCoupons.coupon3.minAmount) {
         if (newCoupons.coupon3.type === 'percentage') {
           coupon3Price = Math.round(coupon2Price * (1 - newCoupons.coupon3.value / 100));
+          coupon3Rate = newCoupons.coupon3.value;
         } else {
           coupon3Price = coupon2Price - newCoupons.coupon3.value;
+          coupon3Rate = Math.round((newCoupons.coupon3.value / coupon2Price) * 100);
         }
       }
 
@@ -767,10 +841,28 @@ export default function CartPage() {
         coupon1_price: coupon1Price,
         coupon2_price: coupon2Price,
         coupon3_price: coupon3Price,
+        coupon1_rate: coupon1Rate,
+        coupon2_rate: coupon2Rate,
+        coupon3_rate: coupon3Rate,
+        final_discount_rate: Math.round(((product.shop_price - (coupon3Price || coupon2Price || coupon1Price || product.discount_price)) / product.shop_price) * 100)
       };
     });
 
     setProducts(updatedProducts);
+    
+    // 파이어스토어에 저장
+    if (user) {
+      try {
+        const docRef = doc(db, 'userCarts', user.uid);
+        await setDoc(docRef, {
+          products: updatedProducts,
+          updatedAt: new Date().toISOString()
+        });
+        console.log('쿠폰 정보 저장 성공');
+      } catch (error) {
+        console.error('쿠폰 정보 저장 중 오류 발생:', error);
+      }
+    }
   };
 
   const columns: Column[] = [
@@ -859,7 +951,7 @@ export default function CartPage() {
               <input
                 type="text"
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                onChange={handleTitleChange}
                 placeholder="타이틀을 입력해주세요"
                 className={`w-[300px] h-10 px-3 border-[1px] rounded-md shadow-sm focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
                   title ? 'border-blue-500 focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 bg-muted' : 'border-input bg-background'
@@ -897,14 +989,7 @@ export default function CartPage() {
               </div>
               <Select 
                 value={deliveryType} 
-                onValueChange={(value: string) => {
-                  setDeliveryType(value);
-                  setIsValidDeliveryType(true);
-                  setFilters(prev => ({
-                    ...prev,
-                    delivery_type: value
-                  }));
-                }}
+                onValueChange={handleDeliveryTypeChange}
               >
                 <SelectTrigger className={`w-[120px] h-10 ${
                   deliveryType ? 'border-blue-500 focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 bg-blue-50' : ''
@@ -977,10 +1062,12 @@ export default function CartPage() {
               />
             </div>
 
-            {/* 메모 입력창 */}
+            {/* 메모 입력창 수정 */}
             <div className="w-full">
               <input
                 type="text"
+                value={memo}
+                onChange={handleMemoChange}
                 placeholder="메모를 입력해주세요"
                 className="w-full h-10 px-3 border-[1px] rounded-md shadow-sm focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm border-input bg-background"
               />
