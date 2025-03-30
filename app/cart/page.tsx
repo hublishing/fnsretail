@@ -27,6 +27,23 @@ import { v4 as uuidv4 } from 'uuid';
 import { Search, FileDown, Settings } from "lucide-react"
 import * as XLSX from 'xlsx';
 import { ExcelSettingsModal } from "@/components/excel-settings-modal"
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface Product {
   product_id: string;
@@ -93,6 +110,35 @@ interface ChannelInfo {
   brand_type: string;
   free_shipping: number;
   conditional_shipping: number;
+}
+
+// 정렬 가능한 행 컴포넌트
+function SortableTableRow({ product, ...props }: { product: Product } & React.HTMLAttributes<HTMLTableRowElement>) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: product.product_id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <TableRow
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className={`cursor-move ${isDragging ? 'bg-muted' : ''}`}
+      {...props}
+    />
+  );
 }
 
 export default function CartPage() {
@@ -167,9 +213,7 @@ export default function CartPage() {
         if (docSnap.exists()) {
           const data = docSnap.data();
           if (data.products && Array.isArray(data.products)) {
-            const sortedItems = [...data.products].sort((a, b) => (b.total_order_qty || 0) - (a.total_order_qty || 0));
             setProducts(data.products);
-            setSortedProducts(sortedItems);
           }
         }
       } catch (error) {
@@ -280,29 +324,102 @@ export default function CartPage() {
     }, 200);
   };
 
-  const handleRemoveFromCart = async (productId: string) => {
+  // 드래그 앤 드롭 핸들러
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (over && active.id !== over.id) {
+      const oldIndex = products.findIndex((item) => item.product_id === active.id);
+      const newIndex = products.findIndex((item) => item.product_id === over.id);
+      
+      const newProducts = arrayMove(products, oldIndex, newIndex);
+      setProducts(newProducts);
+
+      // Firebase에 순서 정보 저장
+      try {
+        if (user) {
+          const docRef = doc(db, 'userCarts', user.uid);
+          await setDoc(docRef, {
+            products: newProducts,
+            updatedAt: new Date().toISOString()
+          });
+        }
+      } catch (error) {
+        console.error('순서 저장 중 오류 발생:', error);
+        // 에러 발생 시 원래 순서로 되돌리기
+        setProducts(products);
+      }
+    }
+  };
+
+  // 드래그 앤 드롭 센서 설정
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // 상품 추가 시에도 순서 정보 저장
+  const handleAddToCart = async (product: Product) => {
     try {
-      const updatedProducts = products.filter((p: Product) => p.product_id !== productId);
+      const newProducts = [...products, product];
+      setProducts(newProducts);
       
       if (user) {
-        // 로그인 상태: Firestore 업데이트
         const docRef = doc(db, 'userCarts', user.uid);
         await setDoc(docRef, {
-          products: updatedProducts,
+          products: newProducts,
           updatedAt: new Date().toISOString()
         });
-      } else {
-        // 로그아웃 상태: 로컬 스토리지 업데이트
-        localStorage.setItem('cartProducts', JSON.stringify(updatedProducts));
       }
-      
-      setProducts(updatedProducts);
-      alert('상품이 제거되었습니다.');
     } catch (error) {
-      console.error('상품 제거 오류:', error);
-      alert('상품을 제거하는 중 오류가 발생했습니다.');
+      console.error('상품 추가 중 오류 발생:', error);
+      setProducts(products);
     }
-  }
+  };
+
+  // 상품 제거 시에도 순서 정보 저장
+  const handleRemoveFromCart = async (productId: string) => {
+    try {
+      const newProducts = products.filter(p => p.product_id !== productId);
+      setProducts(newProducts);
+      
+      if (user) {
+        const docRef = doc(db, 'userCarts', user.uid);
+        await setDoc(docRef, {
+          products: newProducts,
+          updatedAt: new Date().toISOString()
+        });
+      }
+    } catch (error) {
+      console.error('상품 제거 중 오류 발생:', error);
+      setProducts(products);
+    }
+  };
+
+  // 초기 데이터 로드 시 순서 정보도 함께 로드
+  useEffect(() => {
+    const loadCartData = async () => {
+      try {
+        if (user) {
+          const docRef = doc(db, 'userCarts', user.uid);
+          const docSnap = await getDoc(docRef);
+          
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            if (data.products) {
+              setProducts(data.products);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('장바구니 데이터 로드 중 오류 발생:', error);
+      }
+    };
+
+    loadCartData();
+  }, [user]);
 
   // 정렬 상태 변경 시 상품 정렬 - 메모이제이션 적용
   useEffect(() => {
@@ -653,149 +770,159 @@ export default function CartPage() {
 
       {/* 상품 테이블 */}
       <div className="rounded-md border overflow-hidden">
-        <div className="w-[1334px]">
-          <div className="bg-muted sticky top-0 z-10">
-            <Table className="w-full">
-              <TableHeader>
-                <TableRow className="hover:bg-muted">
-                  <TableHead className="w-[50px] text-center">
-                    <Checkbox 
-                      checked={selectedProducts.length === products.length}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setSelectedProducts(products.map(p => p.product_id));
-                        } else {
-                          setSelectedProducts([]);
-                        }
-                      }}
-                    />
-                  </TableHead>
-                  <TableHead className="text-center w-[100px]">이지어드민</TableHead>
-                  <TableHead className="text-center w-[80px]">이미지</TableHead>
-                  <TableHead className="text-center w-[200px]">상품명</TableHead>
-                  <TableHead className="text-center w-[80px]">가격</TableHead>
-                  <TableHead className="text-center w-[80px]">할인가</TableHead>
-                  <TableHead className="text-center w-[80px]">할인율</TableHead>
-                  <TableHead className="text-center w-[100px]">카테고리</TableHead>
-                  <TableHead className="text-center w-[80px]">원가율</TableHead>
-                  <TableHead className="text-center w-[80px]">재고</TableHead>
-                  <TableHead className="text-center w-[80px]">드랍여부</TableHead>
-                  <TableHead className="text-center w-[100px]">공급처명</TableHead>
-                  <TableHead className="text-center w-[80px]">단독여부</TableHead>
-                  <TableHead className="text-center w-[100px]">판매수량</TableHead>
-                  <TableHead className="text-center w-[80px]">URL</TableHead>
-                  <TableHead className="text-center w-[80px]">관리</TableHead>
-                </TableRow>
-              </TableHeader>
-            </Table>
-          </div>
-          <div className="overflow-y-auto max-h-[calc(100vh-400px)]">
-            <Table className="w-full">
-              <TableBody>
-                {sortedProducts.map((product) => (
-                  <TableRow key={product.product_id}>
-                    <TableCell className="text-center w-[50px]">
-                      <Checkbox 
-                        checked={selectedProducts.includes(product.product_id)}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            setSelectedProducts([...selectedProducts, product.product_id]);
-                          } else {
-                            setSelectedProducts(selectedProducts.filter(id => id !== product.product_id));
-                          }
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell className="text-center w-[100px]">{product.product_id}</TableCell>
-                    <TableCell className="text-center w-[80px]">
-                      <div className="flex justify-center">
-                        {product.img_desc1 ? (
-                          <img 
-                            src={product.img_desc1} 
-                            alt="상품 이미지" 
-                            className="w-12 h-12 object-cover rounded-md"
-                            style={{ borderRadius: '5px' }}
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.src = '/no-image.png';
-                              target.alt = '이미지 없음';
-                              target.style.objectFit = 'contain';
-                              target.style.backgroundColor = 'transparent';
-                              target.parentElement?.classList.add('flex', 'justify-center');
+        <div className="w-[1330px]">
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={products.map(p => p.product_id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="overflow-y-auto max-h-[calc(100vh-400px)]">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="hover:bg-muted">
+                      <TableHead className="w-[50px] text-center">
+                        <Checkbox
+                          checked={products.length > 0 && selectedProducts.length === products.length}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedProducts(products.map(p => p.product_id));
+                            } else {
+                              setSelectedProducts([]);
+                            }
+                          }}
+                        />
+                      </TableHead>
+                      <TableHead className="text-center w-[80px]">이미지</TableHead>
+                      <TableHead className="text-left w-[300px]">상품명</TableHead>
+                      <TableHead className="text-center w-[100px]">원가</TableHead>
+                      <TableHead className="text-center w-[100px]">판매가</TableHead>
+                      <TableHead className="text-center w-[100px]">할인가</TableHead>
+                      <TableHead className="text-center w-[80px]">할인율</TableHead>
+                      <TableHead className="text-center w-[100px]">카테고리</TableHead>
+                      <TableHead className="text-center w-[80px]">원가율</TableHead>
+                      <TableHead className="text-center w-[80px]">재고</TableHead>
+                      <TableHead className="text-center w-[80px]">드랍여부</TableHead>
+                      <TableHead className="text-center w-[100px]">공급처명</TableHead>
+                      <TableHead className="text-center w-[80px]">단독여부</TableHead>
+                      <TableHead className="text-center w-[100px]">판매수량</TableHead>
+                      <TableHead className="text-center w-[80px]">URL</TableHead>
+                      <TableHead className="text-center w-[80px]">삭제</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {products.map((product) => (
+                      <SortableTableRow
+                        key={product.product_id}
+                        product={product}
+                        className={selectedProducts.includes(product.product_id) ? 'bg-muted' : ''}
+                      >
+                        <TableCell className="text-center w-[50px]">
+                          <Checkbox 
+                            checked={selectedProducts.includes(product.product_id)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedProducts([...selectedProducts, product.product_id]);
+                              } else {
+                                setSelectedProducts(selectedProducts.filter(id => id !== product.product_id));
+                              }
                             }}
                           />
-                        ) : (
-                          <div className="w-12 h-12 flex items-center justify-center">
-                            <img 
-                              src="/no-image.png" 
-                              alt="이미지 없음" 
-                              className="w-12 h-12 object-contain rounded-md"
-                              style={{ borderRadius: '5px' }}
-                            />
+                        </TableCell>
+                        <TableCell className="text-center w-[80px]">
+                          <div className="flex justify-center">
+                            {product.img_desc1 ? (
+                              <img 
+                                src={product.img_desc1} 
+                                alt="상품 이미지" 
+                                className="w-12 h-12 object-cover rounded-md"
+                                style={{ borderRadius: '5px' }}
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.src = '/no-image.png';
+                                  target.alt = '이미지 없음';
+                                  target.style.objectFit = 'contain';
+                                  target.style.backgroundColor = 'transparent';
+                                  target.parentElement?.classList.add('flex', 'justify-center');
+                                }}
+                              />
+                            ) : (
+                              <div className="w-12 h-12 flex items-center justify-center">
+                                <img 
+                                  src="/no-image.png" 
+                                  alt="이미지 없음" 
+                                  className="w-12 h-12 object-contain rounded-md"
+                                  style={{ borderRadius: '5px' }}
+                                />
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center w-[200px]">
-                      <button
-                        onClick={() => setSelectedProductId(product.product_id)}
-                        className="text-left hover:text-blue-600 transition-colors w-full"
-                      >
-                        <div className="font-medium truncate" title={product.name}>
-                          {product.name.length > 20 ? `${product.name.slice(0, 20)}...` : product.name}
-                        </div>
-                        <div className="text-sm text-gray-500 mt-1 truncate">
-                          {[
-                            product.brand,
-                            product.category_1,
-                            product.extra_column2
-                          ].filter(Boolean).join(' ')}
-                        </div>
-                      </button>
-                    </TableCell>
-                    <TableCell className="text-center w-[80px]">
-                      <div>{product.shop_price?.toLocaleString() || '-'}</div>
-                      <div className="text-sm text-gray-500 mt-1">{product.org_price?.toLocaleString() || '-'}</div>
-                    </TableCell>
-                    <TableCell className="text-center w-[80px]">{product.discount_price?.toLocaleString() || '-'}</TableCell>
-                    <TableCell className="text-center w-[80px]">
-                      {product.discount_price && product.shop_price 
-                        ? `${Math.round(((product.shop_price - product.discount_price) / product.shop_price) * 100)}%`
-                        : product.discount ? `${product.discount}%` : '-'}
-                    </TableCell>
-                    <TableCell className="text-center w-[100px]">{product.category_3 || '-'}</TableCell>
-                    <TableCell className="text-center w-[80px]">{product.cost_ratio ? `${product.cost_ratio}%` : '-'}</TableCell>
-                    <TableCell className="text-center w-[80px]">
-                      <div>{(product.total_stock !== undefined 
-                        ? product.total_stock 
-                        : product.main_wh_available_stock_excl_production_stock)?.toLocaleString() || '-'}</div>
-                      <div className="text-sm text-gray-500 mt-1">{product.soldout_rate ? `${product.soldout_rate}%` : '-'}</div>
-                    </TableCell>
-                    <TableCell className="text-center w-[80px]">{product.drop_yn || '-'}</TableCell>
-                    <TableCell className="text-center w-[100px]">{product.supply_name || '-'}</TableCell>
-                    <TableCell className="text-center w-[80px]">{product.exclusive2 || '-'}</TableCell>
-                    <TableCell className="text-center w-[100px]">{product.total_order_qty?.toLocaleString() || '-'}</TableCell>
-                    <TableCell className="text-center w-[80px]">
-                      {product.product_desc ? (
-                        <a href={product.product_desc} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
-                          링크
-                        </a>
-                      ) : '링크 없음'}
-                    </TableCell>
-                    <TableCell className="text-center w-[80px]">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleRemoveFromCart(product.product_id)}
-                      >
-                        삭제
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                        </TableCell>
+                        <TableCell className="text-center w-[200px]">
+                          <button
+                            onClick={() => setSelectedProductId(product.product_id)}
+                            className="text-left hover:text-blue-600 transition-colors w-full"
+                          >
+                            <div className="font-medium truncate" title={product.name}>
+                              {product.name.length > 20 ? `${product.name.slice(0, 20)}...` : product.name}
+                            </div>
+                            <div className="text-sm text-gray-500 mt-1 truncate">
+                              {[
+                                product.brand,
+                                product.category_1,
+                                product.extra_column2
+                              ].filter(Boolean).join(' ')}
+                            </div>
+                          </button>
+                        </TableCell>
+                        <TableCell className="text-center w-[80px]">
+                          <div>{product.org_price?.toLocaleString() || '-'}</div>
+                        </TableCell>
+                        <TableCell className="text-center w-[80px]">{product.shop_price?.toLocaleString() || '-'}</TableCell>
+                        <TableCell className="text-center w-[80px]">{product.discount_price?.toLocaleString() || '-'}</TableCell>
+                        <TableCell className="text-center w-[80px]">
+                          {product.discount_price && product.shop_price 
+                            ? `${Math.round(((product.shop_price - product.discount_price) / product.shop_price) * 100)}%`
+                            : product.discount ? `${product.discount}%` : '-'}
+                        </TableCell>
+                        <TableCell className="text-center w-[100px]">{product.category_3 || '-'}</TableCell>
+                        <TableCell className="text-center w-[80px]">{product.cost_ratio ? `${product.cost_ratio}%` : '-'}</TableCell>
+                        <TableCell className="text-center w-[80px]">
+                          <div>{(product.total_stock !== undefined 
+                            ? product.total_stock 
+                            : product.main_wh_available_stock_excl_production_stock)?.toLocaleString() || '-'}</div>
+                          <div className="text-sm text-gray-500 mt-1">{product.soldout_rate ? `${product.soldout_rate}%` : '-'}</div>
+                        </TableCell>
+                        <TableCell className="text-center w-[80px]">{product.drop_yn || '-'}</TableCell>
+                        <TableCell className="text-center w-[100px]">{product.supply_name || '-'}</TableCell>
+                        <TableCell className="text-center w-[80px]">{product.exclusive2 || '-'}</TableCell>
+                        <TableCell className="text-center w-[100px]">{product.total_order_qty?.toLocaleString() || '-'}</TableCell>
+                        <TableCell className="text-center w-[80px]">
+                          {product.product_desc ? (
+                            <a href={product.product_desc} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+                              링크
+                            </a>
+                          ) : '링크 없음'}
+                        </TableCell>
+                        <TableCell className="text-center w-[80px]">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveFromCart(product.product_id)}
+                          >
+                            삭제
+                          </Button>
+                        </TableCell>
+                      </SortableTableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </SortableContext>
+          </DndContext>
         </div>
       </div>
 
