@@ -633,7 +633,35 @@ export default function CartPage() {
     }
   };
 
-  // 채널 선택 핸들러
+  // 물류비 계산 함수 추가
+  const calculateLogisticsCost = (
+    channel: ChannelInfo,
+    deliveryType: string,
+    amazonShippingCost?: number
+  ): number => {
+    // 환율 변환
+    const exchangeRate = Number(channel.applied_exchange_rate?.replace(/,/g, '') || 0);
+    
+    // SG_아마존US & 무료배송
+    if (channel.channel_name === 'SG_아마존US' && deliveryType === 'free') {
+      return (amazonShippingCost || 0) * 2;
+    }
+    
+    // SG_아마존US & 조건부배송
+    if (channel.channel_name === 'SG_아마존US') {
+      return amazonShippingCost || 0;
+    }
+    
+    // 일반 무료배송
+    if (deliveryType === 'free') {
+      return Number(channel.free_shipping || 0) / exchangeRate;
+    }
+    
+    // 일반 조건부배송
+    return Number(channel.conditional_shipping || 0) / exchangeRate;
+  };
+
+  // handleChannelSelect 함수 수정
   const handleChannelSelect = async (channel: ChannelInfo) => {
     console.log('선택된 채널 정보:', {
       channel_name: channel.channel_name,
@@ -654,7 +682,7 @@ export default function CartPage() {
     }));
     setSelectedChannelInfo(channel);
     
-    // 판매가 계산
+    // 판매가와 물류비 계산
     const updatedProducts = products.map(product => {
       let pricingPrice: number | null = null;
 
@@ -667,7 +695,8 @@ export default function CartPage() {
         });
         return {
           ...product,
-          pricing_price: null
+          pricing_price: null,
+          logistics_cost: undefined
         };
       }
 
@@ -707,9 +736,13 @@ export default function CartPage() {
         }
       }
 
-      console.log('계산된 판매가:', {
+      // 물류비 계산
+      const logisticsCost = calculateLogisticsCost(channel, deliveryType, Number(channel.amazon_shipping_cost));
+
+      console.log('계산된 판매가와 물류비:', {
         product_name: product.name,
         pricing_price: pricingPrice,
+        logistics_cost: logisticsCost,
         channel_type: channel.type,
         markup_ratio: markupRatio,
         applied_exchange_rate: exchangeRate,
@@ -718,7 +751,8 @@ export default function CartPage() {
 
       return {
         ...product,
-        pricing_price: pricingPrice
+        pricing_price: pricingPrice,
+        logistics_cost: logisticsCost
       };
     });
 
@@ -823,7 +857,7 @@ export default function CartPage() {
     await saveCartInfo();
   };
 
-  // 배송조건 변경 핸들러
+  // handleDeliveryTypeChange 함수 수정
   const handleDeliveryTypeChange = async (value: string) => {
     setDeliveryType(value);
     setIsValidDeliveryType(true);
@@ -831,6 +865,16 @@ export default function CartPage() {
       ...prev,
       delivery_type: value
     }));
+
+    // 선택된 채널이 있고, 채널 정보가 있는 경우에만 물류비 재계산
+    if (selectedChannelInfo) {
+      const updatedProducts = products.map(product => ({
+        ...product,
+        logistics_cost: calculateLogisticsCost(selectedChannelInfo, value, Number(selectedChannelInfo.amazon_shipping_cost))
+      }));
+      setProducts(updatedProducts);
+    }
+
     await saveCartInfo();
   };
 
