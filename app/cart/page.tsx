@@ -1604,42 +1604,40 @@ export default function CartPage() {
               strategy={verticalListSortingStrategy}
             >
               <div className="relative">
-                <Table>
-                  <TableHeader className="bg-muted">
-                    <TableRow className="hover:bg-muted">
-                      <TableHead className="w-[30px] text-center">
-                        <Checkbox
-                          checked={products.length > 0 && selectedProducts.length === products.length}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setSelectedProducts(products.map(p => p.product_id));
-                            } else {
-                              setSelectedProducts([]);
-                            }
-                          }}
-                        />
-                      </TableHead>
-                      <TableHead className="text-center w-[40px]">번호</TableHead>
-                      <TableHead className="text-center w-[70px]">이지어드민</TableHead>
-                      <TableHead className="text-center w-[70px]">이미지</TableHead>
-                      <TableHead className="text-left w-[195px]">상품명</TableHead>
-                      <TableHead className="text-center w-[65px]">판매가</TableHead> 
-                      <TableHead className="text-center w-[65px]">즉시할인</TableHead>
-                      <TableHead className="text-center w-[65px]">쿠폰1</TableHead>
-                      <TableHead className="text-center w-[65px]">쿠폰2</TableHead>
-                      <TableHead className="text-center w-[65px]">쿠폰3</TableHead>
-                      <TableHead className="text-center w-[65px]">최종할인</TableHead>
-                      <TableHead className="text-center w-[65px]">할인부담액</TableHead>
-                      <TableHead className="text-center w-[60px]">원가율</TableHead>
-                      <TableHead className="text-center w-[60px]">재고</TableHead>
-                      <TableHead className="text-center w-[45px]">드랍</TableHead>
-                      <TableHead className="text-center w-[60px]">공급처</TableHead>
-                      <TableHead className="text-center w-[60px]">단독</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                </Table>
                 <div className="overflow-y-auto max-h-[calc(100vh-400px)]">
-                  <Table>
+                  <Table style={{tableLayout: 'fixed', width: '100%', minWidth: '1400px', whiteSpace: 'nowrap'}}>
+                    <TableHeader className="bg-muted sticky top-0">
+                      <TableRow className="hover:bg-muted">
+                        <TableHead className="w-[30px] text-center">
+                          <Checkbox
+                            checked={products.length > 0 && selectedProducts.length === products.length}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedProducts(products.map(p => p.product_id));
+                              } else {
+                                setSelectedProducts([]);
+                              }
+                            }}
+                          />
+                        </TableHead>
+                        <TableHead className="text-center w-[40px]">번호</TableHead>
+                        <TableHead className="text-center w-[70px]">이지어드민</TableHead>
+                        <TableHead className="text-center w-[70px]">이미지</TableHead>
+                        <TableHead className="text-left w-[195px]">상품명</TableHead>
+                        <TableHead className="text-center w-[65px]">판매가</TableHead> 
+                        <TableHead className="text-center w-[65px]">즉시할인</TableHead>
+                        <TableHead className="text-center w-[65px]">쿠폰1</TableHead>
+                        <TableHead className="text-center w-[65px]">쿠폰2</TableHead>
+                        <TableHead className="text-center w-[65px]">쿠폰3</TableHead>
+                        <TableHead className="text-center w-[65px]">최종할인</TableHead>
+                        <TableHead className="text-center w-[65px]">할인부담액</TableHead>
+                        <TableHead className="text-center w-[60px]">원가율</TableHead>
+                        <TableHead className="text-center w-[60px]">재고</TableHead>
+                        <TableHead className="text-center w-[45px]">드랍</TableHead>
+                        <TableHead className="text-center w-[60px]">공급처</TableHead>
+                        <TableHead className="text-center w-[60px]">단독</TableHead>
+                      </TableRow>
+                    </TableHeader>
                     <TableBody>
                       {products.map((product, index) => (
                         <SortableTableRow
@@ -1822,7 +1820,7 @@ export default function CartPage() {
             </SortableContext>
           </DndContext>
         </div>
-      </div> 
+      </div>
 
       {/* 리스트저장 버튼 */}
       <div className="flex justify-end mt-4">    
