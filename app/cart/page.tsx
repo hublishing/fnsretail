@@ -208,12 +208,12 @@ function SortableTableRow({ product, children, ...props }: {
   // 드래그 속성을 자식 컴포넌트에 전달
   const childrenWithProps = React.Children.map(children, (child, index) => {
     if (React.isValidElement(child)) {
-      // 상품명 셀(index 4)에는 드래그 속성을 전달하지 않음
-      if (index === 4) {
+      // 체크박스 셀(index 0)과 상품명 셀(index 4)에는 드래그 속성을 전달하지 않음
+      if (index === 0 || index === 4) {
         return child;
       }
       // 1번째와 2번째 셀에만 배경색 적용
-      if (index === 0 || index === 1) {
+      if (index === 1 || index === 2) {
         return React.cloneElement(child as React.ReactElement<any>, { 
           ...attributes, 
           ...listeners,
@@ -245,14 +245,36 @@ function CheckboxCell({ product, selectedProducts, onSelect, ...props }: {
 } & React.HTMLAttributes<HTMLTableCellElement>) {
   return (
     <TableCell 
-      className="text-center w-[30px]" 
+      className="text-center w-[30px] align-middle" 
       style={{ backgroundColor: product.rowColor || 'transparent' }}
       {...props}
     >
-      <Checkbox 
-        checked={selectedProducts.includes(product.product_id)}
-        onCheckedChange={onSelect}
-      />
+      <div 
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+        onMouseDown={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+        onTouchStart={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+        className="flex items-center justify-center"
+      >
+        <Checkbox 
+          checked={selectedProducts.includes(product.product_id)}
+          onCheckedChange={(checked) => {
+            if (checked) {
+              onSelect(true);
+            } else {
+              onSelect(false);
+            }
+          }}
+        />
+      </div>
     </TableCell>
   );
 }
