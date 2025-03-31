@@ -902,98 +902,88 @@ export default function CartPage() {
         return product;
       }
 
-      // 채널 정보에서 필요한 값들 추출
-      const domesticDeliveryFee = Number(selectedChannelInfo?.domestic_delivery_fee?.replace(/[^0-9.]/g, '') || 0);
-      const shippingFee = Number(selectedChannelInfo?.shipping_fee?.replace(/[^0-9.]/g, '') || 0);
-      const averageFeeRate = Number(selectedChannelInfo?.average_fee_rate || 0) / 100;
+      // 원본 가격 저장
+      const originalPrice = product.pricing_price || 0;
+      const originalCoupon1Price = product.coupon1_price || originalPrice;
+      const originalCoupon2Price = product.coupon2_price || originalCoupon1Price;
+      const originalCoupon3Price = product.coupon3_price || originalCoupon2Price;
 
-      // 할인 적용 기준금액 설정
-      let basePrice = 0;
-      switch (currentTabState.discountBase) {
-        case 'pricing_price':
-          basePrice = product.pricing_price || 0;
-          break;
-        case 'discount_price':
-          basePrice = product.discount_price || product.pricing_price || 0;
-          break;
-        case 'coupon1_price':
-          basePrice = product.coupon1_price || product.discount_price || product.pricing_price || 0;
-          break;
-        case 'coupon2_price':
-          basePrice = product.coupon2_price || product.coupon1_price || product.discount_price || product.pricing_price || 0;
-          break;
-        case 'coupon3_price':
-          basePrice = product.coupon3_price || product.coupon2_price || product.coupon1_price || product.discount_price || product.pricing_price || 0;
-          break;
-      }
-
+      // 할인 계산
       let discountPrice: number | null = null;
+      let coupon1Price: number | null = null;
+      let coupon2Price: number | null = null;
+      let coupon3Price: number | null = null;
 
       // 할인 타입에 따른 가격 계산
       if (currentTabState.discountType === 'amount') {
-        // 즉시할인 - 금액
-        discountPrice = basePrice - currentTabState.discountValue;
+        discountPrice = originalPrice - currentTabState.discountValue;
       } else if (currentTabState.discountType === 'rate') {
-        // 즉시할인 - 율
-        let rawDiscount = basePrice * (currentTabState.discountValue / 100);
+        let rawDiscount = originalPrice * (currentTabState.discountValue / 100);
         if (currentTabState.discountCap > 0) {
           rawDiscount = Math.min(rawDiscount, currentTabState.discountCap);
         }
-        discountPrice = basePrice - roundWithType(rawDiscount, currentTabState.roundUnit, currentTabState.roundType);
-      } else if (currentTabState.discountType === 'min_profit_amount') {
-        // 최저손익 - 금액
-        const costBase = product.org_price + domesticDeliveryFee + shippingFee;
-        discountPrice = Math.round(costBase / (1 - averageFeeRate - currentTabState.discountValue));
-      } else if (currentTabState.discountType === 'min_profit_rate') {
-        // 최저손익 - 율
-        const costBase = product.org_price + domesticDeliveryFee + shippingFee + currentTabState.discountValue;
-        discountPrice = Math.round(costBase / (1 - averageFeeRate));
+        discountPrice = originalPrice - roundWithType(rawDiscount, currentTabState.roundUnit, currentTabState.roundType);
       }
 
-      // 할인율 계산
-      const discountRate = product.pricing_price && product.pricing_price !== 0 && discountPrice
-        ? Math.round(((product.pricing_price - discountPrice) / product.pricing_price) * 100)
-        : 0;
+      // 쿠폰 가격 계산
+      if (type === 'coupon1') {
+        coupon1Price = discountPrice || originalPrice;
+      } else if (type === 'coupon2') {
+        coupon2Price = discountPrice || originalPrice;
+      } else if (type === 'coupon3') {
+        coupon3Price = discountPrice || originalPrice;
+      }
+
+      // 할인 부담액 계산
+      const burden1 = Math.round((originalCoupon1Price - (coupon1Price || originalCoupon1Price)) * (currentTabState.selfRatio / 100));
+      const burden2 = Math.round((originalCoupon2Price - (coupon2Price || originalCoupon2Price)) * (currentTabState.selfRatio / 100));
+      const burden3 = Math.round((originalCoupon3Price - (coupon3Price || originalCoupon3Price)) * (currentTabState.selfRatio / 100));
+      
+      const totalBurden = burden1 + burden2 + burden3;
 
       // 각 탭에 따라 다른 필드 업데이트
       let updatedProduct: Product;
       switch (type) {
         case 'discount':
           updatedProduct = {
-          ...product,
+            ...product,
             discount: currentTabState.discountValue,
             discount_unit: currentTabState.discountType,
-          discount_price: discountPrice,
+            discount_price: discountPrice,
             discount_rate: discountRate,
-            self_ratio: currentTabState.selfRatio
+            self_ratio: currentTabState.selfRatio,
+            discount_burden_amount: totalBurden
           } as Product;
           break;
         case 'coupon1':
           updatedProduct = {
             ...product,
-            coupon1_price: discountPrice,
+            coupon1_price: coupon1Price,
             coupon1_rate: discountRate,
-            self_ratio: currentTabState.selfRatio
+            self_ratio: currentTabState.selfRatio,
+            discount_burden_amount: totalBurden
           } as Product;
           break;
         case 'coupon2':
           updatedProduct = {
             ...product,
-            coupon2_price: discountPrice,
+            coupon2_price: coupon2Price,
             coupon2_rate: discountRate,
-            self_ratio: currentTabState.selfRatio
+            self_ratio: currentTabState.selfRatio,
+            discount_burden_amount: totalBurden
           } as Product;
           break;
         case 'coupon3':
           updatedProduct = {
             ...product,
-            coupon3_price: discountPrice,
+            coupon3_price: coupon3Price,
             coupon3_rate: discountRate,
-            self_ratio: currentTabState.selfRatio
+            self_ratio: currentTabState.selfRatio,
+            discount_burden_amount: totalBurden
           } as Product;
           break;
         default:
-      return product;
+          return product;
       }
 
       // final_price 계산
@@ -1009,7 +999,7 @@ export default function CartPage() {
 
     setProducts(updatedProducts);
     
-    // 파이어스토어에 저장
+    // Firebase에 저장
     if (user) {
       try {
         const docRef = doc(db, 'userCarts', user.uid);
@@ -1303,6 +1293,7 @@ export default function CartPage() {
         </div>
       ),
     },
+    { key: "discount_burden_amount", label: "할인부담액", format: (value: number) => value?.toLocaleString() || '-' },
   ];
 
   // 색상 적용 핸들러
@@ -1638,6 +1629,7 @@ export default function CartPage() {
                       <TableHead className="text-center w-[65px]">쿠폰2</TableHead>
                       <TableHead className="text-center w-[65px]">쿠폰3</TableHead>
                       <TableHead className="text-center w-[65px]">최종할인</TableHead>
+                      <TableHead className="text-center w-[65px]">할인부담액</TableHead>
                       <TableHead className="text-center w-[60px]">원가율</TableHead>
                       <TableHead className="text-center w-[60px]">재고</TableHead>
                       <TableHead className="text-center w-[45px]">드랍</TableHead>
@@ -1788,6 +1780,9 @@ export default function CartPage() {
                                 ? `${Math.round(((product.shop_price - product.discount_price) / product.shop_price) * 100)}%`
                                 : '-'}
                             </div>
+                          </DraggableCell>
+                          <DraggableCell className="text-center w-[65px]">
+                            <div>{product.discount_burden_amount?.toLocaleString() || '-'}</div>
                           </DraggableCell>
                           <DraggableCell className="text-center w-[60px]">
                             <div>
