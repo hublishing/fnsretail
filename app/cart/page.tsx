@@ -105,6 +105,7 @@ interface Product {
   self_ratio?: number;
   final_price: number | null;
   rowColor?: string;  // 행 색상을 위한 필드 추가
+  dividerText?: string;
 }
 
 interface Column {
@@ -175,6 +176,13 @@ interface ExcelSettings {
   includeDiscount: boolean;
 }
 
+interface DividerRule {
+  id: string;
+  range: number[];
+  color: string;
+  text: string;
+}
+
 // 정렬 가능한 행 컴포넌트
 function SortableTableRow({ product, children, ...props }: { 
   product: Product;
@@ -193,7 +201,6 @@ function SortableTableRow({ product, children, ...props }: {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
-    backgroundColor: product.rowColor || 'transparent'
   };
 
   // 드래그 속성을 자식 컴포넌트에 전달
@@ -202,6 +209,14 @@ function SortableTableRow({ product, children, ...props }: {
       // 상품명 셀(index 4)에는 드래그 속성을 전달하지 않음
       if (index === 4) {
         return child;
+      }
+      // 1번째와 2번째 셀에만 배경색 적용
+      if (index === 0 || index === 1) {
+        return React.cloneElement(child as React.ReactElement<any>, { 
+          ...attributes, 
+          ...listeners,
+          style: { backgroundColor: product.rowColor || 'transparent' }
+        });
       }
       return React.cloneElement(child, { ...attributes, ...listeners });
     }
@@ -212,7 +227,7 @@ function SortableTableRow({ product, children, ...props }: {
     <TableRow
       ref={setNodeRef}
       style={style}
-      className={`${isDragging ? 'bg-muted' : ''} ${product.rowColor ? 'hover:bg-muted/50' : ''}`}
+      className={`${isDragging ? 'bg-muted' : ''}`}
       {...props}
     >
       {childrenWithProps}
@@ -221,13 +236,17 @@ function SortableTableRow({ product, children, ...props }: {
 }
 
 // 체크박스 셀 컴포넌트
-function CheckboxCell({ product, selectedProducts, onSelect }: { 
+function CheckboxCell({ product, selectedProducts, onSelect, ...props }: { 
   product: Product; 
   selectedProducts: string[];
   onSelect: (checked: boolean) => void;
-}) {
+} & React.HTMLAttributes<HTMLTableCellElement>) {
   return (
-    <TableCell className="text-center w-[30px]">
+    <TableCell 
+      className="text-center w-[30px]" 
+      style={{ backgroundColor: product.rowColor || 'transparent' }}
+      {...props}
+    >
       <Checkbox 
         checked={selectedProducts.includes(product.product_id)}
         onCheckedChange={onSelect}
@@ -313,6 +332,12 @@ export default function CartPage() {
   const [feeRange, setFeeRange] = useState<number[]>([0, 0]);
   const [selectedColor, setSelectedColor] = useState<string>('');
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
+  const [showDividerModal, setShowDividerModal] = useState(false);
+  const [dividerRules, setDividerRules] = useState<DividerRule[]>([
+    { id: uuidv4(), range: [0, 0], color: '#FFE4E1', text: '' },
+    { id: uuidv4(), range: [0, 0], color: '#FFE4E1', text: '' },
+    { id: uuidv4(), range: [0, 0], color: '#FFE4E1', text: '' }
+  ]);
 
   // 각 탭별 상태 변수들
   const [tabStates, setTabStates] = useState({
@@ -897,10 +922,10 @@ export default function CartPage() {
       switch (type) {
         case 'discount':
           updatedProduct = {
-            ...product,
+          ...product,
             discount: currentTabState.discountValue,
             discount_unit: currentTabState.discountType,
-            discount_price: discountPrice,
+          discount_price: discountPrice,
             discount_rate: discountRate,
             self_ratio: currentTabState.selfRatio
           } as Product;
@@ -930,7 +955,7 @@ export default function CartPage() {
           } as Product;
           break;
         default:
-          return product;
+      return product;
       }
 
       // final_price 계산
@@ -1263,6 +1288,50 @@ export default function CartPage() {
     setFeeRange([0, 0]);
   };
 
+  // 구분자 규칙 추가
+  const handleAddDividerRule = () => {
+    setDividerRules([...dividerRules, { id: uuidv4(), range: [0, 0], color: '', text: '' }]);
+  };
+
+  // 구분자 규칙 제거
+  const handleRemoveDividerRule = (id: string) => {
+    setDividerRules(dividerRules.filter(rule => rule.id !== id));
+  };
+
+  // 구분자 규칙 업데이트
+  const handleUpdateDividerRule = (id: string, field: keyof DividerRule, value: any) => {
+    setDividerRules(dividerRules.map(rule => 
+      rule.id === id ? { ...rule, [field]: value } : rule
+    ));
+  };
+
+  // 구분자 적용
+  const handleApplyDivider = () => {
+    const updatedProducts = products.map((product, index) => {
+      const matchingRule = dividerRules.find(rule => 
+        index + 1 >= rule.range[0] && index + 1 <= rule.range[1]
+      );
+      
+      return {
+        ...product,
+        rowColor: matchingRule?.color || undefined,
+        dividerText: matchingRule?.text || undefined
+      };
+    });
+
+    setProducts(updatedProducts);
+    setShowDividerModal(false);
+  };
+
+  // 구분자 초기화 핸들러
+  const handleResetDividerRules = () => {
+    setDividerRules([
+      { id: uuidv4(), range: [0, 0], color: '#FFE4E1', text: '' },
+      { id: uuidv4(), range: [0, 0], color: '#FFE4E1', text: '' },
+      { id: uuidv4(), range: [0, 0], color: '#FFE4E1', text: '' }
+    ]);
+  };
+
   return (
     <div className="container mx-auto py-8">
       <div className="flex justify-between items-center mb-6">
@@ -1388,38 +1457,27 @@ export default function CartPage() {
                 className="w-[80px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-muted text-sm text-muted-foreground"
               />
               <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={selectedChannelInfo?.average_fee_rate ? `평균수수료 : ${selectedChannelInfo.average_fee_rate}` : ''}
-                  readOnly
-                  placeholder="평균수수료"
-                  className="w-[160px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-muted text-sm text-muted-foreground"
+              <input
+                type="text"
+                value={selectedChannelInfo?.average_fee_rate ? `평균수수료 : ${selectedChannelInfo.average_fee_rate}` : ''}
+                readOnly
+                placeholder="평균수수료"
+                className="w-[160px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-muted text-sm text-muted-foreground"
                 />
-                <div className="flex items-center gap-4 w-[300px]">
-                  <div className="flex-1">
-                    <Slider
-                      value={feeRange}
-                      onValueChange={setFeeRange}
-                      min={0}
-                      max={products.length}
-                      step={1}
-                      className="w-full"
-                    />
-                  </div>
-                  <div className="flex items-center gap-2 min-w-[100px]">
-                    <span className="text-sm text-muted-foreground">
-                      {feeRange[0] || 0} ~ {feeRange[1] || 0}
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setColorPickerOpen(true)}
-                      className="h-8"
+              <div className="flex gap-2">
+                {dividerRules.map((rule, index) => (
+                  rule.range[0] > 0 && rule.range[1] > 0 && (
+                    <div 
+                      key={rule.id} 
+                      className="flex items-center gap-2 px-3 h-10 border-[1px] rounded-md shadow-sm bg-muted text-sm"
+                      style={{ backgroundColor: rule.color || '#FFE4E1' }}
                     >
-                      색상
-                    </Button>
-                  </div>
-                </div>
+                      <span>{rule.range[0]}~{rule.range[1]}</span>
+                      {rule.text && <span className="text-muted-foreground">{rule.text}</span>}
+                    </div>
+                  )
+                ))}
+              </div>
               </div>
             </div>
 
@@ -1456,6 +1514,14 @@ export default function CartPage() {
               className="border-0 hover:bg-transparent hover:text-primary"
             >
               할인
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowDividerModal(true)}
+              className="border-0 hover:bg-transparent hover:text-primary"
+            >
+              구분자
             </Button>
             <Button
               variant="outline"
@@ -2387,6 +2453,108 @@ export default function CartPage() {
           </div>
           <DialogFooter>
             <Button onClick={handleApplyColor}>적용</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 구분자 모달 */}
+      <Dialog open={showDividerModal} onOpenChange={setShowDividerModal}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>구분자 설정</DialogTitle>
+            <DialogDescription>
+              행 범위별로 구분자를 설정합니다.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-6 py-4">
+            {dividerRules.map((rule, index) => (
+              <div key={rule.id} className="flex flex-col gap-4 p-4 border rounded-lg">
+                <div className="flex justify-between items-center">
+                  <h3 className="font-medium">구분자 {index + 1}</h3>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="flex-1"> 
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        value={rule.range[0]}
+                        onChange={(e) => handleUpdateDividerRule(rule.id, 'range', [Number(e.target.value), rule.range[1]])}
+                        min={0}
+                        max={products.length}
+                        className="w-[70px]"
+                        placeholder="시작"
+                      />
+                      <span className="text-muted-foreground">~</span>
+                      <Input
+                        type="number"
+                        value={rule.range[1]}
+                        onChange={(e) => handleUpdateDividerRule(rule.id, 'range', [rule.range[0], Number(e.target.value)])}
+                        min={0}
+                        max={products.length}
+                        className="w-[70px]"
+                        placeholder="끝"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-2"> 
+                    <Select
+                      value={rule.color || '#FFE4E1'}
+                      onValueChange={(value) => handleUpdateDividerRule(rule.id, 'color', value)}
+                    >
+                      <SelectTrigger className="w-[70px] h-10">
+                        <SelectValue>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-4 h-4 rounded-full"
+                              style={{ backgroundColor: rule.color || '#FFE4E1' }}
+                            />
+                          </div>
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="#FFE4E1">
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 rounded-full bg-[#FFE4E1]" />
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="#E6E6FA">
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 rounded-full bg-[#E6E6FA]" />
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="#F0FFF0">
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 rounded-full bg-[#F0FFF0]" />
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="#FFF0F5">
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 rounded-full bg-[#FFF0F5]" />
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="#F0FFFF">
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 rounded-full bg-[#F0FFFF]" />
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div> 
+                  <div className="flex flex-col gap-2"> 
+                  <Input
+                    value={rule.text}
+                    onChange={(e) => handleUpdateDividerRule(rule.id, 'text', e.target.value)}
+                    placeholder="구분자 텍스트 입력" 
+                    className="w-[245px]"
+                  />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleResetDividerRules}>초기화</Button>
+            <Button onClick={handleApplyDivider}>적용</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
