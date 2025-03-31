@@ -714,7 +714,7 @@ export default function CartPage() {
     }, 200);
   };
 
-  // 드래그 앤 드롭 핸들러
+  // 드래그 종료 핸들러
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     setIsDragging(false);
@@ -725,21 +725,7 @@ export default function CartPage() {
       
       const newProducts = arrayMove(products, oldIndex, newIndex);
       setProducts(newProducts);
-
-      // Firebase에 순서 정보 저장
-      try {
-        if (user) {
-          const docRef = doc(db, 'userCarts', user.uid);
-          await setDoc(docRef, {
-            products: newProducts,
-            updatedAt: new Date().toISOString()
-          });
-        }
-      } catch (error) {
-        console.error('순서 저장 중 오류 발생:', error);
-        // 에러 발생 시 원래 순서로 되돌리기
-        setProducts(products);
-      }
+      await saveCartInfo();
     }
   };
 
