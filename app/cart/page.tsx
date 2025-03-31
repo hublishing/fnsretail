@@ -578,7 +578,7 @@ export default function CartPage() {
         if (channel.rounddown !== null) {
           // SQL의 ROUND 함수와 동일한 로직으로 수정
           const basePrice = product.global_price / exchangeRate;
-          const multiplier = Math.pow(10, channel.rounddown);
+          const multiplier = Math.pow(10, Number(channel.rounddown));
           pricingPrice = Math.floor(basePrice * multiplier) / multiplier;
           pricingPrice += Number(channel.digit_adjustment || 0);
           if (channel.channel_name === 'SG_아마존US') {
