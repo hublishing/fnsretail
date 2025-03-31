@@ -1591,31 +1591,23 @@ export default function CartPage() {
       </div>
 
       {/* 상품 테이블 */}
-      <div className="rounded-md border">
-        <div className="w-full">
-          <div className="min-w-full" style={{ 
-            overflowX: 'auto',
-            height: 'calc(100vh - 400px)',
-            overflowY: 'auto'
-          }}>
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-              onDragStart={handleDragStart}
+      <div className="rounded-md border overflow-hidden">
+        <div className="w-[1334px]">
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+            onDragStart={handleDragStart}
+          >
+            <SortableContext
+              items={products.map(p => p.product_id)}
+              strategy={verticalListSortingStrategy}
             >
-              <SortableContext
-                items={products.map(p => p.product_id)}
-                strategy={verticalListSortingStrategy}
-              >
-                <Table style={{ 
-                  minWidth: '1334px',
-                  borderCollapse: 'collapse',
-                  width: 'max-content'
-                }}>
+              <div className="relative">
+                <Table>
                   <TableHeader className="bg-muted">
-                    <TableRow className="hover:bg-muted" style={{ whiteSpace: 'nowrap' }}>
-                      <TableHead className="min-w-[30px] text-center">
+                    <TableRow className="hover:bg-muted">
+                      <TableHead className="w-[30px] text-center">
                         <Checkbox
                           checked={products.length > 0 && selectedProducts.length === products.length}
                           onCheckedChange={(checked) => {
@@ -1627,205 +1619,208 @@ export default function CartPage() {
                           }}
                         />
                       </TableHead>
-                      <TableHead className="text-center min-w-[40px]">번호</TableHead>
-                      <TableHead className="text-center min-w-[70px]">이지어드민</TableHead>
-                      <TableHead className="text-center min-w-[70px]">이미지</TableHead>
-                      <TableHead className="text-left min-w-[195px]">상품명</TableHead>
-                      <TableHead className="text-center min-w-[65px]">판매가</TableHead> 
-                      <TableHead className="text-center min-w-[65px]">즉시할인</TableHead>
-                      <TableHead className="text-center min-w-[65px]">쿠폰1</TableHead>
-                      <TableHead className="text-center min-w-[65px]">쿠폰2</TableHead>
-                      <TableHead className="text-center min-w-[65px]">쿠폰3</TableHead>
-                      <TableHead className="text-center min-w-[65px]">최종할인</TableHead>
-                      <TableHead className="text-center min-w-[65px]">할인부담액</TableHead>
-                      <TableHead className="text-center min-w-[60px]">원가율</TableHead>
-                      <TableHead className="text-center min-w-[60px]">재고</TableHead>
-                      <TableHead className="text-center min-w-[45px]">드랍</TableHead>
-                      <TableHead className="text-center min-w-[60px]">공급처</TableHead>
-                      <TableHead className="text-center min-w-[60px]">단독</TableHead>
+                      <TableHead className="text-center w-[40px]">번호</TableHead>
+                      <TableHead className="text-center w-[70px]">이지어드민</TableHead>
+                      <TableHead className="text-center w-[70px]">이미지</TableHead>
+                      <TableHead className="text-left w-[195px]">상품명</TableHead>
+                      <TableHead className="text-center w-[65px]">판매가</TableHead> 
+                      <TableHead className="text-center w-[65px]">즉시할인</TableHead>
+                      <TableHead className="text-center w-[65px]">쿠폰1</TableHead>
+                      <TableHead className="text-center w-[65px]">쿠폰2</TableHead>
+                      <TableHead className="text-center w-[65px]">쿠폰3</TableHead>
+                      <TableHead className="text-center w-[65px]">최종할인</TableHead>
+                      <TableHead className="text-center w-[65px]">할인부담액</TableHead>
+                      <TableHead className="text-center w-[60px]">원가율</TableHead>
+                      <TableHead className="text-center w-[60px]">재고</TableHead>
+                      <TableHead className="text-center w-[45px]">드랍</TableHead>
+                      <TableHead className="text-center w-[60px]">공급처</TableHead>
+                      <TableHead className="text-center w-[60px]">단독</TableHead>
                     </TableRow>
                   </TableHeader>
-                  <TableBody>
-                    {products.map((product, index) => (
-                      <SortableTableRow
-                        key={product.product_id}
-                        product={product}
-                        className={selectedProducts.includes(product.product_id) ? 'bg-muted' : ''}
-                        style={{ whiteSpace: 'nowrap' }}
-                      >
-                        <CheckboxCell
+                </Table>
+                <div className="overflow-y-auto max-h-[calc(100vh-400px)]">
+                  <Table>
+                    <TableBody>
+                      {products.map((product, index) => (
+                        <SortableTableRow
+                          key={product.product_id}
                           product={product}
-                          selectedProducts={selectedProducts}
-                          onSelect={(checked) => {
-                            if (checked) {
-                              setSelectedProducts([...selectedProducts, product.product_id]);
-                            } else {
-                              setSelectedProducts(selectedProducts.filter(id => id !== product.product_id));
-                            }
-                          }}
-                        />
-                        <DraggableCell className="text-center min-w-[40px]">
-                          <div>{index + 1}</div>
-                        </DraggableCell>
-                        <DraggableCell className="text-center min-w-[65px]">
-                          <div>{product.product_id}</div>
-                        </DraggableCell>
-                        <DraggableCell className="text-center min-w-[70px]">
-                          <div className="flex justify-center">
-                            {product.img_desc1 ? (
-                              <img
-                                src={product.img_desc1}
-                                alt="상품 이미지" 
-                                className="w-12 h-12 object-cover rounded-md"
-                                style={{ borderRadius: '5px' }}
-                                onError={(e) => {
-                                  const target = e.target as HTMLImageElement;
-                                  target.src = '/no-image.png';
-                                  target.alt = '이미지 없음';
-                                  target.style.objectFit = 'contain';
-                                  target.style.backgroundColor = 'transparent';
-                                  target.parentElement?.classList.add('flex', 'justify-center');
-                                }}
-                              />
-                            ) : (
-                              <div className="w-12 h-12 flex items-center justify-center">
-                                <img 
-                                  src="/no-image.png" 
-                                  alt="이미지 없음" 
-                                  className="w-12 h-12 object-contain rounded-md"
+                          className={selectedProducts.includes(product.product_id) ? 'bg-muted' : ''}
+                        >
+                          <CheckboxCell
+                            product={product}
+                            selectedProducts={selectedProducts}
+                            onSelect={(checked) => {
+                              if (checked) {
+                                setSelectedProducts([...selectedProducts, product.product_id]);
+                              } else {
+                                setSelectedProducts(selectedProducts.filter(id => id !== product.product_id));
+                              }
+                            }}
+                          />
+                          <DraggableCell className="text-center w-[40px]">
+                            <div>{index + 1}</div>
+                          </DraggableCell>
+                          <DraggableCell className="text-center w-[65px]">
+                            <div>{product.product_id}</div>
+                          </DraggableCell>
+                          <DraggableCell className="text-center w-[70px]">
+                            <div className="flex justify-center">
+                              {product.img_desc1 ? (
+                                <img
+                                  src={product.img_desc1}
+                                  alt="상품 이미지" 
+                                  className="w-12 h-12 object-cover rounded-md"
                                   style={{ borderRadius: '5px' }}
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.src = '/no-image.png';
+                                    target.alt = '이미지 없음';
+                                    target.style.objectFit = 'contain';
+                                    target.style.backgroundColor = 'transparent';
+                                    target.parentElement?.classList.add('flex', 'justify-center');
+                                  }}
                                 />
+                              ) : (
+                                <div className="w-12 h-12 flex items-center justify-center">
+                                  <img 
+                                    src="/no-image.png" 
+                                    alt="이미지 없음" 
+                                    className="w-12 h-12 object-contain rounded-md"
+                                    style={{ borderRadius: '5px' }}
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          </DraggableCell>
+                          <TableCell className="text-left w-[200px]">
+                            <div className="flex flex-col">
+                              <div 
+                                className="truncate cursor-pointer hover:underline" 
+                                title={product.name}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setSelectedProductId(product.product_id);
+                                }}
+                                style={{ pointerEvents: 'all', touchAction: 'none' }}
+                              >
+                                {product.name.length > 20 ? `${product.name.substring(0, 20)}...` : product.name}
                               </div>
-                            )}
-                          </div>
-                        </DraggableCell>
-                        <TableCell className="text-left min-w-[200px]">
-                          <div className="flex flex-col">
-                            <div 
-                              className="truncate cursor-pointer hover:underline" 
-                              title={product.name}
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setSelectedProductId(product.product_id);
-                              }}
-                              style={{ pointerEvents: 'all', touchAction: 'none' }}
-                            >
-                              {product.name.length > 20 ? `${product.name.substring(0, 20)}...` : product.name}
+                              <div className="text-sm text-muted-foreground">
+                                {product.brand && <span className="mr-1">{product.brand}</span>}
+                                {product.category_1 && <span className="mr-1">{product.category_1}</span>}
+                                {product.extra_column2 && <span className="mr-1">{product.extra_column2}</span>}
+                                {product.category_3 && <span className="ml-auto">{product.category_3}</span>}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <DraggableCell className="text-center w-[65px]">
+                            <div>{product.pricing_price?.toLocaleString() || '-'}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {(() => {
+                                if (!product.org_price || !selectedChannelInfo) return '-';
+                                
+                                const exchangeRate = Number(selectedChannelInfo.applied_exchange_rate?.replace(/,/g, '') || 0);
+                                const cost = selectedChannelInfo.type === '국내' 
+                                  ? Math.round(product.org_price / 1.1)
+                                  : Math.round(product.org_price / exchangeRate);
+                                
+                                return cost.toLocaleString();
+                              })()}
+                            </div>
+                          </DraggableCell>
+                          <DraggableCell className="text-center w-[65px]">
+                            <div>{product.discount_price?.toLocaleString() || '-'}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {product.discount_price && product.shop_price 
+                                ? `${Math.round(((product.shop_price - product.discount_price) / product.shop_price) * 100)}%`
+                                : '-'}
+                            </div>
+                          </DraggableCell>
+                          <DraggableCell className="text-center w-[65px]">
+                            <div>{product.coupon1_price ? product.coupon1_price.toLocaleString() : "-"}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {product.coupon1_price && product.discount_price
+                                ? `${Math.round(((product.discount_price - product.coupon1_price) / product.discount_price) * 100)}%`
+                                : '-'}
+                            </div>
+                          </DraggableCell>
+                          <DraggableCell className="text-center w-[65px]">
+                            <div>{product.coupon2_price ? product.coupon2_price.toLocaleString() : "-"}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {product.coupon2_price && product.coupon1_price
+                                ? `${Math.round(((product.coupon1_price - product.coupon2_price) / product.coupon1_price) * 100)}%`
+                                : '-'}
+                            </div>
+                          </DraggableCell>
+                          <DraggableCell className="text-center w-[65px]">
+                            <div>{product.coupon3_price ? product.coupon3_price.toLocaleString() : "-"}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {product.coupon3_price && product.coupon2_price
+                                ? `${Math.round(((product.coupon2_price - product.coupon3_price) / product.coupon2_price) * 100)}%`
+                                : '-'}
+                            </div>
+                          </DraggableCell>
+                          <DraggableCell className="text-center w-[65px]">
+                            <div> 
+                              {product.coupon3_price ? product.coupon3_price.toLocaleString() :
+                               product.coupon2_price ? product.coupon2_price.toLocaleString() :
+                               product.coupon1_price ? product.coupon1_price.toLocaleString() :
+                               product.discount_price?.toLocaleString() || '-'}
                             </div>
                             <div className="text-sm text-muted-foreground">
-                              {product.brand && <span className="mr-1">{product.brand}</span>}
-                              {product.category_1 && <span className="mr-1">{product.category_1}</span>}
-                              {product.extra_column2 && <span className="mr-1">{product.extra_column2}</span>}
-                              {product.category_3 && <span className="ml-auto">{product.category_3}</span>}
+                              {product.coupon3_price && product.shop_price
+                                ? `${Math.round(((product.shop_price - product.coupon3_price) / product.shop_price) * 100)}%`
+                                : product.coupon2_price && product.shop_price
+                                ? `${Math.round(((product.shop_price - product.coupon2_price) / product.shop_price) * 100)}%`
+                                : product.coupon1_price && product.shop_price
+                                ? `${Math.round(((product.shop_price - product.coupon1_price) / product.shop_price) * 100)}%`
+                                : product.discount_price && product.shop_price
+                                ? `${Math.round(((product.shop_price - product.discount_price) / product.shop_price) * 100)}%`
+                                : '-'}
                             </div>
-                          </div>
-                        </TableCell>
-                        <DraggableCell className="text-center min-w-[65px]">
-                          <div>{product.pricing_price?.toLocaleString() || '-'}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {(() => {
-                              if (!product.org_price || !selectedChannelInfo) return '-';
-                              
-                              const exchangeRate = Number(selectedChannelInfo.applied_exchange_rate?.replace(/,/g, '') || 0);
-                              const cost = selectedChannelInfo.type === '국내' 
-                                ? Math.round(product.org_price / 1.1)
-                                : Math.round(product.org_price / exchangeRate);
-                              
-                              return cost.toLocaleString();
-                            })()}
-                          </div>
-                        </DraggableCell>
-                        <DraggableCell className="text-center min-w-[65px]">
-                          <div>{product.discount_price?.toLocaleString() || '-'}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {product.discount_price && product.shop_price 
-                              ? `${Math.round(((product.shop_price - product.discount_price) / product.shop_price) * 100)}%`
-                              : '-'}
-                          </div>
-                        </DraggableCell>
-                        <DraggableCell className="text-center min-w-[65px]">
-                          <div>{product.coupon1_price ? product.coupon1_price.toLocaleString() : "-"}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {product.coupon1_price && product.discount_price
-                              ? `${Math.round(((product.discount_price - product.coupon1_price) / product.discount_price) * 100)}%`
-                              : '-'}
-                          </div>
-                        </DraggableCell>
-                        <DraggableCell className="text-center min-w-[65px]">
-                          <div>{product.coupon2_price ? product.coupon2_price.toLocaleString() : "-"}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {product.coupon2_price && product.coupon1_price
-                              ? `${Math.round(((product.coupon1_price - product.coupon2_price) / product.coupon1_price) * 100)}%`
-                              : '-'}
-                          </div>
-                        </DraggableCell>
-                        <DraggableCell className="text-center min-w-[65px]">
-                          <div>{product.coupon3_price ? product.coupon3_price.toLocaleString() : "-"}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {product.coupon3_price && product.coupon2_price
-                              ? `${Math.round(((product.coupon2_price - product.coupon3_price) / product.coupon2_price) * 100)}%`
-                              : '-'}
-                          </div>
-                        </DraggableCell>
-                        <DraggableCell className="text-center min-w-[65px]">
-                          <div> 
-                            {product.coupon3_price ? product.coupon3_price.toLocaleString() :
-                             product.coupon2_price ? product.coupon2_price.toLocaleString() :
-                             product.coupon1_price ? product.coupon1_price.toLocaleString() :
-                             product.discount_price?.toLocaleString() || '-'}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {product.coupon3_price && product.shop_price
-                              ? `${Math.round(((product.shop_price - product.coupon3_price) / product.shop_price) * 100)}%`
-                              : product.coupon2_price && product.shop_price
-                              ? `${Math.round(((product.shop_price - product.coupon2_price) / product.shop_price) * 100)}%`
-                              : product.coupon1_price && product.shop_price
-                              ? `${Math.round(((product.shop_price - product.coupon1_price) / product.shop_price) * 100)}%`
-                              : product.discount_price && product.shop_price
-                              ? `${Math.round(((product.shop_price - product.discount_price) / product.shop_price) * 100)}%`
-                              : '-'}
-                          </div>
-                        </DraggableCell>
-                        <DraggableCell className="text-center min-w-[65px]">
-                          <div>{product.discount_burden_amount?.toLocaleString() || '-'}</div>
-                        </DraggableCell>
-                        <DraggableCell className="text-center min-w-[60px]">
-                          <div>
-                            {(() => {
-                              const basePrice = product.adjusted_cost || product.org_price;
-                              const finalPrice = product.discount_price || product.pricing_price;
-                              const burden = product.discount_burden_amount || 0;
-                              
-                              if (!basePrice || !finalPrice) return '-';
-                              
-                              const costRatio = (basePrice / (finalPrice - burden)) * 100;
-                              return `${Math.round(costRatio)}%`;
-                            })()}
-                          </div>
-                        </DraggableCell>
-                        <DraggableCell className="text-center min-w-[60px]">
-                          <div>{(product.total_stock !== undefined 
-                            ? product.total_stock 
-                            : product.main_wh_available_stock_excl_production_stock)?.toLocaleString() || '-'}</div>
-                          <div className="text-sm text-gray-500 mt-1">{product.soldout_rate ? `${product.soldout_rate}%` : '-'}</div>
-                        </DraggableCell>
-                        <DraggableCell className="text-center min-w-[45px]">
-                          <div>{product.drop_yn || '-'}</div>
-                        </DraggableCell>
-                        <DraggableCell className="text-center min-w-[60px]">
-                          <div>{product.supply_name || '-'}</div>
-                        </DraggableCell>
-                        <DraggableCell className="text-center min-w-[60px]">
-                          <div>{product.exclusive2 || '-'}</div>
-                        </DraggableCell>
-                      </SortableTableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </SortableContext>
-            </DndContext>
-          </div>
+                          </DraggableCell>
+                          <DraggableCell className="text-center w-[65px]">
+                            <div>{product.discount_burden_amount?.toLocaleString() || '-'}</div>
+                          </DraggableCell>
+                          <DraggableCell className="text-center w-[60px]">
+                            <div>
+                              {(() => {
+                                const basePrice = product.adjusted_cost || product.org_price;
+                                const finalPrice = product.discount_price || product.pricing_price;
+                                const burden = product.discount_burden_amount || 0;
+                                
+                                if (!basePrice || !finalPrice) return '-';
+                                
+                                const costRatio = (basePrice / (finalPrice - burden)) * 100;
+                                return `${Math.round(costRatio)}%`;
+                              })()}
+                            </div>
+                          </DraggableCell>
+                          <DraggableCell className="text-center w-[60px]">
+                            <div>{(product.total_stock !== undefined 
+                              ? product.total_stock 
+                              : product.main_wh_available_stock_excl_production_stock)?.toLocaleString() || '-'}</div>
+                            <div className="text-sm text-gray-500 mt-1">{product.soldout_rate ? `${product.soldout_rate}%` : '-'}</div>
+                          </DraggableCell>
+                          <DraggableCell className="text-center w-[45px]">
+                            <div>{product.drop_yn || '-'}</div>
+                          </DraggableCell>
+                          <DraggableCell className="text-center w-[60px]">
+                            <div>{product.supply_name || '-'}</div>
+                          </DraggableCell>
+                          <DraggableCell className="text-center w-[60px]">
+                            <div>{product.exclusive2 || '-'}</div>
+                          </DraggableCell>
+                        </SortableTableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            </SortableContext>
+          </DndContext>
         </div>
       </div> 
 
