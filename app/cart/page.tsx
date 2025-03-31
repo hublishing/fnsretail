@@ -102,6 +102,7 @@ interface Product {
   isSelected?: boolean;
   pricing_price: number | null;
   self_ratio?: number;
+  final_price: number | null;
 }
 
 interface Column {
@@ -818,7 +819,8 @@ export default function CartPage() {
       return;
     }
 
-    if (!discountValue) {
+    const currentTabState = getCurrentTabState();
+    if (!currentTabState.discountValue) {
       alert('할인값을 입력해주세요.');
       return;
     }
@@ -835,7 +837,7 @@ export default function CartPage() {
 
       // 할인 적용 기준금액 설정
       let basePrice = 0;
-      switch (discountBase) {
+      switch (currentTabState.discountBase) {
         case 'pricing_price':
           basePrice = product.pricing_price || 0;
           break;
@@ -856,66 +858,81 @@ export default function CartPage() {
       let discountPrice: number | null = null;
 
       // 할인 타입에 따른 가격 계산
-      if (discountType === 'amount') {
+      if (currentTabState.discountType === 'amount') {
         // 즉시할인 - 금액
-        discountPrice = basePrice - discountValue;
-      } else if (discountType === 'rate') {
+        discountPrice = basePrice - currentTabState.discountValue;
+      } else if (currentTabState.discountType === 'rate') {
         // 즉시할인 - 율
-        let rawDiscount = basePrice * (discountValue / 100);
-        if (discountCap > 0) {
-          rawDiscount = Math.min(rawDiscount, discountCap);
+        let rawDiscount = basePrice * (currentTabState.discountValue / 100);
+        if (currentTabState.discountCap > 0) {
+          rawDiscount = Math.min(rawDiscount, currentTabState.discountCap);
         }
-        discountPrice = basePrice - roundWithType(rawDiscount, roundUnit, roundType);
-      } else if (discountType === 'min_profit_amount') {
+        discountPrice = basePrice - roundWithType(rawDiscount, currentTabState.roundUnit, currentTabState.roundType);
+      } else if (currentTabState.discountType === 'min_profit_amount') {
         // 최저손익 - 금액
         const costBase = product.org_price + domesticDeliveryFee + shippingFee;
-        discountPrice = Math.round(costBase / (1 - averageFeeRate - discountValue));
-      } else if (discountType === 'min_profit_rate') {
+        discountPrice = Math.round(costBase / (1 - averageFeeRate - currentTabState.discountValue));
+      } else if (currentTabState.discountType === 'min_profit_rate') {
         // 최저손익 - 율
-        const costBase = product.org_price + domesticDeliveryFee + shippingFee + discountValue;
+        const costBase = product.org_price + domesticDeliveryFee + shippingFee + currentTabState.discountValue;
         discountPrice = Math.round(costBase / (1 - averageFeeRate));
       }
 
       // 할인율 계산
-      const discountRate = discountPrice && basePrice
-        ? Math.round(((basePrice - discountPrice) / basePrice) * 100)
+      const discountRate = product.pricing_price && product.pricing_price !== 0 && discountPrice
+        ? Math.round(((product.pricing_price - discountPrice) / product.pricing_price) * 100)
         : 0;
 
       // 각 탭에 따라 다른 필드 업데이트
+      let updatedProduct: Product;
       switch (type) {
         case 'discount':
-        return {
-          ...product,
-          discount: discountValue,
-          discount_unit: discountType,
-          discount_price: discountPrice,
+          updatedProduct = {
+            ...product,
+            discount: currentTabState.discountValue,
+            discount_unit: currentTabState.discountType,
+            discount_price: discountPrice,
             discount_rate: discountRate,
-            self_ratio: selfRatio
+            self_ratio: currentTabState.selfRatio
           } as Product;
+          break;
         case 'coupon1':
-          return {
+          updatedProduct = {
             ...product,
             coupon1_price: discountPrice,
             coupon1_rate: discountRate,
-            self_ratio: selfRatio
+            self_ratio: currentTabState.selfRatio
           } as Product;
+          break;
         case 'coupon2':
-          return {
+          updatedProduct = {
             ...product,
             coupon2_price: discountPrice,
             coupon2_rate: discountRate,
-            self_ratio: selfRatio
+            self_ratio: currentTabState.selfRatio
           } as Product;
+          break;
         case 'coupon3':
-          return {
+          updatedProduct = {
             ...product,
             coupon3_price: discountPrice,
             coupon3_rate: discountRate,
-            self_ratio: selfRatio
+            self_ratio: currentTabState.selfRatio
           } as Product;
+          break;
         default:
-      return product;
+          return product;
       }
+
+      // final_price 계산
+      updatedProduct.final_price = 
+        updatedProduct.coupon3_price || 
+        updatedProduct.coupon2_price || 
+        updatedProduct.coupon1_price || 
+        updatedProduct.discount_price || 
+        updatedProduct.pricing_price || null;
+
+      return updatedProduct;
     });
 
     setProducts(updatedProducts);
@@ -1371,19 +1388,7 @@ export default function CartPage() {
               onClick={() => setShowDiscountModal(true)}
               className="border-0 hover:bg-transparent hover:text-primary"
             >
-              즉시할인
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowCouponModal(true)}
-              className="border-0 hover:bg-transparent hover:text-primary"
-              disabled={selectedProducts.length === 0 || !selectedProducts.every(id => {
-                const product = products.find(p => p.product_id === id);
-                return product?.discount_price !== undefined;
-              })}
-            >
-              쿠폰
+              할인
             </Button>
             <Button
               variant="outline"
@@ -2277,15 +2282,6 @@ export default function CartPage() {
           onClose={() => setShowExcelSettings(false)}
           settings={excelSettings}
           onSettingsChange={setExcelSettings}
-        />
-      )}
-
-      {/* 쿠폰 모달 */}
-      {showCouponModal && (
-        <CouponModal
-          isOpen={showCouponModal}
-          onClose={() => setShowCouponModal(false)}
-          onApply={handleApplyCoupons}
         />
       )}
     </div>
