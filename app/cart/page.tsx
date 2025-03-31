@@ -426,6 +426,45 @@ export default function CartPage() {
     return newUuid;
   };
 
+  // 정보 저장 함수
+  const saveCartInfo = async () => {
+    if (!user) return;
+
+    try {
+      // undefined 값을 가진 필드 제거
+      const cartData = {
+        products: products.map(product => {
+          const cleanProduct = { ...product };
+          Object.keys(cleanProduct).forEach(key => {
+            if (cleanProduct[key as keyof Product] === undefined) {
+              delete cleanProduct[key as keyof Product];
+            }
+          });
+          return cleanProduct;
+        }),
+        title: title || '',
+        channel_name: filters.channel_name || '',
+        delivery_type: filters.delivery_type || '',
+        start_date: startDate || '',
+        end_date: endDate || '',
+        memo: memo || '',
+        divider_rules: dividerRules.map(rule => ({
+          id: rule.id,
+          range: rule.range,
+          color: rule.color || '#FFE4E1',
+          text: rule.text || ''
+        })),
+        updatedAt: new Date().toISOString()
+      };
+
+      const docRef = doc(db, 'userCarts', user.uid);
+      await setDoc(docRef, cartData);
+      console.log('장바구니 정보 저장 성공');
+    } catch (error) {
+      console.error('장바구니 정보 저장 중 오류 발생:', error);
+    }
+  };
+
   // 사용자 세션 로드
   useEffect(() => {
     let isMounted = true;
@@ -464,6 +503,17 @@ export default function CartPage() {
           if (data.start_date) setStartDate(data.start_date);
           if (data.end_date) setEndDate(data.end_date);
           if (data.memo) setMemo(data.memo);
+          if (data.divider_rules && Array.isArray(data.divider_rules)) {
+            // 구분자 규칙이 있는 경우 해당 규칙으로 설정
+            setDividerRules(data.divider_rules);
+          } else {
+            // 구분자 규칙이 없는 경우 기본값 설정
+            setDividerRules([
+              { id: uuidv4(), range: [0, 0], color: '#FFE4E1', text: '' },
+              { id: uuidv4(), range: [0, 0], color: '#FFE4E1', text: '' },
+              { id: uuidv4(), range: [0, 0], color: '#FFE4E1', text: '' }
+            ]);
+          }
         }
       } catch (error) {
         console.error('세션 또는 장바구니 데이터 로드 오류:', error);
@@ -750,28 +800,6 @@ export default function CartPage() {
     } catch (error) {
       console.error('상품 제거 중 오류 발생:', error);
       setProducts(products);
-    }
-  };
-
-  // 정보 저장 함수
-  const saveCartInfo = async () => {
-    if (!user) return;
-
-    try {
-      const docRef = doc(db, 'userCarts', user.uid);
-      await setDoc(docRef, {
-        products,
-        title,
-        channel_name: filters.channel_name,
-        delivery_type: filters.delivery_type,
-        start_date: startDate,
-        end_date: endDate,
-        memo,
-        updatedAt: new Date().toISOString()
-      });
-      console.log('장바구니 정보 저장 성공');
-    } catch (error) {
-      console.error('장바구니 정보 저장 중 오류 발생:', error);
     }
   };
 
@@ -1299,14 +1327,16 @@ export default function CartPage() {
   };
 
   // 구분자 규칙 업데이트
-  const handleUpdateDividerRule = (id: string, field: keyof DividerRule, value: any) => {
-    setDividerRules(dividerRules.map(rule => 
+  const handleUpdateDividerRule = async (id: string, field: keyof DividerRule, value: any) => {
+    const updatedRules = dividerRules.map(rule => 
       rule.id === id ? { ...rule, [field]: value } : rule
-    ));
+    );
+    setDividerRules(updatedRules);
+    await saveCartInfo();
   };
 
   // 구분자 적용
-  const handleApplyDivider = () => {
+  const handleApplyDivider = async () => {
     const updatedProducts = products.map((product, index) => {
       const matchingRule = dividerRules.find(rule => 
         index + 1 >= rule.range[0] && index + 1 <= rule.range[1]
@@ -1321,15 +1351,18 @@ export default function CartPage() {
 
     setProducts(updatedProducts);
     setShowDividerModal(false);
+    await saveCartInfo();
   };
 
   // 구분자 초기화 핸들러
-  const handleResetDividerRules = () => {
-    setDividerRules([
+  const handleResetDividerRules = async () => {
+    const defaultRules = [
       { id: uuidv4(), range: [0, 0], color: '#FFE4E1', text: '' },
       { id: uuidv4(), range: [0, 0], color: '#FFE4E1', text: '' },
       { id: uuidv4(), range: [0, 0], color: '#FFE4E1', text: '' }
-    ]);
+    ];
+    setDividerRules(defaultRules);
+    await saveCartInfo();
   };
 
   return (
