@@ -106,6 +106,8 @@ interface Product {
   final_price: number | null;
   rowColor?: string;  // 행 색상을 위한 필드 추가
   dividerText?: string;
+  adjusted_cost?: number;
+  discount_burden_amount?: number;
 }
 
 interface Column {
@@ -1210,6 +1212,11 @@ export default function CartPage() {
           start_date: '',
           end_date: '',
           memo: '',
+          divider_rules: [
+            { id: uuidv4(), range: [0, 0], color: '#FFE4E1', text: '' },
+            { id: uuidv4(), range: [0, 0], color: '#FFE4E1', text: '' },
+            { id: uuidv4(), range: [0, 0], color: '#FFE4E1', text: '' }
+          ],
           updatedAt: new Date().toISOString()
         });
 
@@ -1229,6 +1236,11 @@ export default function CartPage() {
         setSelectedChannelInfo(null);
         setIsValidChannel(true);
         setIsValidDeliveryType(true);
+        setDividerRules([
+          { id: uuidv4(), range: [0, 0], color: '#FFE4E1', text: '' },
+          { id: uuidv4(), range: [0, 0], color: '#FFE4E1', text: '' },
+          { id: uuidv4(), range: [0, 0], color: '#FFE4E1', text: '' }
+        ]);
 
         alert('리스트가 초기화되었습니다.');
       }
@@ -1446,14 +1458,7 @@ export default function CartPage() {
             </div>
 
             {/* 채널 상세 정보 첫 번째 줄 */}
-            <div className="flex items-center gap-4">
-              <input
-                type="text"
-                value={selectedChannelInfo?.channel_category_2 || ''}
-                readOnly
-                placeholder="구분"
-                className="w-[120px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-muted text-sm text-muted-foreground"
-              />
+            <div className="flex items-center gap-4"> 
               <input
                 type="text"
                 value={selectedChannelInfo?.channel_category_3 || ''}
@@ -1482,7 +1487,8 @@ export default function CartPage() {
                 readOnly
                 placeholder="평균수수료"
                 className="w-[160px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-muted text-sm text-muted-foreground"
-                />
+                /> 
+              </div>
               <div className="flex gap-2">
                 {dividerRules.map((rule, index) => (
                   rule.range[0] > 0 && rule.range[1] > 0 && (
@@ -1496,7 +1502,6 @@ export default function CartPage() {
                     </div>
                   )
                 ))}
-              </div>
               </div>
             </div>
 
@@ -1698,7 +1703,18 @@ export default function CartPage() {
                           </TableCell>
                           <DraggableCell className="text-center w-[65px]">
                             <div>{product.pricing_price?.toLocaleString() || '-'}</div>
-                            <div className="text-sm text-muted-foreground">{product.org_price?.toLocaleString() || '-'}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {(() => {
+                                if (!product.org_price || !selectedChannelInfo) return '-';
+                                
+                                const exchangeRate = Number(selectedChannelInfo.applied_exchange_rate?.replace(/,/g, '') || 0);
+                                const cost = selectedChannelInfo.type === '국내' 
+                                  ? Math.round(product.org_price / 1.1)
+                                  : Math.round(product.org_price / exchangeRate);
+                                
+                                return cost.toLocaleString();
+                              })()}
+                            </div>
                           </DraggableCell>
                           <DraggableCell className="text-center w-[65px]">
                             <div>{product.discount_price?.toLocaleString() || '-'}</div>
@@ -1752,7 +1768,18 @@ export default function CartPage() {
                             </div>
                           </DraggableCell>
                           <DraggableCell className="text-center w-[60px]">
-                            <div>{product.cost_ratio ? `${product.cost_ratio}%` : '-'}</div>
+                            <div>
+                              {(() => {
+                                const basePrice = product.adjusted_cost || product.org_price;
+                                const finalPrice = product.discount_price || product.pricing_price;
+                                const burden = product.discount_burden_amount || 0;
+                                
+                                if (!basePrice || !finalPrice) return '-';
+                                
+                                const costRatio = (basePrice / (finalPrice - burden)) * 100;
+                                return `${Math.round(costRatio)}%`;
+                              })()}
+                            </div>
                           </DraggableCell>
                           <DraggableCell className="text-center w-[60px]">
                             <div>{(product.total_stock !== undefined 
