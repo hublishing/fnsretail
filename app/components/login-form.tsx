@@ -22,13 +22,13 @@ export function LoginForm({ formAction, error }: LoginFormProps) {
       <form action={formAction} className="space-y-4">
         <div className="space-y-2">
           <label htmlFor="username" className="text-sm font-medium">
-            아이디
+            이메일
           </label>
           <Input
             id="username"
             name="username"
             type="text"
-            placeholder="아이디를 입력하세요"
+            placeholder="이메일을 입력하세요"
             required
           />
         </div>

@@ -62,6 +62,7 @@ interface Product {
   name: string;
   org_price: number;
   shop_price: number;
+  global_price: number;
   img_desc1: string;
   product_desc: string;
   extra_column2: string;
@@ -85,13 +86,15 @@ interface Product {
   order_channels?: string[];
   order_categories?: string[];
   order_types?: string[];
-  discount_price?: number;
+  discount_price?: number | null;
   discount?: number;
   discount_rate?: number;
+  discount_unit?: 'percentage' | 'fixed' | 'min_profit_percentage' | 'min_profit_fixed';
   coupon1_price?: number;
   coupon2_price?: number;
   coupon3_price?: number;
   isSelected?: boolean;
+  pricing_price: number | null;
 }
 
 interface Column {
@@ -141,6 +144,7 @@ interface ChannelInfo {
   brand_type: string;
   free_shipping: number;
   conditional_shipping: number;
+  amazon_shipping_cost?: number;
 }
 
 interface CartItem {
@@ -270,7 +274,7 @@ export default function CartPage() {
     includeDiscount: true,
   });
   const [isDragging, setIsDragging] = useState(false);
-  const [discountType, setDiscountType] = useState<'percentage' | 'fixed'>('percentage');
+  const [discountType, setDiscountType] = useState<'percentage' | 'fixed' | 'min_profit_percentage' | 'min_profit_fixed'>('percentage');
   const [discountValue, setDiscountValue] = useState<number>(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -417,12 +421,32 @@ export default function CartPage() {
   const handleChannelSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setChannelSearchTerm(value);
+    
     // 입력된 값이 채널 목록에 있는지 확인
-    setIsValidChannel(channels.some(c => c.channel_name === value));
+    const foundChannel = channels.find(c => c.channel_name === value);
+    if (foundChannel) {
+      setIsValidChannel(true);
+      setSelectedChannelInfo(foundChannel);
+      // 채널이 선택되면 판매가 다시 계산
+      handleChannelSelect(foundChannel);
+    } else {
+      setIsValidChannel(false);
+      setSelectedChannelInfo(null);
+    }
   };
 
   // 채널 선택 핸들러
   const handleChannelSelect = async (channel: ChannelInfo) => {
+    console.log('선택된 채널 정보:', {
+      channel_name: channel.channel_name,
+      type: channel.type,
+      markup_ratio: channel.markup_ratio,
+      applied_exchange_rate: channel.applied_exchange_rate,
+      rounddown: channel.rounddown,
+      digit_adjustment: channel.digit_adjustment,
+      amazon_shipping_cost: channel.amazon_shipping_cost
+    });
+
     setChannelSearchTerm(channel.channel_name);
     setShowChannelSuggestions(false);
     setIsValidChannel(true);
@@ -431,6 +455,73 @@ export default function CartPage() {
       channel_name: channel.channel_name
     }));
     setSelectedChannelInfo(channel);
+    
+    // 판매가 계산
+    const updatedProducts = products.map(product => {
+      let pricingPrice: number | null = null;
+
+      // 채널 정보의 모든 값이 있는지 확인
+      if (!channel.type || !channel.markup_ratio || !channel.applied_exchange_rate) {
+        console.log('채널 정보 누락:', {
+          type: channel.type,
+          markup_ratio: channel.markup_ratio,
+          applied_exchange_rate: channel.applied_exchange_rate
+        });
+        return {
+          ...product,
+          pricing_price: null
+        };
+      }
+
+      // markup_ratio에서 콤마 제거하고 숫자로 변환
+      const markupRatio = Number(channel.markup_ratio.replace(/,/g, ''));
+      const exchangeRate = Number(channel.applied_exchange_rate.replace(/,/g, ''));
+
+      // 타입칸에 표시되는 채널 타입에 따라 판매가 계산
+      if (channel.type === '일본' || channel.type === '자사몰') {
+        if (channel.rounddown !== null) {
+          pricingPrice = Math.floor(product.global_price / exchangeRate);
+          pricingPrice += Number(channel.digit_adjustment || 0);
+          if (channel.channel_name === 'SG_아마존US') {
+            pricingPrice += Number(channel.amazon_shipping_cost || 0);
+          }
+        }
+      }
+      // 국내
+      else if (channel.type === '국내') {
+        pricingPrice = product.shop_price + markupRatio;
+      }
+      // 해외
+      else if (channel.type === '해외' && channel.rounddown !== null) {
+        pricingPrice = Math.floor(
+          (product.shop_price * markupRatio) / exchangeRate
+        );
+        pricingPrice += Number(channel.digit_adjustment || 0);
+
+        // ZALORA 특별 케이스
+        if (channel.channel_name === 'SG_ZALORA_SG') {
+          pricingPrice *= 1.09;
+        } else if (channel.channel_name === 'SG_ZALORA_MY') {
+          pricingPrice *= 1.1;
+        }
+      }
+
+      console.log('계산된 판매가:', {
+        product_name: product.name,
+        pricing_price: pricingPrice,
+        channel_type: channel.type,
+        markup_ratio: markupRatio,
+        applied_exchange_rate: exchangeRate,
+        shop_price: product.shop_price
+      });
+
+      return {
+        ...product,
+        pricing_price: pricingPrice
+      };
+    });
+
+    setProducts(updatedProducts);
     await saveCartInfo();
   };
 
@@ -636,23 +727,46 @@ export default function CartPage() {
     }
 
     const updatedProducts = products.map(product => {
-      if (selectedProducts.includes(product.product_id)) {
-        let discountPrice = product.shop_price;
-        if (discountType === 'fixed') {
-          discountPrice = product.shop_price - discountValue;
-        } else {
-          discountPrice = Math.round(product.shop_price * (1 - discountValue / 100));
-        }
-
-        return {
-          ...product,
-          discount: discountValue,
-          discount_unit: discountType,
-          discount_price: discountPrice,
-          discount_rate: Math.round(((product.shop_price - discountPrice) / product.shop_price) * 100)
-        };
+      if (!selectedProducts.includes(product.product_id)) {
+        return product;
       }
-      return product;
+
+      // 채널 정보에서 필요한 값들 추출
+      const domesticDeliveryFee = Number(selectedChannelInfo?.domestic_delivery_fee?.replace(/[^0-9.]/g, '') || 0);
+      const shippingFee = Number(selectedChannelInfo?.shipping_fee?.replace(/[^0-9.]/g, '') || 0);
+      const averageFeeRate = Number(selectedChannelInfo?.average_fee_rate || 0);
+
+      let discountPrice: number | null = null;
+
+      // 할인 타입에 따른 가격 계산
+      if (discountType === 'percentage' && product.pricing_price) {
+        // 즉시할인 - 퍼센트
+        discountPrice = Math.round(product.pricing_price * (1 - discountValue / 100));
+      } else if (discountType === 'fixed' && product.pricing_price) {
+        // 즉시할인 - 원화
+        discountPrice = product.pricing_price - discountValue;
+      } else if (discountType === 'min_profit_percentage') {
+        // 최저손익 - 퍼센트
+        const basePrice = product.org_price + domesticDeliveryFee + shippingFee;
+        discountPrice = Math.round(basePrice / (1 - averageFeeRate - discountValue / 100));
+      } else if (discountType === 'min_profit_fixed') {
+        // 최저손익 - 원화
+        const basePrice = product.org_price + domesticDeliveryFee + shippingFee + discountValue;
+        discountPrice = Math.round(basePrice / (1 - averageFeeRate));
+      }
+
+      // 할인율 계산
+      const discountRate = discountPrice && product.pricing_price
+        ? Math.round(((product.pricing_price - discountPrice) / product.pricing_price) * 100)
+        : 0;
+
+      return {
+        ...product,
+        discount: discountValue,
+        discount_unit: discountType,
+        discount_price: discountPrice,
+        discount_rate: discountRate
+      } as Product;
     });
 
     setProducts(updatedProducts);
@@ -916,14 +1030,13 @@ export default function CartPage() {
     { key: "name", label: "상품명" },
     { key: "org_price", label: "원가", format: (value: number) => value?.toLocaleString() || '-' },
     { key: "shop_price", label: "판매가", format: (value: number) => value?.toLocaleString() || '-' },
+    { key: "pricing_price", label: "채널가", format: (value: number) => value?.toLocaleString() || '-' },
     { key: "cost_ratio", label: "원가율", format: (value: number) => value ? `${value}%` : '-' },
     { key: "total_stock", label: "재고", format: (value: number) => value?.toLocaleString() || '-' },
     { key: "soldout_rate", label: "품절률", format: (value: number) => value ? `${value}%` : '-' },
     { key: "drop_yn", label: "드랍여부" },
     { key: "supply_name", label: "공급처명" },
     { key: "exclusive2", label: "단독여부" },
-    { key: "total_order_qty", label: "판매수량", format: (value: number) => value?.toLocaleString() || '-' },
-    { key: "product_desc", label: "URL", format: (value: string) => value ? <a href={value} target="_blank" rel="noopener noreferrer">링크</a> : '-' },
     {
       key: "discount_price",
       label: "즉시할인",
@@ -939,36 +1052,6 @@ export default function CartPage() {
           ) : (
             "-"
           )}
-        </div>
-      ),
-    },
-    {
-      key: "coupon1_price",
-      label: "쿠폰1",
-      render: (product) => (
-        <div className="text-right">
-          {product.coupon1_price ? product.coupon1_price.toLocaleString() : "-"}
-        </div>
-      ),
-    },
-    {
-      key: "coupon2_price",
-      label: "쿠폰2",
-      render: (product) => (
-        <div className="text-right">
-          {product.coupon2_price ? product.coupon2_price.toLocaleString() : "-"}
-        </div>
-      ),
-    },
-    {
-      key: "coupon3_price",
-      label: "쿠폰3",
-      render: (product) => (
-        <div className="text-right">
-          {product.coupon3_price ? product.coupon3_price.toLocaleString() :
-           product.coupon2_price ? product.coupon2_price.toLocaleString() :
-           product.coupon1_price ? product.coupon1_price.toLocaleString() :
-           product.discount_price?.toLocaleString() || '-'}
         </div>
       ),
     },
@@ -1216,7 +1299,7 @@ export default function CartPage() {
                       <TableHead className="text-center w-[70px]">이지어드민</TableHead>
                       <TableHead className="text-center w-[70px]">이미지</TableHead>
                       <TableHead className="text-left w-[195px]">상품명</TableHead>
-                      <TableHead className="text-center w-[65px]">판매가</TableHead>
+                      <TableHead className="text-center w-[65px]">판매가</TableHead> 
                       <TableHead className="text-center w-[65px]">즉시할인</TableHead>
                       <TableHead className="text-center w-[65px]">쿠폰1</TableHead>
                       <TableHead className="text-center w-[65px]">쿠폰2</TableHead>
@@ -1227,8 +1310,6 @@ export default function CartPage() {
                       <TableHead className="text-center w-[45px]">드랍</TableHead>
                       <TableHead className="text-center w-[60px]">공급처</TableHead>
                       <TableHead className="text-center w-[60px]">단독</TableHead>
-                      <TableHead className="text-center w-[60px]">판매량</TableHead>
-                      <TableHead className="text-center w-[50px]">URL</TableHead>
                     </TableRow>
                   </TableHeader>
                 </Table>
@@ -1310,7 +1391,7 @@ export default function CartPage() {
                             </div>
                           </TableCell>
                           <DraggableCell className="text-center w-[65px]">
-                            <div>{product.shop_price?.toLocaleString() || '-'}</div>
+                            <div>{product.pricing_price?.toLocaleString() || '-'}</div>
                             <div className="text-sm text-muted-foreground">{product.org_price?.toLocaleString() || '-'}</div>
                           </DraggableCell>
                           <DraggableCell className="text-center w-[65px]">
@@ -1382,16 +1463,6 @@ export default function CartPage() {
                           <DraggableCell className="text-center w-[60px]">
                             <div>{product.exclusive2 || '-'}</div>
                           </DraggableCell>
-                          <DraggableCell className="text-center w-[60px]">
-                            <div>{product.total_order_qty?.toLocaleString() || '-'}</div>
-                          </DraggableCell>
-                          <DraggableCell className="text-center w-[50px]">
-                            {product.product_desc ? (
-                              <a href={product.product_desc} target="_blank" rel="noopener noreferrer" className="hover:underline">
-                                링크
-                              </a>
-                            ) : '-'}
-                          </DraggableCell>
                         </SortableTableRow>
                       ))}
                     </TableBody>
@@ -1437,14 +1508,16 @@ export default function CartPage() {
               />
               <Select
                 value={discountType}
-                onValueChange={(value: 'percentage' | 'fixed') => setDiscountType(value)}
+                onValueChange={(value: 'percentage' | 'fixed' | 'min_profit_percentage' | 'min_profit_fixed') => setDiscountType(value)}
               >
-                <SelectTrigger className="w-[80px] h-10">
-                  <SelectValue placeholder="단위" />
+                <SelectTrigger className="w-[120px] h-10">
+                  <SelectValue placeholder="할인유형" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="percentage">%</SelectItem>
-                  <SelectItem value="fixed">원</SelectItem>
+                  <SelectItem value="percentage">즉시할인(%)</SelectItem>
+                  <SelectItem value="fixed">즉시할인(원)</SelectItem>
+                  <SelectItem value="min_profit_percentage">최저손익(%)</SelectItem>
+                  <SelectItem value="min_profit_fixed">최저손익(원)</SelectItem>
                 </SelectContent>
               </Select>
             </div>

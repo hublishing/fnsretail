@@ -1,15 +1,21 @@
 'use client'
 
+import type { ReactElement } from 'react'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { LoginForm } from '../components/login-form'
-import { useActionState } from 'react'
+import { useFormState } from 'react-dom'
 import { login } from '../actions/auth'
 import type { LoginResult } from '../actions/auth'
 
-export default function LoginPage() {
+const initialState: LoginResult = {
+  success: false,
+  error: ''
+}
+
+export default function LoginPage(): ReactElement {
   const router = useRouter()
-  const [state, formAction] = useActionState<LoginResult, FormData>(login, { success: false, error: '' })
+  const [state, formAction] = useFormState<LoginResult, FormData>(login, initialState)
 
   useEffect(() => {
     if (state.success) {
