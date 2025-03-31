@@ -111,6 +111,7 @@ interface Product {
   expected_commission_fee?: number;  // 예상수수료 필드 추가
   expected_settlement_amount?: number;  // 정산예정금액 필드 추가
   logistics_cost?: number;  // 물류비 필드 추가
+  expected_net_profit?: number;  // 예상순이익액 필드 추가
 }
 
 interface Column {
@@ -739,10 +740,19 @@ export default function CartPage() {
       // 물류비 계산
       const logisticsCost = calculateLogisticsCost(channel, deliveryType, Number(channel.amazon_shipping_cost));
 
+      // 예상순이익액 계산 (SQL 쿼리와 동일하게)
+      const expectedNetProfit = (product.expected_settlement_amount || 0) 
+        - (product.adjusted_cost || product.org_price) 
+        - logisticsCost;
+
       console.log('계산된 판매가와 물류비:', {
         product_name: product.name,
         pricing_price: pricingPrice,
         logistics_cost: logisticsCost,
+        expected_net_profit: expectedNetProfit,
+        expected_settlement_amount: product.expected_settlement_amount,
+        adjusted_cost: product.adjusted_cost,
+        org_price: product.org_price,
         channel_type: channel.type,
         markup_ratio: markupRatio,
         applied_exchange_rate: exchangeRate,
@@ -752,7 +762,8 @@ export default function CartPage() {
       return {
         ...product,
         pricing_price: pricingPrice,
-        logistics_cost: logisticsCost
+        logistics_cost: logisticsCost,
+        expected_net_profit: expectedNetProfit
       };
     });
 
@@ -1316,7 +1327,7 @@ export default function CartPage() {
     { key: "org_price", label: "원가", format: (value: number) => value?.toLocaleString() || '-' },
     { key: "shop_price", label: "판매가", format: (value: number) => value?.toLocaleString() || '-' },
     { key: "pricing_price", label: "채널가", format: (value: number) => value?.toLocaleString() || '-' },
-    { key: "cost_ratio", label: "원가율", format: (value: number) => value ? `${value}%` : '-' },
+    { key: "cost_ratio", label: "원가율", format: (value: number) => value?.toLocaleString() || '-' },
     { key: "total_stock", label: "재고", format: (value: number) => value?.toLocaleString() || '-' },
     { key: "soldout_rate", label: "품절률", format: (value: number) => value ? `${value}%` : '-' },
     { key: "drop_yn", label: "드랍여부" },
@@ -1343,8 +1354,15 @@ export default function CartPage() {
     { key: "discount_burden_amount", label: "할인부담액", format: (value: number) => value?.toLocaleString() || '-' },
     { key: "adjusted_cost", label: "조정원가", format: (value: number) => value?.toLocaleString() || '-' },
     { key: "expected_commission_fee", label: "예상수수료", format: (value: number) => value?.toLocaleString() || '-' },
-    { key: "logistics_cost", label: "물류비", format: (value: number) => value?.toLocaleString() || '-' },  // 물류비 컬럼 추가
+    { key: "logistics_cost", label: "물류비", format: (value: number) => value?.toLocaleString() || '-' },
+    { key: "expected_net_profit", label: "예상순이익액", format: (value: number) => value?.toLocaleString() || '-' },
     { key: "expected_settlement_amount", label: "정산예정금액", format: (value: number) => value?.toLocaleString() || '-' },
+    { key: "cost_ratio", label: "원가율", format: (value: number) => value?.toLocaleString() || '-' },
+    { key: "total_stock", label: "재고", format: (value: number) => value?.toLocaleString() || '-' },
+    { key: "drop_yn", label: "드랍", format: (value: string) => value || '-' },
+    { key: "supply_name", label: "공급처", format: (value: string) => value || '-' },
+    { key: "exclusive2", label: "단독", format: (value: string) => value || '-' },
+    { key: "actions", label: "작업" },
   ];
 
   // 색상 적용 핸들러
@@ -1656,7 +1674,7 @@ export default function CartPage() {
             >
               <div className="relative">
                 <div className="overflow-y-auto max-h-[calc(100vh-400px)]">
-                  <Table style={{tableLayout: 'fixed', width: '100%', minWidth: '1600px', whiteSpace: 'nowrap'}}>
+                  <Table style={{width: '100%', minWidth: '2000px', whiteSpace: 'nowrap'}}>
                     <TableHeader className="bg-muted sticky top-0">
                       <TableRow className="hover:bg-muted">
                         <TableHead className="w-[30px] text-center">
@@ -1671,26 +1689,27 @@ export default function CartPage() {
                             }}
                           />
                         </TableHead>
-                        <TableHead className="text-center w-[40px]">번호</TableHead>
-                        <TableHead className="text-center w-[70px]">이지어드민</TableHead>
+                        <TableHead className="text-center w-[50px]">번호</TableHead>
+                        <TableHead className="text-center w-[80px]">이지어드민</TableHead>
                         <TableHead className="text-center w-[70px]">이미지</TableHead>
-                        <TableHead className="text-left w-[195px]">상품명</TableHead>
-                        <TableHead className="text-center w-[65px]">판매가</TableHead> 
-                        <TableHead className="text-center w-[65px]">즉시할인</TableHead>
-                        <TableHead className="text-center w-[65px]">쿠폰1</TableHead>
-                        <TableHead className="text-center w-[65px]">쿠폰2</TableHead>
-                        <TableHead className="text-center w-[65px]">쿠폰3</TableHead>
-                        <TableHead className="text-center w-[65px]">최종할인</TableHead>
-                        <TableHead className="text-center w-[65px]">할인부담액</TableHead>
-                        <TableHead className="text-center w-[65px]">조정원가</TableHead>
-                        <TableHead className="text-center w-[65px]">예상수수료</TableHead>
-                        <TableHead className="text-center w-[65px]">물류비</TableHead>
-                        <TableHead className="text-center w-[65px]">정산예정금액</TableHead>
-                        <TableHead className="text-center w-[60px]">원가율</TableHead>
-                        <TableHead className="text-center w-[60px]">재고</TableHead>
-                        <TableHead className="text-center w-[45px]">드랍</TableHead>
-                        <TableHead className="text-center w-[60px]">공급처</TableHead>
-                        <TableHead className="text-center w-[60px]">단독</TableHead>
+                        <TableHead className="text-left w-[200px]">상품명</TableHead>
+                        <TableHead className="text-center w-[80px]">판매가</TableHead> 
+                        <TableHead className="text-center w-[80px]">즉시할인</TableHead>
+                        <TableHead className="text-center w-[80px]">쿠폰1</TableHead>
+                        <TableHead className="text-center w-[80px]">쿠폰2</TableHead>
+                        <TableHead className="text-center w-[80px]">쿠폰3</TableHead>
+                        <TableHead className="text-center w-[80px]">최종할인</TableHead>
+                        <TableHead className="text-center w-[80px]">할인부담액</TableHead>
+                        <TableHead className="text-center w-[80px]">조정원가</TableHead>
+                        <TableHead className="text-center w-[80px]">예상수수료</TableHead>
+                        <TableHead className="text-center w-[80px]">물류비</TableHead>
+                        <TableHead className="text-center w-[80px]">예상순이익액</TableHead>
+                        <TableHead className="text-center w-[80px]">정산예정금액</TableHead>
+                        <TableHead className="text-center w-[80px]">원가율</TableHead>
+                        <TableHead className="text-center w-[80px]">재고</TableHead>
+                        <TableHead className="text-center w-[70px]">드랍</TableHead>
+                        <TableHead className="text-center w-[80px]">공급처</TableHead>
+                        <TableHead className="text-center w-[80px]">단독</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1711,14 +1730,14 @@ export default function CartPage() {
                               }
                             }}
                           />
-                          <DraggableCell className="text-center w-[40px]">
+                          <DraggableCell className="text-center">
                             <div>{index + 1}</div>
                           </DraggableCell>
-                          <DraggableCell className="text-center w-[65px]">
+                          <DraggableCell className="text-center">
                             <div>{product.product_id}</div>
                           </DraggableCell>
-                          <DraggableCell className="text-center w-[70px]">
-                            <div className="flex justify-center">
+                          <DraggableCell className="text-center">
+                            <div className="flex justify-center" >
                               {product.img_desc1 ? (
                                 <img
                                   src={product.img_desc1}
@@ -1746,7 +1765,7 @@ export default function CartPage() {
                               )}
                             </div>
                           </DraggableCell>
-                          <TableCell className="text-left w-[200px]">
+                          <TableCell className="text-left">
                             <div className="flex flex-col">
                               <div 
                                 className="truncate cursor-pointer hover:underline" 
@@ -1768,7 +1787,7 @@ export default function CartPage() {
                               </div>
                             </div>
                           </TableCell>
-                          <DraggableCell className="text-center w-[65px]">
+                          <DraggableCell className="text-center">
                             <div>{product.pricing_price?.toLocaleString() || '-'}</div>
                             <div className="text-sm text-muted-foreground">
                               {(() => {
@@ -1783,7 +1802,7 @@ export default function CartPage() {
                               })()}
                             </div>
                           </DraggableCell>
-                          <DraggableCell className="text-center w-[65px]">
+                          <DraggableCell className="text-center">
                             <div>{product.discount_price?.toLocaleString() || '-'}</div>
                             <div className="text-sm text-muted-foreground">
                               {product.discount_price && product.shop_price 
@@ -1791,7 +1810,7 @@ export default function CartPage() {
                                 : '-'}
                             </div>
                           </DraggableCell>
-                          <DraggableCell className="text-center w-[65px]">
+                          <DraggableCell className="text-center">
                             <div>{product.coupon1_price ? product.coupon1_price.toLocaleString() : "-"}</div>
                             <div className="text-sm text-muted-foreground">
                               {product.coupon1_price && product.discount_price
@@ -1799,7 +1818,7 @@ export default function CartPage() {
                                 : '-'}
                             </div>
                           </DraggableCell>
-                          <DraggableCell className="text-center w-[65px]">
+                          <DraggableCell className="text-center">
                             <div>{product.coupon2_price ? product.coupon2_price.toLocaleString() : "-"}</div>
                             <div className="text-sm text-muted-foreground">
                               {product.coupon2_price && product.coupon1_price
@@ -1807,7 +1826,7 @@ export default function CartPage() {
                                 : '-'}
                             </div>
                           </DraggableCell>
-                          <DraggableCell className="text-center w-[65px]">
+                          <DraggableCell className="text-center">
                             <div>{product.coupon3_price ? product.coupon3_price.toLocaleString() : "-"}</div>
                             <div className="text-sm text-muted-foreground">
                               {product.coupon3_price && product.coupon2_price
@@ -1815,7 +1834,7 @@ export default function CartPage() {
                                 : '-'}
                             </div>
                           </DraggableCell>
-                          <DraggableCell className="text-center w-[65px]">
+                          <DraggableCell className="text-center">
                             <div> 
                               {product.coupon3_price ? product.coupon3_price.toLocaleString() :
                                product.coupon2_price ? product.coupon2_price.toLocaleString() :
@@ -1834,22 +1853,25 @@ export default function CartPage() {
                                 : '-'}
                             </div>
                           </DraggableCell>
-                          <DraggableCell className="text-center w-[65px]">
+                          <DraggableCell className="text-center">
                             <div>{product.discount_burden_amount?.toLocaleString() || '-'}</div>
                           </DraggableCell>
-                          <DraggableCell className="text-center w-[65px]">
+                          <DraggableCell className="text-center">
                             <div>{product.adjusted_cost?.toLocaleString() || '-'}</div>
                           </DraggableCell>
-                          <DraggableCell className="text-center w-[65px]">
+                          <DraggableCell className="text-center">
                             <div>{product.expected_commission_fee?.toLocaleString() || '-'}</div>
                           </DraggableCell>
-                          <DraggableCell className="text-center w-[65px]">
+                          <DraggableCell className="text-center">
                             <div>{product.logistics_cost?.toLocaleString() || '-'}</div>
                           </DraggableCell>
-                          <DraggableCell className="text-center w-[65px]">
+                          <DraggableCell className="text-center">
+                            <div>{product.expected_net_profit?.toLocaleString() || '-'}</div>
+                          </DraggableCell>
+                          <DraggableCell className="text-center">
                             <div>{product.expected_settlement_amount?.toLocaleString() || '-'}</div>
                           </DraggableCell>
-                          <DraggableCell className="text-center w-[60px]">
+                          <DraggableCell className="text-center">
                             <div>
                               {(() => {
                                 const basePrice = product.adjusted_cost || product.org_price;
@@ -1863,19 +1885,19 @@ export default function CartPage() {
                               })()}
                             </div>
                           </DraggableCell>
-                          <DraggableCell className="text-center w-[60px]">
+                          <DraggableCell className="text-center">
                             <div>{(product.total_stock !== undefined 
                               ? product.total_stock 
                               : product.main_wh_available_stock_excl_production_stock)?.toLocaleString() || '-'}</div>
                             <div className="text-sm text-gray-500 mt-1">{product.soldout_rate ? `${product.soldout_rate}%` : '-'}</div>
                           </DraggableCell>
-                          <DraggableCell className="text-center w-[45px]">
+                          <DraggableCell className="text-center">
                             <div>{product.drop_yn || '-'}</div>
                           </DraggableCell>
-                          <DraggableCell className="text-center w-[60px]">
+                          <DraggableCell className="text-center">
                             <div>{product.supply_name || '-'}</div>
                           </DraggableCell>
-                          <DraggableCell className="text-center w-[60px]">
+                          <DraggableCell className="text-center">
                             <div>{product.exclusive2 || '-'}</div>
                           </DraggableCell>
                         </SortableTableRow>
