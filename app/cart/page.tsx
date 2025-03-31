@@ -108,6 +108,8 @@ interface Product {
   dividerText?: string;
   adjusted_cost?: number;
   discount_burden_amount?: number;
+  expected_commission_fee?: number;  // 예상수수료 필드 추가
+  expected_settlement_amount?: number;  // 정산예정금액 필드 추가
 }
 
 interface Column {
@@ -208,8 +210,8 @@ function SortableTableRow({ product, children, ...props }: {
   // 드래그 속성을 자식 컴포넌트에 전달
   const childrenWithProps = React.Children.map(children, (child, index) => {
     if (React.isValidElement(child)) {
-      // 체크박스 셀(index 0)과 상품명 셀(index 4)에는 드래그 속성을 전달하지 않음
-      if (index === 0 || index === 4) {
+      // 체크박스 셀(index 0), 상품명 셀(index 4), 이지어드민 셀(index 2)에는 드래그 속성을 전달하지 않음
+      if (index === 0 || index === 4 || index === 2) {
         return child;
       }
       // 1번째와 2번째 셀에만 배경색 적용
@@ -1294,6 +1296,9 @@ export default function CartPage() {
       ),
     },
     { key: "discount_burden_amount", label: "할인부담액", format: (value: number) => value?.toLocaleString() || '-' },
+    { key: "adjusted_cost", label: "조정원가", format: (value: number) => value?.toLocaleString() || '-' },
+    { key: "expected_commission_fee", label: "예상수수료", format: (value: number) => value?.toLocaleString() || '-' },
+    { key: "expected_settlement_amount", label: "정산예정금액", format: (value: number) => value?.toLocaleString() || '-' },
   ];
 
   // 색상 적용 핸들러
@@ -1605,7 +1610,7 @@ export default function CartPage() {
             >
               <div className="relative">
                 <div className="overflow-y-auto max-h-[calc(100vh-400px)]">
-                  <Table style={{tableLayout: 'fixed', width: '100%', minWidth: '1400px', whiteSpace: 'nowrap'}}>
+                  <Table style={{tableLayout: 'fixed', width: '100%', minWidth: '1600px', whiteSpace: 'nowrap'}}>
                     <TableHeader className="bg-muted sticky top-0">
                       <TableRow className="hover:bg-muted">
                         <TableHead className="w-[30px] text-center">
@@ -1631,6 +1636,9 @@ export default function CartPage() {
                         <TableHead className="text-center w-[65px]">쿠폰3</TableHead>
                         <TableHead className="text-center w-[65px]">최종할인</TableHead>
                         <TableHead className="text-center w-[65px]">할인부담액</TableHead>
+                        <TableHead className="text-center w-[65px]">조정원가</TableHead>
+                        <TableHead className="text-center w-[65px]">예상수수료</TableHead>
+                        <TableHead className="text-center w-[65px]">정산예정금액</TableHead>
                         <TableHead className="text-center w-[60px]">원가율</TableHead>
                         <TableHead className="text-center w-[60px]">재고</TableHead>
                         <TableHead className="text-center w-[45px]">드랍</TableHead>
@@ -1781,6 +1789,15 @@ export default function CartPage() {
                           </DraggableCell>
                           <DraggableCell className="text-center w-[65px]">
                             <div>{product.discount_burden_amount?.toLocaleString() || '-'}</div>
+                          </DraggableCell>
+                          <DraggableCell className="text-center w-[65px]">
+                            <div>{product.adjusted_cost?.toLocaleString() || '-'}</div>
+                          </DraggableCell>
+                          <DraggableCell className="text-center w-[65px]">
+                            <div>{product.expected_commission_fee?.toLocaleString() || '-'}</div>
+                          </DraggableCell>
+                          <DraggableCell className="text-center w-[65px]">
+                            <div>{product.expected_settlement_amount?.toLocaleString() || '-'}</div>
                           </DraggableCell>
                           <DraggableCell className="text-center w-[60px]">
                             <div>
