@@ -62,6 +62,7 @@ import {
   TabsTrigger,
   TabsContent,
 } from "@/components/ui/tabs"
+import { Slider } from "@/components/ui/slider"
 
 interface Product {
   product_id: string;
@@ -103,6 +104,7 @@ interface Product {
   pricing_price: number | null;
   self_ratio?: number;
   final_price: number | null;
+  rowColor?: string;  // 행 색상을 위한 필드 추가
 }
 
 interface Column {
@@ -191,6 +193,7 @@ function SortableTableRow({ product, children, ...props }: {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
+    backgroundColor: product.rowColor || 'transparent'
   };
 
   // 드래그 속성을 자식 컴포넌트에 전달
@@ -209,7 +212,7 @@ function SortableTableRow({ product, children, ...props }: {
     <TableRow
       ref={setNodeRef}
       style={style}
-      className={`${isDragging ? 'bg-muted' : ''}`}
+      className={`${isDragging ? 'bg-muted' : ''} ${product.rowColor ? 'hover:bg-muted/50' : ''}`}
       {...props}
     >
       {childrenWithProps}
@@ -307,6 +310,9 @@ export default function CartPage() {
   const [roundType, setRoundType] = useState<'floor' | 'ceil'>('floor');
   const [hurdleTarget, setHurdleTarget] = useState<string>('pricing_price');
   const [hurdleAmount, setHurdleAmount] = useState<number>(0);
+  const [feeRange, setFeeRange] = useState<number[]>([0, 0]);
+  const [selectedColor, setSelectedColor] = useState<string>('');
+  const [colorPickerOpen, setColorPickerOpen] = useState(false);
 
   // 각 탭별 상태 변수들
   const [tabStates, setTabStates] = useState({
@@ -1223,6 +1229,37 @@ export default function CartPage() {
     },
   ];
 
+  // 색상 적용 핸들러
+  const handleApplyColor = () => {
+    if (!selectedColor || products.length === 0) return;
+
+    const [min, max] = feeRange;
+    const updatedProducts = products.map((product, index) => {
+      if (index + 1 >= min && index + 1 <= max) {
+        return {
+          ...product,
+          rowColor: selectedColor
+        };
+      }
+      return product;
+    });
+
+    setProducts(updatedProducts);
+    
+    // Firebase에 저장
+    if (user) {
+      const docRef = doc(db, 'userCarts', user.uid);
+      setDoc(docRef, {
+        products: updatedProducts,
+        updatedAt: new Date().toISOString()
+      });
+    }
+    
+    setColorPickerOpen(false);
+    setSelectedColor('');
+    setFeeRange([0, 0]);
+  };
+
   return (
     <div className="container mx-auto py-8">
       <div className="flex justify-between items-center mb-6">
@@ -1347,13 +1384,40 @@ export default function CartPage() {
                 placeholder="담당자"
                 className="w-[80px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-muted text-sm text-muted-foreground"
               />
-              <input
-                type="text"
-                value={selectedChannelInfo?.average_fee_rate ? `평균수수료 : ${selectedChannelInfo.average_fee_rate}` : ''}
-                readOnly
-                placeholder="평균수수료"
-                className="w-[160px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-muted text-sm text-muted-foreground"
-              />
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={selectedChannelInfo?.average_fee_rate ? `평균수수료 : ${selectedChannelInfo.average_fee_rate}` : ''}
+                  readOnly
+                  placeholder="평균수수료"
+                  className="w-[160px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-muted text-sm text-muted-foreground"
+                />
+                <div className="flex items-center gap-4 w-[300px]">
+                  <div className="flex-1">
+                    <Slider
+                      value={feeRange}
+                      onValueChange={setFeeRange}
+                      min={0}
+                      max={products.length}
+                      step={1}
+                      className="w-full"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2 min-w-[100px]">
+                    <span className="text-sm text-muted-foreground">
+                      {feeRange[0] || 0} ~ {feeRange[1] || 0}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setColorPickerOpen(true)}
+                      className="h-8"
+                    >
+                      색상
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* 메모 입력창 수정 */}
@@ -2284,6 +2348,45 @@ export default function CartPage() {
           onSettingsChange={setExcelSettings}
         />
       )}
+
+      {/* 색상 선택 모달 */}
+      <Dialog open={colorPickerOpen} onOpenChange={setColorPickerOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>색상 선택</DialogTitle>
+            <DialogDescription>
+              선택한 범위의 행에 적용할 색상을 선택하세요.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="flex flex-wrap gap-2">
+              {[
+                { name: '연한 빨강', color: '#FFE4E1' },
+                { name: '연한 보라', color: '#E6E6FA' },
+                { name: '연한 초록', color: '#F0FFF0' },
+                { name: '연한 분홍', color: '#FFF0F5' },
+                { name: '연한 하늘', color: '#F0FFFF' },
+                { name: '연한 주황', color: '#FFE4B5' },
+                { name: '연한 청록', color: '#E0FFFF' },
+                { name: '연한 베이지', color: '#F5F5DC' }
+              ].map((colorOption) => (
+                <div
+                  key={colorOption.color}
+                  className={`w-8 h-8 rounded-full cursor-pointer border-2 ${
+                    selectedColor === colorOption.color ? 'border-blue-500' : 'border-transparent'
+                  }`}
+                  style={{ backgroundColor: colorOption.color }}
+                  onClick={() => setSelectedColor(colorOption.color)}
+                  title={colorOption.name}
+                />
+              ))}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleApplyColor}>적용</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 } 
