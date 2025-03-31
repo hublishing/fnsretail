@@ -576,7 +576,10 @@ export default function CartPage() {
       // 타입칸에 표시되는 채널 타입에 따라 판매가 계산
       if (channel.type === '일본' || channel.type === '자사몰') {
         if (channel.rounddown !== null) {
-          pricingPrice = Math.floor(product.global_price / exchangeRate);
+          // SQL의 ROUND 함수와 동일한 로직으로 수정
+          const basePrice = product.global_price / exchangeRate;
+          const multiplier = Math.pow(10, channel.rounddown);
+          pricingPrice = Math.floor(basePrice * multiplier) / multiplier;
           pricingPrice += Number(channel.digit_adjustment || 0);
           if (channel.channel_name === 'SG_아마존US') {
             pricingPrice += Number(channel.amazon_shipping_cost || 0);
