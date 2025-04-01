@@ -112,26 +112,32 @@ export function DiscountModal({
   }
 
   const calculateDiscount = (price: number, rate: number, roundType: 'floor' | 'ceil' = 'ceil') => {
-    // 1. 할인금액 계산 (소수점 1자리 반올림)
-    const discountAmount = Math.round(price * (rate / 100) * 10) / 10;
-    
-    // 2. 실제 할인된 금액 계산
-    const discountedPrice = price - discountAmount;
-    
-    // 3. 할인된 금액의 1의자리 올림/내림 처리
-    let finalPrice;
-    switch (roundType) {
-      case 'floor':
-        finalPrice = Math.floor(discountedPrice / 10) * 10;
-        break;
-      case 'ceil':
-        finalPrice = Math.ceil(discountedPrice / 10) * 10;
-        break;
-      default:
-        finalPrice = discountedPrice;
+    // 채널 타입이 국내인 경우에만 특별한 계산 방식 적용
+    if (selectedChannelInfo?.type === '국내') {
+      // 1. 할인금액 계산 (소수점 1자리 반올림)
+      const discountAmount = Math.round(price * (rate / 100) * 10) / 10;
+      
+      // 2. 실제 할인된 금액 계산
+      const discountedPrice = price - discountAmount;
+      
+      // 3. 할인된 금액의 1의자리 올림/내림 처리
+      let finalPrice;
+      switch (roundType) {
+        case 'floor':
+          finalPrice = Math.floor(discountedPrice / 10) * 10;
+          break;
+        case 'ceil':
+          finalPrice = Math.ceil(discountedPrice / 10) * 10;
+          break;
+        default:
+          finalPrice = discountedPrice;
+      }
+      
+      return finalPrice;
+    } else {
+      // 국내가 아닌 경우 일반적인 할인 계산
+      return price * (1 - rate / 100);
     }
-    
-    return finalPrice;
   };
 
   const handleApplyDiscount = async (type: 'coupon1' | 'coupon2' | 'coupon3', state: TabState) => {
@@ -344,19 +350,23 @@ export function DiscountModal({
                         placeholder="할인율 입력"
                       />
                       <span className="text-sm text-muted-foreground">%</span>
-                      <Label className="w-[80px]">1의자리</Label>
-                      <Select
-                        value={getCurrentTabState().roundType}
-                        onValueChange={(value: 'floor' | 'ceil') => handleTabStateChange('tab1', 'roundType', value)}
-                      >
-                        <SelectTrigger className="w-[100px] h-10">
-                          <SelectValue placeholder="내림" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="floor">내림</SelectItem>
-                          <SelectItem value="ceil">올림</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      {selectedChannelInfo?.type === '국내' && (
+                        <>
+                          <Label className="w-[80px]">1의자리</Label>
+                          <Select
+                            value={getCurrentTabState().roundType}
+                            onValueChange={(value: 'floor' | 'ceil') => handleTabStateChange('tab1', 'roundType', value)}
+                          >
+                            <SelectTrigger className="w-[100px] h-10">
+                              <SelectValue placeholder="내림" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="floor">내림</SelectItem>
+                              <SelectItem value="ceil">올림</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </>
+                      )}
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -487,19 +497,23 @@ export function DiscountModal({
                         placeholder="할인율 입력"
                       />
                       <span className="text-sm text-muted-foreground">%</span>
-                      <Label className="w-[80px]">1의자리</Label>
-                      <Select
-                        value={getCurrentTabState().roundType}
-                        onValueChange={(value: 'floor' | 'ceil') => handleTabStateChange('tab2', 'roundType', value)}
-                      >
-                        <SelectTrigger className="w-[100px] h-10">
-                          <SelectValue placeholder="내림" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="floor">내림</SelectItem>
-                          <SelectItem value="ceil">올림</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      {selectedChannelInfo?.type === '국내' && (
+                        <>
+                          <Label className="w-[80px]">1의자리</Label>
+                          <Select
+                            value={getCurrentTabState().roundType}
+                            onValueChange={(value: 'floor' | 'ceil') => handleTabStateChange('tab2', 'roundType', value)}
+                          >
+                            <SelectTrigger className="w-[100px] h-10">
+                              <SelectValue placeholder="내림" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="floor">내림</SelectItem>
+                              <SelectItem value="ceil">올림</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </>
+                      )}
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -630,19 +644,23 @@ export function DiscountModal({
                         placeholder="할인율 입력"
                       />
                       <span className="text-sm text-muted-foreground">%</span>
-                      <Label className="w-[80px]">1의자리</Label>
-                      <Select
-                        value={getCurrentTabState().roundType}
-                        onValueChange={(value: 'floor' | 'ceil') => handleTabStateChange('tab3', 'roundType', value)}
-                      >
-                        <SelectTrigger className="w-[100px] h-10">
-                          <SelectValue placeholder="내림" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="floor">내림</SelectItem>
-                          <SelectItem value="ceil">올림</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      {selectedChannelInfo?.type === '국내' && (
+                        <>
+                          <Label className="w-[80px]">1의자리</Label>
+                          <Select
+                            value={getCurrentTabState().roundType}
+                            onValueChange={(value: 'floor' | 'ceil') => handleTabStateChange('tab3', 'roundType', value)}
+                          >
+                            <SelectTrigger className="w-[100px] h-10">
+                              <SelectValue placeholder="내림" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="floor">내림</SelectItem>
+                              <SelectItem value="ceil">올림</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </>
+                      )}
                     </div>
 
                     <div className="flex items-center gap-2">
