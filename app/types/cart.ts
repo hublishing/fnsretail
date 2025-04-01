@@ -32,7 +32,7 @@ export interface Product {
   discount_price?: number | null;
   discount?: number;
   discount_rate?: number;
-  discount_unit?: 'amount' | 'rate' | 'min_profit_amount' | 'min_profit_rate';
+  discount_unit?: string;
   coupon1_price?: number;
   coupon2_price?: number;
   coupon3_price?: number;

@@ -73,6 +73,7 @@ import {
   ExcelSettings,
   DividerRule
 } from '@/app/types/cart';
+import { TabState } from "@/app/components/discount-modal"
 
 
 // 정렬 가능한 행 컴포넌트
@@ -254,15 +255,27 @@ export default function CartPage() {
   ]);
 
   // 각 탭별 상태 변수들
-  const [tabStates, setTabStates] = useState({
+  const [tabStates, setTabStates] = useState<{
+    [key: string]: {
+      hurdleTarget: string;
+      hurdleAmount: number;
+      discountBase: string;
+      discountType: 'amount' | 'rate';
+      discountValue: number;
+      roundUnit: string;
+      roundType: 'floor' | 'ceil';
+      discountCap: number;
+      selfRatio: number;
+    }
+  }>({
     tab1: {
       hurdleTarget: 'pricing_price',
       hurdleAmount: 0,
       discountBase: 'pricing_price',
-      discountType: 'amount' as const,
+      discountType: 'amount',
       discountValue: 0,
       roundUnit: 'none',
-      roundType: 'floor' as const,
+      roundType: 'floor',
       discountCap: 0,
       selfRatio: 0
     },
@@ -270,10 +283,10 @@ export default function CartPage() {
       hurdleTarget: 'pricing_price',
       hurdleAmount: 0,
       discountBase: 'pricing_price',
-      discountType: 'amount' as const,
+      discountType: 'amount',
       discountValue: 0,
       roundUnit: 'none',
-      roundType: 'floor' as const,
+      roundType: 'floor',
       discountCap: 0,
       selfRatio: 0
     },
@@ -281,10 +294,10 @@ export default function CartPage() {
       hurdleTarget: 'pricing_price',
       hurdleAmount: 0,
       discountBase: 'pricing_price',
-      discountType: 'amount' as const,
+      discountType: 'amount',
       discountValue: 0,
       roundUnit: 'none',
-      roundType: 'floor' as const,
+      roundType: 'floor',
       discountCap: 0,
       selfRatio: 0
     },
@@ -292,10 +305,10 @@ export default function CartPage() {
       hurdleTarget: 'pricing_price',
       hurdleAmount: 0,
       discountBase: 'pricing_price',
-      discountType: 'amount' as const,
+      discountType: 'amount',
       discountValue: 0,
       roundUnit: 'none',
-      roundType: 'floor' as const,
+      roundType: 'floor',
       discountCap: 0,
       selfRatio: 0
     }
@@ -314,7 +327,7 @@ export default function CartPage() {
     setTabStates(prev => ({
       ...prev,
       [tab]: {
-        ...prev[tab as keyof typeof prev],
+        ...prev[tab],
         [field]: value
       }
     }));
@@ -322,7 +335,7 @@ export default function CartPage() {
 
   // 현재 탭의 상태 가져오기
   const getCurrentTabState = () => {
-    return tabStates[currentTab as keyof typeof tabStates];
+    return tabStates[currentTab];
   };
 
   // 할인 타입 타입 정의
@@ -824,109 +837,7 @@ export default function CartPage() {
   };
 
   // 할인 적용 핸들러
-  const handleApplyDiscount = async (type: 'discount' | 'coupon1' | 'coupon2' | 'coupon3', state: any) => {
-    if (!selectedProducts.length) {
-      alert('할인을 적용할 상품을 선택해주세요.');
-      return;
-    }
-
-    const { hurdleTarget, hurdleAmount, discountBase, discountType, discountValue, selfRatio, roundUnit, roundType, discountCap } = state;
-
-    // 선택된 상품들의 총 금액 계산
-    const totalAmount = selectedProducts.reduce((sum, productId) => {
-      const product = products.find(p => p.product_id === productId);
-      if (!product) return sum;
-      return sum + (product[hurdleTarget as keyof Product] as number || 0);
-    }, 0);
-
-    // 기준금액 체크
-    if (totalAmount < hurdleAmount) {
-      alert(`선택한 상품들의 총 금액(${totalAmount.toLocaleString()}원)이 기준금액(${hurdleAmount.toLocaleString()}원)보다 작습니다.`);
-      return;
-    }
-
-    // 할인 적용
-    const updatedProducts = products.map(product => {
-      if (!selectedProducts.includes(product.product_id)) return product;
-
-      const basePrice = product[discountBase as keyof Product] as number || 0;
-      let discountAmount = 0;
-
-      if (type === 'discount') {
-        // 즉시할인 로직
-        if (state.discountType === '즉시할인') {
-          if (state.unitType === '%') {
-            discountAmount = basePrice * (state.discountValue / 100);
-          } else if (state.unitType === '원') {
-            discountAmount = state.discountValue;
-          }
-        } else if (state.discountType === '최저손익') {
-          const costSum = (product.org_price || 0) + 
-                         (product.domestic_delivery_fee || 0) + 
-                         (product.shipping_fee || 0);
-          const averageFeeRate = product.average_fee_rate || 0;
-          
-          if (state.unitType === '%') {
-            const targetPrice = costSum / (1 - averageFeeRate - state.discountValue / 100);
-            discountAmount = basePrice - targetPrice;
-          } else if (state.unitType === '원') {
-            const targetPrice = (costSum + state.discountValue) / (1 - averageFeeRate);
-            discountAmount = basePrice - targetPrice;
-          }
-        }
-      }
-
-      // 최대 할인금액 제한
-      if (discountCap > 0 && discountAmount > discountCap) {
-        discountAmount = discountCap;
-      }
-
-      // 절사 처리
-      if (roundUnit !== 'none') {
-        discountAmount = roundWithType(discountAmount, roundUnit, roundType);
-      }
-
-      // 자사부담 계산
-      const selfBurdenAmount = discountAmount * (selfRatio / 100);
-      const finalDiscountAmount = discountAmount - selfBurdenAmount;
-
-      // 할인가격 업데이트
-      const updatedProduct = { ...product };
-      if (type === 'discount') {
-        updatedProduct.discount_price = basePrice - finalDiscountAmount;
-        updatedProduct.discount = finalDiscountAmount;
-        updatedProduct.discount_rate = (finalDiscountAmount / basePrice) * 100;
-        updatedProduct.discount_unit = discountType;
-        updatedProduct.self_ratio = selfRatio;
-      } else if (type === 'coupon1') {
-        const currentPrice = product.coupon1_price || 0;
-        updatedProduct.coupon1_price = currentPrice - finalDiscountAmount;
-        updatedProduct.discount = finalDiscountAmount;
-        updatedProduct.discount_rate = (finalDiscountAmount / currentPrice) * 100;
-        updatedProduct.discount_unit = discountType;
-        updatedProduct.self_ratio = selfRatio;
-      } else if (type === 'coupon2') {
-        const currentPrice = product.coupon2_price || 0;
-        updatedProduct.coupon2_price = currentPrice - finalDiscountAmount;
-        updatedProduct.discount = finalDiscountAmount;
-        updatedProduct.discount_rate = (finalDiscountAmount / currentPrice) * 100;
-        updatedProduct.discount_unit = discountType;
-        updatedProduct.self_ratio = selfRatio;
-      } else if (type === 'coupon3') {
-        const currentPrice = product.coupon3_price || 0;
-        updatedProduct.coupon3_price = currentPrice - finalDiscountAmount;
-        updatedProduct.discount = finalDiscountAmount;
-        updatedProduct.discount_rate = (finalDiscountAmount / currentPrice) * 100;
-        updatedProduct.discount_unit = discountType;
-        updatedProduct.self_ratio = selfRatio;
-      }
-
-      return updatedProduct;
-    });
-
-    setProducts(updatedProducts);
-    setShowDiscountModal(false);
-  };
+   
 
   // 엑셀 다운로드 함수
   const handleExcelDownload = () => {
@@ -1084,6 +995,92 @@ export default function CartPage() {
     } catch (error) {
       console.error('리스트 초기화 중 오류 발생:', error);
       alert('리스트 초기화 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 할인 초기화 핸들러 추가
+  const handleResetDiscount = async () => {
+    if (!confirm('모든 할인을 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+      return;
+    }
+
+    try {
+      const updatedProducts = products.map(product => {
+        const newProduct = { ...product };
+        delete newProduct.discount_price;
+        delete newProduct.discount;
+        delete newProduct.discount_rate;
+        delete newProduct.discount_unit;
+        delete newProduct.coupon1_price;
+        delete newProduct.coupon2_price;
+        delete newProduct.coupon3_price;
+        delete newProduct.self_ratio;
+        delete newProduct.discount_burden_amount;
+        return newProduct;
+      });
+
+      setProducts(updatedProducts);
+      
+      // 할인 모달 상태 초기화
+      setTabStates({
+        tab1: {
+          hurdleTarget: 'pricing_price',
+          hurdleAmount: 0,
+          discountBase: 'pricing_price',
+          discountType: 'amount',
+          discountValue: 0,
+          roundUnit: 'none',
+          roundType: 'floor',
+          discountCap: 0,
+          selfRatio: 0
+        },
+        tab2: {
+          hurdleTarget: 'pricing_price',
+          hurdleAmount: 0,
+          discountBase: 'pricing_price',
+          discountType: 'amount',
+          discountValue: 0,
+          roundUnit: 'none',
+          roundType: 'floor',
+          discountCap: 0,
+          selfRatio: 0
+        },
+        tab3: {
+          hurdleTarget: 'pricing_price',
+          hurdleAmount: 0,
+          discountBase: 'pricing_price',
+          discountType: 'amount',
+          discountValue: 0,
+          roundUnit: 'none',
+          roundType: 'floor',
+          discountCap: 0,
+          selfRatio: 0
+        },
+        tab4: {
+          hurdleTarget: 'pricing_price',
+          hurdleAmount: 0,
+          discountBase: 'pricing_price',
+          discountType: 'amount',
+          discountValue: 0,
+          roundUnit: 'none',
+          roundType: 'floor',
+          discountCap: 0,
+          selfRatio: 0
+        }
+      });
+      
+      if (user) {
+        const docRef = doc(db, 'userCarts', user.uid);
+        await setDoc(docRef, {
+          products: updatedProducts,
+          updatedAt: new Date().toISOString()
+        });
+      }
+
+      alert('할인이 초기화되었습니다.');
+    } catch (error) {
+      console.error('할인 초기화 중 오류 발생:', error);
+      alert('할인 초기화 중 오류가 발생했습니다.');
     }
   };
 
@@ -1417,11 +1414,19 @@ export default function CartPage() {
             <Button
               variant="outline"
               size="sm"
+              onClick={handleResetDiscount}
+              className="border-0 hover:bg-transparent hover:text-primary"
+            >
+              할인 초기화
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={handleReset}
               className="border-0 hover:bg-transparent hover:text-primary"
             >
               리스트 초기화
-            </Button> 
+            </Button>
           </div>
         </div>
       </div>
@@ -1753,7 +1758,18 @@ export default function CartPage() {
       <DiscountModal 
         showDiscountModal={showDiscountModal}
         setShowDiscountModal={setShowDiscountModal}
-        onApplyDiscount={handleApplyDiscount}
+        onApplyDiscount={(updatedProducts) => {
+          setProducts(updatedProducts);
+          if (user) {
+            const docRef = doc(db, 'userCarts', user.uid);
+            setDoc(docRef, {
+              products: updatedProducts,
+              updatedAt: new Date().toISOString()
+            });
+          }
+        }}
+        products={products}
+        selectedProducts={selectedProducts}
       />
     </div>
   )
