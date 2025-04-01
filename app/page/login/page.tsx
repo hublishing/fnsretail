@@ -3,10 +3,10 @@
 import type { ReactElement } from 'react'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { LoginForm } from '../components/login-form'
+import { LoginForm } from '@/app/components/login-form'
 import { useFormState } from 'react-dom'
-import { login } from '../actions/auth'
-import type { LoginResult } from '../actions/auth'
+import { login } from '@/app/actions/auth'
+import type { LoginResult } from '@/app/actions/auth'
 
 const initialState: LoginResult = {
   success: false,
@@ -24,7 +24,7 @@ export default function LoginPage(): ReactElement {
   }, [state.success, router])
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="flex min-h-screen items-center justify-center">
       <LoginForm formAction={formAction} error={state.error} />
     </div>
   )
