@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react'
 
 export function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const isLoginPage = pathname === '/login'
+  const isLoginPage = pathname === '/page/login'
   const [isCollapsed, setIsCollapsed] = useState(false)
 
   useEffect(() => {
