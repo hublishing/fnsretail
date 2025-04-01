@@ -667,6 +667,7 @@ export default function CartPage() {
       // 판매가와 물류비 계산
       const updatedProducts = products.map(product => {
         let pricingPrice: number | null = null;
+        let adjustedCost: number | null = null;
 
         // 채널 정보의 모든 값이 있는지 확인
         if (!channel.type || !channel.markup_ratio || !channel.applied_exchange_rate) {
@@ -678,13 +679,16 @@ export default function CartPage() {
           return {
             ...product,
             pricing_price: null,
-            logistics_cost: undefined
+            logistics_cost: undefined,
+            adjusted_cost: null
           };
         }
 
+        // 환율 변환
+        const exchangeRate = Number(channel.applied_exchange_rate.replace(/,/g, ''));
+
         // markup_ratio에서 콤마 제거하고 숫자로 변환
         const markupRatio = Number(channel.markup_ratio.replace(/,/g, ''));
-        const exchangeRate = Number(channel.applied_exchange_rate.replace(/,/g, ''));
 
         // 타입칸에 표시되는 채널 타입에 따라 판매가 계산
         if (channel.type === '일본' || channel.type === '자사몰') {
@@ -724,7 +728,8 @@ export default function CartPage() {
         const newProduct = {
           ...product,
           pricing_price: pricingPrice,
-          logistics_cost: logisticsCost
+          logistics_cost: logisticsCost,
+          adjusted_cost: adjustedCost
         };
 
         // 예상수수료 계산
@@ -1248,13 +1253,31 @@ export default function CartPage() {
     setDividerRules(dividerRules.filter(rule => rule.id !== id));
   };
 
-  // 구분자 규칙 업데이트
+  // 구분자 규칙 업데이트 핸들러
   const handleUpdateDividerRule = async (id: string, field: keyof DividerRule, value: any) => {
-    const updatedRules = dividerRules.map(rule => 
+    const updatedRules = dividerRules.map(rule =>
       rule.id === id ? { ...rule, [field]: value } : rule
     );
     setDividerRules(updatedRules);
-    await saveCartInfo();
+    
+    // 파이어스토어에 업데이트
+    if (user) {
+      try {
+        const docRef = doc(db, 'userCarts', user.uid);
+        const docSnap = await getDoc(docRef);
+        
+        if (docSnap.exists()) {
+          const currentData = docSnap.data();
+          await setDoc(docRef, {
+            ...currentData,
+            divider_rules: updatedRules,
+            updatedAt: new Date().toISOString()
+          });
+        }
+      } catch (error) {
+        console.error('구분자 규칙 업데이트 중 오류:', error);
+      }
+    }
   };
 
   // 구분자 적용
@@ -1278,23 +1301,42 @@ export default function CartPage() {
 
   // 구분자 초기화 핸들러
   const handleResetDividerRules = async () => {
-    // 1. 구분자 규칙 초기화
-    const defaultRules = [
-      { id: uuidv4(), range: [0, 0] as [number, number], color: '#FFE4E1', text: '' },
-      { id: uuidv4(), range: [0, 0] as [number, number], color: '#FFE4E1', text: '' },
-      { id: uuidv4(), range: [0, 0] as [number, number], color: '#FFE4E1', text: '' }
-    ];
-    setDividerRules(defaultRules);
+    try {
+      const defaultRules = [
+        { id: uuidv4(), range: [0, 0] as [number, number], color: '#FFE4E1', text: '' },
+        { id: uuidv4(), range: [0, 0] as [number, number], color: '#FFE4E1', text: '' },
+        { id: uuidv4(), range: [0, 0] as [number, number], color: '#FFE4E1', text: '' }
+      ];
 
-    // 2. 상품들의 배경색과 텍스트 초기화
-    const updatedProducts = products.map(product => ({
-      ...product,
-      rowColor: undefined,
-      dividerText: undefined
-    }));
-    
-    setProducts(updatedProducts);
-    await saveCartInfo();
+      setDividerRules(defaultRules);
+
+      // 파이어스토어 업데이트
+      if (user) {
+        const docRef = doc(db, 'userCarts', user.uid);
+        const docSnap = await getDoc(docRef);
+        
+        if (docSnap.exists()) {
+          const currentData = docSnap.data();
+          await setDoc(docRef, {
+            ...currentData,
+            divider_rules: defaultRules,
+            updatedAt: new Date().toISOString()
+          });
+        }
+      }
+
+      // 상품들의 배경색과 텍스트 초기화
+      const updatedProducts = products.map(product => ({
+        ...product,
+        rowColor: undefined,
+        dividerText: undefined
+      }));
+      
+      setProducts(updatedProducts);
+    } catch (error) {
+      console.error('구분자 초기화 중 오류 발생:', error);
+      alert('구분자 초기화 중 오류가 발생했습니다.');
+    }
   };
 
   return (
@@ -1654,11 +1696,10 @@ export default function CartPage() {
                              if (!product.org_price || !selectedChannelInfo) return '-';
                              
                              const exchangeRate = Number(selectedChannelInfo.applied_exchange_rate?.replace(/,/g, '') || 0);
-                             const cost = selectedChannelInfo.type === '국내' 
-                               ? Math.round(product.org_price / 1.1)
-                               : Math.round(product.org_price / exchangeRate);
+                             const cost = product.org_price / exchangeRate * 
+                               (selectedChannelInfo.type === '국내' ? 1.1 : 1);
                              
-                             return cost.toLocaleString();
+                             return Math.round(cost).toLocaleString();
                            })()}
                          </div>
                        </DraggableCell>

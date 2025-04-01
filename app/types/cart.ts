@@ -42,7 +42,7 @@ export interface Product {
   final_price: number | null;
   rowColor?: string;
   dividerText?: string;
-  adjusted_cost?: number;
+  adjusted_cost?: number | null;
   discount_burden_amount?: number;
   expected_commission_fee?: number;
   expected_settlement_amount?: number;

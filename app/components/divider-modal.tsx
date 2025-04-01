@@ -32,7 +32,7 @@ interface DividerModalProps {
   dividerRules: DividerRule[]
   onUpdateDividerRule: (id: string, field: keyof DividerRule, value: any) => void
   onApplyDivider: (rules: DividerRule[]) => void
-  onResetDividerRules: () => void
+  onResetDividerRules: () => Promise<void>
 }
 
 export function DividerModal({
@@ -103,27 +103,33 @@ export function DividerModal({
   };
  
   // 초기화 핸들러
-  const handleResetDividerRules = () => {
-    console.log('=== 구분자 초기화 시작 ===');
-    console.log('현재 구분자 규칙:', dividerRules);
-    
-    const defaultRules = [
-      { id: uuidv4(), range: [0, 0] as [number, number], color: '#FFE4E1', text: '' },
-      { id: uuidv4(), range: [0, 0] as [number, number], color: '#FFE4E1', text: '' },
-      { id: uuidv4(), range: [0, 0] as [number, number], color: '#FFE4E1', text: '' }
-    ];
-    
-    defaultRules.forEach(rule => {
-      onUpdateDividerRule(rule.id, 'range', rule.range);
-      onUpdateDividerRule(rule.id, 'color', rule.color);
-      onUpdateDividerRule(rule.id, 'text', rule.text);
-    });
-    
-    console.log('초기화 후 규칙:', defaultRules);
-    console.log('=== 구분자 초기화 완료 ===');
-    
-    // 부모 컴포넌트의 초기화 함수 호출
-    onResetDividerRules();
+  const handleResetDividerRules = async () => {
+    try {
+      console.log('=== 구분자 초기화 시작 ===');
+      console.log('현재 구분자 규칙:', dividerRules);
+      
+      const defaultRules = [
+        { id: uuidv4(), range: [0, 0] as [number, number], color: '#FFE4E1', text: '' },
+        { id: uuidv4(), range: [0, 0] as [number, number], color: '#FFE4E1', text: '' },
+        { id: uuidv4(), range: [0, 0] as [number, number], color: '#FFE4E1', text: '' }
+      ];
+      
+      // 각 규칙 업데이트
+      for (const rule of defaultRules) {
+        await onUpdateDividerRule(rule.id, 'range', rule.range);
+        await onUpdateDividerRule(rule.id, 'color', rule.color);
+        await onUpdateDividerRule(rule.id, 'text', rule.text);
+      }
+      
+      console.log('초기화 후 규칙:', defaultRules);
+      console.log('=== 구분자 초기화 완료 ===');
+      
+      // 부모 컴포넌트의 초기화 함수 호출 (파이어스토어 업데이트 포함)
+      await onResetDividerRules();
+    } catch (error) {
+      console.error('구분자 초기화 중 오류 발생:', error);
+      alert('구분자 초기화 중 오류가 발생했습니다.');
+    }
   };
 
   return (
