@@ -76,9 +76,9 @@ export function DiscountModal({
       unitType: '%'
     },
     tab3: {
-      hurdleTarget: 'coupon1_price',
+      hurdleTarget: 'coupon_price_1',
       hurdleAmount: 0,
-      discountBase: 'coupon1_price',
+      discountBase: 'coupon_price_1',
       discountType: 'amount',
       discountValue: 0,
       selfRatio: 0,
@@ -88,9 +88,9 @@ export function DiscountModal({
       unitType: '%'
     },
     tab4: {
-      hurdleTarget: 'coupon2_price',
+      hurdleTarget: 'coupon_price_2',
       hurdleAmount: 0,
-      discountBase: 'coupon2_price',
+      discountBase: 'coupon_price_2',
       discountType: 'amount',
       discountValue: 0,
       selfRatio: 0,
@@ -277,10 +277,10 @@ export function DiscountModal({
             console.log('자사부담:', selfBurdenAmount, '원');
             console.log('최종 할인금액:', discountAmount, '원');
             
-            newProduct.coupon1_price = basePrice - discountAmount;
+            newProduct.coupon_price_1 = basePrice - discountAmount;
             newProduct.discount_burden_amount = selfBurdenAmount;
             
-            console.log('최종 가격:', newProduct.coupon1_price);
+            console.log('최종 가격:', newProduct.coupon_price_1);
           } else {
             console.log('사용가능 기준 미충족 - 쿠폰 적용 안함');
           }
@@ -333,10 +333,10 @@ export function DiscountModal({
             console.log('자사부담:', selfBurdenAmount, '원');
             console.log('최종 할인금액:', discountAmount, '원');
             
-            newProduct.coupon2_price = basePrice - discountAmount;
+            newProduct.coupon_price_2 = basePrice - discountAmount;
             newProduct.discount_burden_amount = selfBurdenAmount;
             
-            console.log('최종 가격:', newProduct.coupon2_price);
+            console.log('최종 가격:', newProduct.coupon_price_2);
           } else {
             console.log('사용가능 기준 미충족 - 쿠폰 적용 안함');
           }
@@ -389,10 +389,10 @@ export function DiscountModal({
             console.log('자사부담:', selfBurdenAmount, '원');
             console.log('최종 할인금액:', discountAmount, '원');
             
-            newProduct.coupon3_price = basePrice - discountAmount;
+            newProduct.coupon_price_3 = basePrice - discountAmount;
             newProduct.discount_burden_amount = selfBurdenAmount;
             
-            console.log('최종 가격:', newProduct.coupon3_price);
+            console.log('최종 가격:', newProduct.coupon_price_3);
           } else {
             console.log('사용가능 기준 미충족 - 쿠폰 적용 안함');
           }
@@ -499,9 +499,9 @@ export function DiscountModal({
                     <SelectContent>
                       <SelectItem value="pricing_price">채널별판매가</SelectItem>
                       <SelectItem value="discount_price">즉시할인가</SelectItem>
-                      <SelectItem value="coupon1_price">쿠폰적용가1</SelectItem>
-                      <SelectItem value="coupon2_price">쿠폰적용가2</SelectItem>
-                      <SelectItem value="coupon3_price">쿠폰적용가3</SelectItem>
+                      <SelectItem value="coupon_price_1">쿠폰적용가1</SelectItem>
+                      <SelectItem value="coupon_price_2">쿠폰적용가2</SelectItem>
+                      <SelectItem value="coupon_price_3">쿠폰적용가3</SelectItem>
                     </SelectContent>
                   </Select> 
                   <Label className="w-[110px] ml-4">기준금액 (원 이상)</Label>
@@ -527,9 +527,9 @@ export function DiscountModal({
                     <SelectContent>
                       <SelectItem value="pricing_price">채널별판매가</SelectItem>
                       <SelectItem value="discount_price">즉시할인가</SelectItem>
-                      <SelectItem value="coupon1_price">쿠폰적용가1</SelectItem>
-                      <SelectItem value="coupon2_price">쿠폰적용가2</SelectItem>
-                      <SelectItem value="coupon3_price">쿠폰적용가3</SelectItem>
+                      <SelectItem value="coupon_price_1">쿠폰적용가1</SelectItem>
+                      <SelectItem value="coupon_price_2">쿠폰적용가2</SelectItem>
+                      <SelectItem value="coupon_price_3">쿠폰적용가3</SelectItem>
                     </SelectContent>
                   </Select> 
                   <Label className="w-[110px] ml-4">할인 구분</Label>
@@ -655,9 +655,9 @@ export function DiscountModal({
                     <SelectContent>
                       <SelectItem value="pricing_price">채널별판매가</SelectItem>
                       <SelectItem value="discount_price">즉시할인가</SelectItem>
-                      <SelectItem value="coupon1_price">쿠폰적용가1</SelectItem>
-                      <SelectItem value="coupon2_price">쿠폰적용가2</SelectItem>
-                      <SelectItem value="coupon3_price">쿠폰적용가3</SelectItem>
+                      <SelectItem value="coupon_price_1">쿠폰적용가1</SelectItem>
+                      <SelectItem value="coupon_price_2">쿠폰적용가2</SelectItem>
+                      <SelectItem value="coupon_price_3">쿠폰적용가3</SelectItem>
                     </SelectContent>
                   </Select> 
                   <Label className="w-[110px] ml-4">기준금액 (원 이상)</Label>
@@ -683,9 +683,9 @@ export function DiscountModal({
                     <SelectContent>
                       <SelectItem value="pricing_price">채널별판매가</SelectItem>
                       <SelectItem value="discount_price">즉시할인가</SelectItem>
-                      <SelectItem value="coupon1_price">쿠폰적용가1</SelectItem>
-                      <SelectItem value="coupon2_price">쿠폰적용가2</SelectItem>
-                      <SelectItem value="coupon3_price">쿠폰적용가3</SelectItem>
+                      <SelectItem value="coupon_price_1">쿠폰적용가1</SelectItem>
+                      <SelectItem value="coupon_price_2">쿠폰적용가2</SelectItem>
+                      <SelectItem value="coupon_price_3">쿠폰적용가3</SelectItem>
                     </SelectContent>
                   </Select> 
                   <Label className="w-[110px] ml-4">할인 구분</Label>
@@ -811,9 +811,9 @@ export function DiscountModal({
                     <SelectContent>
                       <SelectItem value="pricing_price">채널별판매가</SelectItem>
                       <SelectItem value="discount_price">즉시할인가</SelectItem>
-                      <SelectItem value="coupon1_price">쿠폰적용가1</SelectItem>
-                      <SelectItem value="coupon2_price">쿠폰적용가2</SelectItem>
-                      <SelectItem value="coupon3_price">쿠폰적용가3</SelectItem>
+                      <SelectItem value="coupon_price_1">쿠폰적용가1</SelectItem>
+                      <SelectItem value="coupon_price_2">쿠폰적용가2</SelectItem>
+                      <SelectItem value="coupon_price_3">쿠폰적용가3</SelectItem>
                     </SelectContent>
                   </Select> 
                   <Label className="w-[110px] ml-4">기준금액 (원 이상)</Label>
@@ -839,9 +839,9 @@ export function DiscountModal({
                     <SelectContent>
                       <SelectItem value="pricing_price">채널별판매가</SelectItem>
                       <SelectItem value="discount_price">즉시할인가</SelectItem>
-                      <SelectItem value="coupon1_price">쿠폰적용가1</SelectItem>
-                      <SelectItem value="coupon2_price">쿠폰적용가2</SelectItem>
-                      <SelectItem value="coupon3_price">쿠폰적용가3</SelectItem>
+                      <SelectItem value="coupon_price_1">쿠폰적용가1</SelectItem>
+                      <SelectItem value="coupon_price_2">쿠폰적용가2</SelectItem>
+                      <SelectItem value="coupon_price_3">쿠폰적용가3</SelectItem>
                     </SelectContent>
                   </Select> 
                   <Label className="w-[110px] ml-4">할인 구분</Label>

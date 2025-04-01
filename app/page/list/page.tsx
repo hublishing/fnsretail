@@ -1011,9 +1011,9 @@ export default function CartPage() {
         delete newProduct.discount;
         delete newProduct.discount_rate;
         delete newProduct.discount_unit;
-        delete newProduct.coupon1_price;
-        delete newProduct.coupon2_price;
-        delete newProduct.coupon3_price;
+        delete newProduct.coupon_price_1;
+        delete newProduct.coupon_price_2;
+        delete newProduct.coupon_price_3;
         delete newProduct.self_ratio;
         delete newProduct.discount_burden_amount;
         return newProduct;
@@ -1445,8 +1445,8 @@ export default function CartPage() {
            strategy={verticalListSortingStrategy}
          >
            <div className="relative">
-             <div className="overflow-y-auto max-h-[calc(100vh-400px)]">
-               <Table style={{width: '100%', minWidth: '2000px', whiteSpace: 'nowrap'}}>
+             <div className="overflow-y-auto max-h-[calc(100vh-200px)]">
+               <Table style={{width: '100%', minWidth: '1800px', whiteSpace: 'nowrap'}}>
                  <TableHeader className="bg-muted sticky top-0">
                    <TableRow className="hover:bg-muted">
                      <TableHead className="w-[30px] text-center">
@@ -1583,43 +1583,43 @@ export default function CartPage() {
                          </div>
                        </DraggableCell>
                        <DraggableCell className="text-center">
-                         <div>{product.coupon1_price ? product.coupon1_price.toLocaleString() : "-"}</div>
+                         <div>{product.coupon_price_1 ? product.coupon_price_1.toLocaleString() : "-"}</div>
                          <div className="text-sm text-muted-foreground">
-                           {product.coupon1_price && product.discount_price
-                             ? `${Math.round(((product.discount_price - product.coupon1_price) / product.discount_price) * 100)}%`
+                           {product.coupon_price_1 && product.discount_price
+                             ? `${Math.round(((product.discount_price - product.coupon_price_1) / product.discount_price) * 100)}%`
                              : '-'}
                          </div>
                        </DraggableCell>
                        <DraggableCell className="text-center">
-                         <div>{product.coupon2_price ? product.coupon2_price.toLocaleString() : "-"}</div>
+                         <div>{product.coupon_price_2 ? product.coupon_price_2.toLocaleString() : "-"}</div>
                          <div className="text-sm text-muted-foreground">
-                           {product.coupon2_price && product.coupon1_price
-                             ? `${Math.round(((product.coupon1_price - product.coupon2_price) / product.coupon1_price) * 100)}%`
+                           {product.coupon_price_2 && product.coupon_price_1
+                             ? `${Math.round(((product.coupon_price_1 - product.coupon_price_2) / product.coupon_price_1) * 100)}%`
                              : '-'}
                          </div>
                        </DraggableCell>
                        <DraggableCell className="text-center">
-                         <div>{product.coupon3_price ? product.coupon3_price.toLocaleString() : "-"}</div>
+                         <div>{product.coupon_price_3 ? product.coupon_price_3.toLocaleString() : "-"}</div>
                          <div className="text-sm text-muted-foreground">
-                           {product.coupon3_price && product.coupon2_price
-                             ? `${Math.round(((product.coupon2_price - product.coupon3_price) / product.coupon2_price) * 100)}%`
+                           {product.coupon_price_3 && product.coupon_price_2
+                             ? `${Math.round(((product.coupon_price_2 - product.coupon_price_3) / product.coupon_price_2) * 100)}%`
                              : '-'}
                          </div>
                        </DraggableCell>
                        <DraggableCell className="text-center">
                          <div> 
-                           {product.coupon3_price ? product.coupon3_price.toLocaleString() :
-                            product.coupon2_price ? product.coupon2_price.toLocaleString() :
-                            product.coupon1_price ? product.coupon1_price.toLocaleString() :
+                           {product.coupon_price_3 ? product.coupon_price_3.toLocaleString() :
+                            product.coupon_price_2 ? product.coupon_price_2.toLocaleString() :
+                            product.coupon_price_1 ? product.coupon_price_1.toLocaleString() :
                             product.discount_price?.toLocaleString() || '-'}
                          </div>
                          <div className="text-sm text-muted-foreground">
-                           {product.coupon3_price && product.shop_price
-                             ? `${Math.round(((product.shop_price - product.coupon3_price) / product.shop_price) * 100)}%`
-                             : product.coupon2_price && product.shop_price
-                             ? `${Math.round(((product.shop_price - product.coupon2_price) / product.shop_price) * 100)}%`
-                             : product.coupon1_price && product.shop_price
-                             ? `${Math.round(((product.shop_price - product.coupon1_price) / product.shop_price) * 100)}%`
+                           {product.coupon_price_3 && product.shop_price
+                             ? `${Math.round(((product.shop_price - product.coupon_price_3) / product.shop_price) * 100)}%`
+                             : product.coupon_price_2 && product.shop_price
+                             ? `${Math.round(((product.shop_price - product.coupon_price_2) / product.shop_price) * 100)}%`
+                             : product.coupon_price_1 && product.shop_price
+                             ? `${Math.round(((product.shop_price - product.coupon_price_1) / product.shop_price) * 100)}%`
                              : product.discount_price && product.shop_price
                              ? `${Math.round(((product.shop_price - product.discount_price) / product.shop_price) * 100)}%`
                              : '-'}

@@ -33,9 +33,9 @@ export interface Product {
   discount?: number;
   discount_rate?: number;
   discount_unit?: string;
-  coupon1_price?: number;
-  coupon2_price?: number;
-  coupon3_price?: number;
+  coupon_price_1?: number;
+  coupon_price_2?: number;
+  coupon_price_3?: number;
   isSelected?: boolean;
   pricing_price: number | null;
   self_ratio?: number;
