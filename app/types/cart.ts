@@ -48,6 +48,7 @@ export interface Product {
   expected_settlement_amount?: number;
   logistics_cost?: number;
   expected_net_profit?: number;
+  expected_net_profit_margin?: number;
   domestic_delivery_fee?: number;
   shipping_fee?: number;
   average_fee_rate?: number;

@@ -561,113 +561,202 @@ export default function CartPage() {
     return Number(channel.conditional_shipping || 0) / exchangeRate;
   };
 
+  // 예상수수료 계산 함수 추가
+  const calculateExpectedCommissionFee = (product: Product, adjustByDiscount: boolean = true) => {
+    console.log('=== 예상수수료 계산 시작 ===');
+    console.log('채널 정보:', selectedChannelInfo);
+    console.log('상품 정보:', product);
+    
+    const pricingPrice = Number(product.pricing_price) || 0;
+    const discountPrice = Number(product.discount_price) || 0;
+    // 수정: average_fee_rate가 문자열일 수 있으므로 명시적으로 숫자로 변환
+    const averageFeeRate = selectedChannelInfo?.average_fee_rate ? parseFloat(String(selectedChannelInfo.average_fee_rate)) : 0;
+
+    console.log('기본 값들:', {
+      pricingPrice,
+      discountPrice,
+      averageFeeRate,
+      원본average_fee_rate: selectedChannelInfo?.average_fee_rate
+    });
+
+    // 할인율 계산 (0~1 사이 값)
+    const discountRatio = pricingPrice > 0 ? (pricingPrice - discountPrice) / pricingPrice : 0;
+    console.log('할인율:', discountRatio * 100 + '%');
+
+    // 수수료율 조정
+    let adjustedFeeRate = averageFeeRate;
+    if (adjustByDiscount) {
+      // 할인율에 따른 수수료 조정 (10% 단위로 1%씩 차감)
+      const feeRateReduction = Math.floor(discountRatio * 100 / 10);
+      adjustedFeeRate = Math.max(averageFeeRate - feeRateReduction, 0);
+      console.log('수수료율 조정:', {
+        원래수수료율: averageFeeRate,
+        차감: feeRateReduction,
+        조정된수수료율: adjustedFeeRate
+      });
+    }
+
+    // 최종 수수료 계산
+    const finalPrice = discountPrice > 0 ? discountPrice : pricingPrice;
+    const commissionFee = finalPrice * (adjustedFeeRate / 100);
+    console.log('최종 계산:', {
+      최종가격: finalPrice,
+      적용수수료율: adjustedFeeRate,
+      예상수수료: Math.round(commissionFee)
+    });
+
+    return Math.round(commissionFee);
+  };
+
+  // 예상순이익 계산 함수 추가
+  const calculateExpectedNetProfit = (product: Product) => {
+    // 예상정산금액
+    const expectedSettlementAmount = product.expected_settlement_amount || 0;
+    
+    // 원가 (조정원가가 있으면 조정원가, 없으면 기본 원가)
+    const cost = product.adjusted_cost || product.org_price || 0;
+    
+    // 물류비용
+    const logisticsCost = product.logistics_cost || 0;
+
+    // 예상순이익 = 예상정산금액 - 원가 - 물류비용
+    return expectedSettlementAmount - cost - logisticsCost;
+  };
+
+  // 예상순이익률 계산 함수 수정
+  const calculateExpectedNetProfitMargin = (product: Product) => {
+    const pricingPrice = product.pricing_price || 0;
+    if (pricingPrice === 0) return 0;
+
+    // SQL의 SAFE_DIVIDE 로직과 동일하게 구현
+    // expected_net_profit_margin = (expected_settlement_amount - COALESCE(adjusted_cost, org_price) - logistics_cost) / pricing_price
+    const expectedSettlementAmount = product.expected_settlement_amount || 0;
+    const cost = product.adjusted_cost || product.org_price || 0;
+    const logisticsCost = product.logistics_cost || 0;
+
+    const expectedNetProfit = expectedSettlementAmount - cost - logisticsCost;
+    return expectedNetProfit / pricingPrice;
+  };
+
+  // 정산예정금액 계산 함수 추가
+  const calculateExpectedSettlementAmount = (product: Product) => {
+    const pricingPrice = product.pricing_price || 0;
+    // 최종할인 컬럼과 동일한 로직 적용
+    const finalDiscountPrice = product.coupon_price_3 || 
+                             product.coupon_price_2 || 
+                             product.coupon_price_1 || 
+                             product.discount_price || 
+                             null;
+    const expectedCommissionFee = product.expected_commission_fee || 0;
+    const discountBurdenAmount = product.discount_burden_amount || 0;
+  
+    return finalDiscountPrice === null
+      ? pricingPrice - expectedCommissionFee - discountBurdenAmount
+      : finalDiscountPrice - expectedCommissionFee - discountBurdenAmount;
+  };
   // handleChannelSelect 함수 수정
   const handleChannelSelect = async (channel: ChannelInfo) => {
-    console.log('선택된 채널 정보:', {
-      channel_name_2: channel.channel_name_2,
-      type: channel.type,
-      markup_ratio: channel.markup_ratio,
-      applied_exchange_rate: channel.applied_exchange_rate,
-      rounddown: channel.rounddown,
-      digit_adjustment: channel.digit_adjustment,
-      amazon_shipping_cost: channel.amazon_shipping_cost
-    });
-
-    setChannelSearchTerm(channel.channel_name_2);
-    setShowChannelSuggestions(false);
-    setIsValidChannel(true);
-    setFilters(prev => ({
-      ...prev,
-      channel_name_2: channel.channel_name_2
-    }));
-    setSelectedChannelInfo(channel);
-    
-    // 판매가와 물류비 계산
-    const updatedProducts = products.map(product => {
-      let pricingPrice: number | null = null;
-
-      // 채널 정보의 모든 값이 있는지 확인
-      if (!channel.type || !channel.markup_ratio || !channel.applied_exchange_rate) {
-        console.log('채널 정보 누락:', {
-          type: channel.type,
-          markup_ratio: channel.markup_ratio,
-          applied_exchange_rate: channel.applied_exchange_rate
-        });
-        return {
-          ...product,
-          pricing_price: null,
-          logistics_cost: undefined
-        };
-      }
-
-      // markup_ratio에서 콤마 제거하고 숫자로 변환
-      const markupRatio = Number(channel.markup_ratio.replace(/,/g, ''));
-      const exchangeRate = Number(channel.applied_exchange_rate.replace(/,/g, ''));
-
-      // 타입칸에 표시되는 채널 타입에 따라 판매가 계산
-      if (channel.type === '일본' || channel.type === '자사몰') {
-        if (channel.rounddown !== null) {
-          // SQL의 ROUND 함수와 동일한 로직으로 수정
-          const basePrice = product.global_price / exchangeRate;
-          const multiplier = Math.pow(10, Number(channel.rounddown));
-          pricingPrice = Math.floor(basePrice * multiplier) / multiplier;
-          pricingPrice += Number(channel.digit_adjustment || 0);
-          if (channel.channel_name_2 === 'SG_아마존US') {
-            pricingPrice += Number(channel.amazon_shipping_cost || 0);
-          }
-        }
-      }
-      // 국내
-      else if (channel.type === '국내') {
-        pricingPrice = product.shop_price + markupRatio;
-      }
-      // 해외
-      else if (channel.type === '해외' && channel.rounddown !== null) {
-        pricingPrice = Math.floor(
-          (product.shop_price * markupRatio) / exchangeRate
-        );
-        pricingPrice += Number(channel.digit_adjustment || 0);
-
-        // ZALORA 특별 케이스
-        if (channel.channel_name_2 === 'SG_ZALORA_SG') {
-          pricingPrice *= 1.09;
-        } else if (channel.channel_name_2 === 'SG_ZALORA_MY') {
-          pricingPrice *= 1.1;
-        }
-      }
-
-      // 물류비 계산
-      const logisticsCost = calculateLogisticsCost(channel, deliveryType, Number(channel.amazon_shipping_cost));
-
-      // 예상순이익액 계산 (SQL 쿼리와 동일하게)
-      const expectedNetProfit = (product.expected_settlement_amount || 0) 
-        - (product.adjusted_cost || product.org_price) 
-        - logisticsCost;
-
-      console.log('계산된 판매가와 물류비:', {
-        product_name: product.name,
-        pricing_price: pricingPrice,
-        logistics_cost: logisticsCost,
-        expected_net_profit: expectedNetProfit,
-        expected_settlement_amount: product.expected_settlement_amount,
-        adjusted_cost: product.adjusted_cost,
-        org_price: product.org_price,
-        channel_type: channel.type,
-        markup_ratio: markupRatio,
-        applied_exchange_rate: exchangeRate,
-        shop_price: product.shop_price
+    try {
+      console.log('선택된 채널 정보:', {
+        channel_name_2: channel.channel_name_2,
+        type: channel.type,
+        markup_ratio: channel.markup_ratio,
+        applied_exchange_rate: channel.applied_exchange_rate,
+        rounddown: channel.rounddown,
+        digit_adjustment: channel.digit_adjustment,
+        amazon_shipping_cost: channel.amazon_shipping_cost
       });
 
-      return {
-        ...product,
-        pricing_price: pricingPrice,
-        logistics_cost: logisticsCost,
-        expected_net_profit: expectedNetProfit
-      };
-    });
+      setChannelSearchTerm(channel.channel_name_2);
+      setShowChannelSuggestions(false);
+      setIsValidChannel(true);
+      setFilters(prev => ({
+        ...prev,
+        channel_name_2: channel.channel_name_2
+      }));
+      setSelectedChannelInfo(channel);
+      
+      // 판매가와 물류비 계산
+      const updatedProducts = products.map(product => {
+        let pricingPrice: number | null = null;
 
-    setProducts(updatedProducts);
-    await saveCartInfo();
+        // 채널 정보의 모든 값이 있는지 확인
+        if (!channel.type || !channel.markup_ratio || !channel.applied_exchange_rate) {
+          console.log('채널 정보 누락:', {
+            type: channel.type,
+            markup_ratio: channel.markup_ratio,
+            applied_exchange_rate: channel.applied_exchange_rate
+          });
+          return {
+            ...product,
+            pricing_price: null,
+            logistics_cost: undefined
+          };
+        }
+
+        // markup_ratio에서 콤마 제거하고 숫자로 변환
+        const markupRatio = Number(channel.markup_ratio.replace(/,/g, ''));
+        const exchangeRate = Number(channel.applied_exchange_rate.replace(/,/g, ''));
+
+        // 타입칸에 표시되는 채널 타입에 따라 판매가 계산
+        if (channel.type === '일본' || channel.type === '자사몰') {
+          if (channel.rounddown !== null) {
+            // SQL의 ROUND 함수와 동일한 로직으로 수정
+            const basePrice = product.global_price / exchangeRate;
+            const multiplier = Math.pow(10, Number(channel.rounddown));
+            pricingPrice = Math.floor(basePrice * multiplier) / multiplier;
+            pricingPrice += Number(channel.digit_adjustment || 0);
+            if (channel.channel_name_2 === 'SG_아마존US') {
+              pricingPrice += Number(channel.amazon_shipping_cost || 0);
+            }
+          }
+        }
+        // 국내
+        else if (channel.type === '국내') {
+          pricingPrice = product.shop_price + markupRatio;
+        }
+        // 해외
+        else if (channel.type === '해외' && channel.rounddown !== null) {
+          pricingPrice = Math.floor(
+            (product.shop_price * markupRatio) / exchangeRate
+          );
+          pricingPrice += Number(channel.digit_adjustment || 0);
+
+          // ZALORA 특별 케이스
+          if (channel.channel_name_2 === 'SG_ZALORA_SG') {
+            pricingPrice *= 1.09;
+          } else if (channel.channel_name_2 === 'SG_ZALORA_MY') {
+            pricingPrice *= 1.1;
+          }
+        }
+
+        // 물류비 계산
+        const logisticsCost = calculateLogisticsCost(channel, deliveryType, Number(channel.amazon_shipping_cost));
+
+        const newProduct = {
+          ...product,
+          pricing_price: pricingPrice,
+          logistics_cost: logisticsCost
+        };
+
+        // 예상수수료 계산
+        newProduct.expected_commission_fee = calculateExpectedCommissionFee(newProduct);
+
+        // 정산예정금액 계산
+        newProduct.expected_settlement_amount = calculateExpectedSettlementAmount(newProduct);
+
+        // 예상순이익 및 예상순이익률 계산
+        newProduct.expected_net_profit = calculateExpectedNetProfit(newProduct);
+        newProduct.expected_net_profit_margin = calculateExpectedNetProfitMargin(newProduct);
+
+        return newProduct;
+      });
+
+      setProducts(updatedProducts);
+      await saveCartInfo();
+    } catch (error) {
+      console.error('채널 선택 중 오류 발생:', error);
+    }
   };
 
   // 채널 검색창 포커스 핸들러
@@ -1120,6 +1209,7 @@ export default function CartPage() {
     { key: "expected_commission_fee", label: "예상수수료", format: (value: number) => value?.toLocaleString() || '-' },
     { key: "logistics_cost", label: "물류비", format: (value: number) => value?.toLocaleString() || '-' },
     { key: "expected_net_profit", label: "예상순이익액", format: (value: number) => value?.toLocaleString() || '-' },
+    { key: "expected_net_profit_margin", label: "예상순이익률", format: (value: number) => value ? `${(value * 100).toFixed(1)}%` : '-' },
     { key: "expected_settlement_amount", label: "정산예정금액", format: (value: number) => value?.toLocaleString() || '-' },
     { key: "cost_ratio", label: "원가율", format: (value: number) => value?.toLocaleString() || '-' },
     { key: "total_stock", label: "재고", format: (value: number) => value?.toLocaleString() || '-' },
@@ -1639,6 +1729,11 @@ export default function CartPage() {
                        </DraggableCell>
                        <DraggableCell className="text-center">
                          <div>{product.expected_net_profit?.toLocaleString() || '-'}</div>
+                         <div>
+                           {product.expected_net_profit_margin 
+                             ? `${(product.expected_net_profit_margin * 100).toFixed(1)}%` 
+                             : '-'}
+                         </div>
                        </DraggableCell>
                        <DraggableCell className="text-center">
                          <div>{product.expected_settlement_amount?.toLocaleString() || '-'}</div>
@@ -1754,23 +1849,31 @@ export default function CartPage() {
           // 구분자 규칙을 적용하는 로직
         }}
       />
-      
-      <DiscountModal 
-        showDiscountModal={showDiscountModal}
-        setShowDiscountModal={setShowDiscountModal}
-        onApplyDiscount={(updatedProducts) => {
-          setProducts(updatedProducts);
-          if (user) {
-            const docRef = doc(db, 'userCarts', user.uid);
-            setDoc(docRef, {
-              products: updatedProducts,
-              updatedAt: new Date().toISOString()
-            });
-          }
-        }}
-        products={products}
-        selectedProducts={selectedProducts}
-      />
+       
+      {showDiscountModal && (
+        <DiscountModal
+          products={products}
+          selectedProducts={selectedProducts}
+          showDiscountModal={showDiscountModal}
+          setShowDiscountModal={setShowDiscountModal}
+          onClose={() => setShowDiscountModal(false)}
+          onApplyDiscount={(updatedProducts) => {
+            setProducts(updatedProducts);
+            if (user) {
+              const docRef = doc(db, 'userCarts', user.uid);
+              setDoc(docRef, {
+                products: updatedProducts,
+                updatedAt: new Date().toISOString()
+              });
+            }
+          }}
+          calculateExpectedSettlementAmount={calculateExpectedSettlementAmount}
+          calculateExpectedNetProfit={calculateExpectedNetProfit}
+          calculateExpectedCommissionFee={calculateExpectedCommissionFee}
+          selectedChannelInfo={selectedChannelInfo}
+        />
+      )}
+ 
     </div>
   )
 } 

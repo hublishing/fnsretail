@@ -17,7 +17,7 @@ import {
 } from "@/app/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/components/ui/tabs"
 import { useState } from "react"
-import { Product } from '@/app/types/cart'
+import { Product, ChannelInfo } from '@/app/types/cart'
 
 type DiscountType = '즉시할인' | '최저손익' | 'amount' | 'rate'
 
@@ -40,6 +40,11 @@ interface DiscountModalProps {
   onApplyDiscount: (products: Product[]) => void
   products: Product[]
   selectedProducts: string[]
+  onClose: () => void
+  calculateExpectedSettlementAmount: (product: Product) => number
+  calculateExpectedNetProfit: (product: Product) => number
+  calculateExpectedCommissionFee: (product: Product, adjustByDiscount?: boolean) => number
+  selectedChannelInfo: ChannelInfo | null
 }
 
 export function DiscountModal({ 
@@ -47,7 +52,12 @@ export function DiscountModal({
   setShowDiscountModal,
   onApplyDiscount,
   products,
-  selectedProducts
+  selectedProducts,
+  onClose,
+  calculateExpectedSettlementAmount,
+  calculateExpectedNetProfit,
+  calculateExpectedCommissionFee,
+  selectedChannelInfo
 }: DiscountModalProps) {
   const [currentTab, setCurrentTab] = useState('tab1')
   const [tabStates, setTabStates] = useState<Record<string, TabState>>({
@@ -116,8 +126,8 @@ export function DiscountModal({
       // 단위 변경 시 입력값 초기화
       if (field === 'unitType') {
         return {
-          ...prev,
-          [tab]: {
+      ...prev,
+      [tab]: {
             ...currentState,
             [field]: value,
             discountValue: 0  // 입력값 초기화
@@ -226,6 +236,19 @@ export function DiscountModal({
           newProduct.discount_rate = (discountAmount / basePrice) * 100;
           newProduct.discount_unit = state.unitType;
           
+          // props로 받은 함수 사용
+          newProduct.expected_settlement_amount = calculateExpectedSettlementAmount(newProduct);
+          
+          // 예상순이익 재계산
+          newProduct.expected_net_profit = calculateExpectedNetProfit(newProduct);
+          
+          // 예상수수료 재계산
+          console.log('=== 할인 모달에서 예상수수료 계산 ===');
+          console.log('채널 정보:', selectedChannelInfo);
+          console.log('상품 정보:', newProduct);
+          newProduct.expected_commission_fee = calculateExpectedCommissionFee(newProduct);
+          console.log('계산된 예상수수료:', newProduct.expected_commission_fee);
+          
           console.log('최종 가격:', newProduct.discount_price);
           console.log('할인율:', newProduct.discount_rate, '%');
         } else if (type === 'coupon1') {
@@ -279,6 +302,15 @@ export function DiscountModal({
             
             newProduct.coupon_price_1 = basePrice - discountAmount;
             newProduct.discount_burden_amount = selfBurdenAmount;
+            
+            // 예상수수료 재계산
+            newProduct.expected_commission_fee = calculateExpectedCommissionFee(newProduct);
+            
+            // 정산예정금액 재계산
+            newProduct.expected_settlement_amount = calculateExpectedSettlementAmount(newProduct);
+            
+            // 예상순이익 재계산
+            newProduct.expected_net_profit = calculateExpectedNetProfit(newProduct);
             
             console.log('최종 가격:', newProduct.coupon_price_1);
           } else {
@@ -336,6 +368,15 @@ export function DiscountModal({
             newProduct.coupon_price_2 = basePrice - discountAmount;
             newProduct.discount_burden_amount = selfBurdenAmount;
             
+            // 예상수수료 재계산
+            newProduct.expected_commission_fee = calculateExpectedCommissionFee(newProduct);
+            
+            // 정산예정금액 재계산
+            newProduct.expected_settlement_amount = calculateExpectedSettlementAmount(newProduct);
+            
+            // 예상순이익 재계산
+            newProduct.expected_net_profit = calculateExpectedNetProfit(newProduct);
+            
             console.log('최종 가격:', newProduct.coupon_price_2);
           } else {
             console.log('사용가능 기준 미충족 - 쿠폰 적용 안함');
@@ -391,6 +432,15 @@ export function DiscountModal({
             
             newProduct.coupon_price_3 = basePrice - discountAmount;
             newProduct.discount_burden_amount = selfBurdenAmount;
+            
+            // 예상수수료 재계산
+            newProduct.expected_commission_fee = calculateExpectedCommissionFee(newProduct);
+            
+            // 정산예정금액 재계산
+            newProduct.expected_settlement_amount = calculateExpectedSettlementAmount(newProduct);
+            
+            // 예상순이익 재계산
+            newProduct.expected_net_profit = calculateExpectedNetProfit(newProduct);
             
             console.log('최종 가격:', newProduct.coupon_price_3);
           } else {
@@ -450,31 +500,31 @@ export function DiscountModal({
                 </div>
 
                 {/* 할인 값 입력 */}
-                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2">
                   <Label className="w-[110px]">
                     {getCurrentTabState().discountType === '최저손익' ? '최저손익 값' : '할인 값'}
                   </Label>
-                  <Input
-                    type="number"
-                    value={getCurrentTabState().discountValue}
-                    onChange={(e) => handleTabStateChange('tab1', 'discountValue', Number(e.target.value))}
-                    className="w-[150px] h-10"
+                    <Input
+                      type="number"
+                      value={getCurrentTabState().discountValue}
+                      onChange={(e) => handleTabStateChange('tab1', 'discountValue', Number(e.target.value))}
+                      className="w-[150px] h-10"
                     placeholder={`예: ${getCurrentTabState().unitType === '%' ? '10 (10%)' : '1000 (1000원)'}`}
                   />
                   
-                  <Select
+                    <Select
                     value={getCurrentTabState().unitType}
                     onValueChange={(value: string) => handleTabStateChange('tab1', 'unitType', value)}
-                  >
-                    <SelectTrigger className="w-[100px] h-10">
+                    >
+                      <SelectTrigger className="w-[100px] h-10">
                       <SelectValue placeholder="단위" />
-                    </SelectTrigger>
-                    <SelectContent>
+                      </SelectTrigger>
+                      <SelectContent>
                       <SelectItem value="%">%</SelectItem>
                       <SelectItem value="원">원</SelectItem>
-                    </SelectContent>
-                  </Select> 
-                </div> 
+                      </SelectContent>
+                    </Select>
+                  </div>
 
               </div> 
               <div className="mt-4 flex justify-end">
