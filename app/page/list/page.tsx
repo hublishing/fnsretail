@@ -563,13 +563,23 @@ export default function CartPage() {
   };
 
   // 예상수수료 계산 함수 추가
-  const calculateExpectedCommissionFee = (product: Product, adjustByDiscount: boolean = true) => {
+  const calculateExpectedCommissionFee = (
+    product: Product, 
+    adjustByDiscount: boolean = true,
+    channelInfo: ChannelInfo | null = selectedChannelInfo
+  ) => {
     
     const pricingPrice = Number(product.pricing_price) || 0;
-    const discountPrice = Number(product.discount_price) || 0;
+    // 최종 할인가 계산 (쿠폰3 -> 쿠폰2 -> 쿠폰1 -> 즉시할인 순으로 체크)
+    const discountPrice = Number(
+      product.coupon_price_3 || 
+      product.coupon_price_2 || 
+      product.coupon_price_1 || 
+      product.discount_price
+    ) || 0;
+    
     // 수정: average_fee_rate가 문자열일 수 있으므로 명시적으로 숫자로 변환
-    const averageFeeRate = selectedChannelInfo?.average_fee_rate ? parseFloat(String(selectedChannelInfo.average_fee_rate)) : 0;
-
+    const averageFeeRate = channelInfo?.average_fee_rate ? parseFloat(String(channelInfo.average_fee_rate)) : 0;
 
     // 할인율 계산 (0~1 사이 값)
     const discountRatio = pricingPrice > 0 ? (pricingPrice - discountPrice) / pricingPrice : 0;
@@ -1785,6 +1795,22 @@ export default function CartPage() {
                        </DraggableCell>
                        <DraggableCell className="text-center">
                          <div>{product.expected_commission_fee?.toLocaleString() || '-'}</div>
+                         <div className="text-sm text-muted-foreground">
+                           {(() => {
+                             const pricingPrice = Number(product.pricing_price) || 0;
+                             const discountPrice = Number(
+                               product.coupon_price_3 || 
+                               product.coupon_price_2 || 
+                               product.coupon_price_1 || 
+                               product.discount_price
+                             ) || 0;
+                             const discountRatio = pricingPrice > 0 ? (pricingPrice - discountPrice) / pricingPrice : 0;
+                             const averageFeeRate = selectedChannelInfo?.average_fee_rate ? parseFloat(String(selectedChannelInfo.average_fee_rate)) : 0;
+                             const feeRateReduction = Math.floor(discountRatio * 100 / 10);
+                             const adjustedFeeRate = Math.max(averageFeeRate - feeRateReduction, 0);
+                             return `${adjustedFeeRate.toFixed(1)}%`;
+                           })()}
+                         </div>
                        </DraggableCell>
                        <DraggableCell className="text-center">
                          <div>{product.logistics_cost?.toLocaleString() || '-'}</div>
