@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card'
 import {
   Table,
   TableBody,
@@ -9,17 +9,17 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@/app/components/ui/table"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Button } from "@/components/ui/button"
+} from "@/app/components/ui/select"
+import { Button } from "@/app/components/ui/button"
 import { Calendar } from 'lucide-react'
-import { Input } from "@/components/ui/input"
+import { Input } from "@/app/components/ui/input"
 
 // 데이터 타입 정의
 interface SalesData {

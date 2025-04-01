@@ -5,39 +5,39 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { usePathname } from "next/navigation"
 import { Menu, LogOut, History, LayoutDashboard, ShoppingCart, Search, FileText, PlusCircle, NotebookText, List } from "lucide-react"
-import { Switch } from "@/components/ui/switch"
-import { SheetTitle } from "@/components/ui/sheet"
+import { Switch } from "@/app/components/ui/switch"
+import { SheetTitle } from "@/app/components/ui/sheet"
 
 import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Button } from "@/app/components/ui/button"
+import { ScrollArea } from "@/app/components/ui/scroll-area"
+import { Sheet, SheetContent, SheetTrigger } from "@/app/components/ui/sheet"
 import { signOut, getSession } from "@/app/actions/auth"
 
 const menuItems = [
   {
     title: "대시보드",
-    href: "/dashboard",
+    href: "/page/dashboard",
     icon: LayoutDashboard,
   },
   {
     title: "상품검색",
-    href: "/dynamic-table",
+    href: "/page/dynamic-table",
     icon: Search,
   },
   {
     title: "리스트작성",
-    href: "/cart",
+    href: "/page/list",
     icon: List,
   },
   {
     title: "패치노트",
-    href: "/patch-notes",
+    href: "/page/patch-notes",
     icon: History,
   },
   {
     title: "패치정보",
-    href: "/patch-info",
+    href: "/page/patch-info",
     icon: PlusCircle,
   },
 ]

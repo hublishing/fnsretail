@@ -8,9 +8,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
+} from "@/app/components/ui/table"
+import { Input } from "@/app/components/ui/input"
+import { Button } from "@/app/components/ui/button"
 import { Search, FileDown, Plus, Settings } from "lucide-react"
 import {
   Select,
@@ -18,16 +18,16 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/app/components/ui/select"
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/auth';
 import { getSession } from '@/app/actions/auth';
 import { useRouter } from "next/navigation"
-import { ProductDetailModal } from "@/components/product-detail-modal"
+import { ProductDetailModal } from "@/app/components/product-detail-modal"
 import * as XLSX from 'xlsx';
-import { ExcelSettingsModal } from "@/components/excel-settings-modal"
-import { Checkbox } from "@/components/ui/checkbox"
+import { ExcelSettingsModal } from "@/app/components/excel-settings-modal"
+import { Checkbox } from "@/app/components/ui/checkbox"
 
 // 고정 필터 옵션
 const STATIC_FILTER_OPTIONS = {

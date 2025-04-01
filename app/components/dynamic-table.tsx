@@ -1,9 +1,9 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/app/components/ui/table"
+import { Input } from "@/app/components/ui/input"
+import { Button } from "@/app/components/ui/button"
 import {
   ChevronDown,
   ChevronUp,
@@ -17,11 +17,11 @@ import {
   X,
   Plus,
 } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { Badge } from "@/app/components/ui/badge"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/app/components/ui/select"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/app/components/ui/dialog"
+import { Popover, PopoverContent, PopoverTrigger } from "@/app/components/ui/popover"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/app/components/ui/collapsible"
 
 export type DataType = "string" | "number" | "date" | "boolean" | "array" | "object" | "unknown"
 

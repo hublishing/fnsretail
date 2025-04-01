@@ -1,9 +1,9 @@
 "use client"
 
 import { useEffect, useState } from 'react'
-import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/app/components/ui/card"
+import { Input } from "@/app/components/ui/input"
+import { Button } from "@/app/components/ui/button"
 import { useRouter } from 'next/navigation'
 import { getSession } from '@/app/actions/auth'
 

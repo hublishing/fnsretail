@@ -8,25 +8,25 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
+} from "@/app/components/ui/table"
+import { Button } from "@/app/components/ui/button"
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { getSession } from '@/app/actions/auth';
-import { ProductDetailModal } from "@/components/product-detail-modal"
+import { ProductDetailModal } from "@/app/components/product-detail-modal"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+} from "@/app/components/ui/select"
+import { Checkbox } from "@/app/components/ui/checkbox"
+import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card"
 import { v4 as uuidv4 } from 'uuid';
 import { Search, FileDown, Settings } from "lucide-react"
 import * as XLSX from 'xlsx';
-import { ExcelSettingsModal } from "@/components/excel-settings-modal"
+import { ExcelSettingsModal } from "@/app/components/excel-settings-modal"
 import {
   DndContext,
   closestCenter,
@@ -45,6 +45,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import React from 'react';
+import { DiscountModal } from "@/app/components/discount-modal"
 import {
   Dialog,
   DialogContent,
@@ -52,142 +53,27 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
-import { CouponModal } from "../../components/coupon-modal"
+} from "@/app/components/ui/dialog"
+import { Label } from "@/app/components/ui/label"
+import { Input } from "@/app/components/ui/input"
 import {
   Tabs,
   TabsList,
   TabsTrigger,
   TabsContent,
-} from "@/components/ui/tabs"
-import { Slider } from "@/components/ui/slider"
+} from "@/app/components/ui/tabs"
+import { Slider } from "@/app/components/ui/slider"
+import { DividerModal } from '@/app/components/divider-modal';
+import {
+  Product,
+  Column,
+  Filters,
+  ChannelInfo,
+  CartItem,
+  ExcelSettings,
+  DividerRule
+} from '@/app/types/cart';
 
-interface Product {
-  product_id: string;
-  name: string;
-  org_price: number;
-  shop_price: number;
-  global_price: number;
-  img_desc1: string;
-  product_desc: string;
-  extra_column2: string;
-  cost_ratio: number;
-  category_1: string;
-  category_3: string;
-  main_wh_available_stock_excl_production_stock: number;
-  total_stock: number;
-  drop_yn: string;
-  soldout_rate: number;
-  supply_name: string;
-  exclusive2: string;
-  detail?: never;
-  options_product_id: string;
-  brand?: string;
-  line?: string;
-  season?: string;
-  total_order_qty?: number;
-  recent_order_dates?: string[];
-  order_countries?: string[];
-  order_channels?: string[];
-  order_categories?: string[];
-  order_types?: string[];
-  discount_price?: number | null;
-  discount?: number;
-  discount_rate?: number;
-  discount_unit?: 'amount' | 'rate' | 'min_profit_amount' | 'min_profit_rate';
-  coupon1_price?: number;
-  coupon2_price?: number;
-  coupon3_price?: number;
-  isSelected?: boolean;
-  pricing_price: number | null;
-  self_ratio?: number;
-  final_price: number | null;
-  rowColor?: string;  // 행 색상을 위한 필드 추가
-  dividerText?: string;
-  adjusted_cost?: number;
-  discount_burden_amount?: number;
-  expected_commission_fee?: number;  // 예상수수료 필드 추가
-  expected_settlement_amount?: number;  // 정산예정금액 필드 추가
-  logistics_cost?: number;  // 물류비 필드 추가
-  expected_net_profit?: number;  // 예상순이익액 필드 추가
-}
-
-interface Column {
-  key: keyof Product | 'actions';
-  label: string;
-  format?: (value: any) => React.ReactNode;
-  render?: (product: Product) => React.ReactNode;
-}
-
-interface Filters {
-  channel_name_2: string;
-  delivery_type: string;
-}
-
-interface ChannelInfo {
-  channel_name_2: string;
-  channel_category_2: string;
-  channel_category_3: string;
-  team: string;
-  manager: string;
-  shop_id: string;
-  shop_name: string;
-  used: string;
-  price_formula: string;
-  shipping_formula: string;
-  exchange_rate: string;
-  currency: string;
-  correction_rate: string;
-  amount: string;
-  comment: string;
-  use_yn: string;
-  type: string;
-  markup_ratio: string;
-  applied_exchange_rate: string;
-  rounddown: string;
-  digit_adjustment: string;
-  currency_2: string;
-  average_fee_rate: string;
-  shipping_condition: string;
-  outerbox_fee: string;
-  domestic_delivery_fee: string;
-  shipping_fee: string;
-  customs_fee: string;
-  declaration_fee: string;
-  innerbox_fee: string;
-  packingbox_fee: string;
-  brand_type: string;
-  free_shipping: number;
-  conditional_shipping: number;
-  amazon_shipping_cost?: number;
-}
-
-interface CartItem {
-  id: string;
-  productId: string;
-  name: string;
-  price: number;
-  quantity: number;
-  category?: string;
-  brand?: string;
-  url?: string;
-}
-
-interface ExcelSettings {
-  includeImage: boolean;
-  includeUrl: boolean;
-  includeCost: boolean;
-  includeDiscount: boolean;
-}
-
-interface DividerRule {
-  id: string;
-  range: number[];
-  color: string;
-  text: string;
-}
 
 // 정렬 가능한 행 컴포넌트
 function SortableTableRow({ product, children, ...props }: { 
@@ -938,141 +824,87 @@ export default function CartPage() {
   };
 
   // 할인 적용 핸들러
-  const handleApplyDiscount = async (type: 'discount' | 'coupon1' | 'coupon2' | 'coupon3') => {
+  const handleApplyDiscount = async (type: 'discount' | 'coupon1' | 'coupon2' | 'coupon3', state: any) => {
     if (!selectedProducts.length) {
       alert('할인을 적용할 상품을 선택해주세요.');
       return;
     }
 
-    if (!filters.channel_name_2) {
-      alert('채널을 선택해주세요.');
+    const { hurdleTarget, hurdleAmount, discountBase, discountType, discountValue, selfRatio, roundUnit, roundType, discountCap } = state;
+
+    // 선택된 상품들의 총 금액 계산
+    const totalAmount = selectedProducts.reduce((sum, productId) => {
+      const product = products.find(p => p.product_id === productId);
+      if (!product) return sum;
+      return sum + (product[hurdleTarget as keyof Product] as number || 0);
+    }, 0);
+
+    // 기준금액 체크
+    if (totalAmount < hurdleAmount) {
+      alert(`선택한 상품들의 총 금액(${totalAmount.toLocaleString()}원)이 기준금액(${hurdleAmount.toLocaleString()}원)보다 작습니다.`);
       return;
     }
 
-    const currentTabState = getCurrentTabState();
-    if (!currentTabState.discountValue) {
-      alert('할인값을 입력해주세요.');
-      return;
-    }
-
+    // 할인 적용
     const updatedProducts = products.map(product => {
-      if (!selectedProducts.includes(product.product_id)) {
-        return product;
-      }
+      if (!selectedProducts.includes(product.product_id)) return product;
 
-      // 원본 가격 저장
-      const originalPrice = product.pricing_price || 0;
-      const originalCoupon1Price = product.coupon1_price || originalPrice;
-      const originalCoupon2Price = product.coupon2_price || originalCoupon1Price;
-      const originalCoupon3Price = product.coupon3_price || originalCoupon2Price;
+      const basePrice = product[discountBase as keyof Product] as number || 0;
+      let discountAmount = 0;
 
-      // 할인 계산
-      let discountPrice: number | null = null;
-      let coupon1Price: number | null = null;
-      let coupon2Price: number | null = null;
-      let coupon3Price: number | null = null;
-
-      // 할인 타입에 따른 가격 계산
-      if (currentTabState.discountType === 'amount') {
-        discountPrice = originalPrice - currentTabState.discountValue;
-      } else if (currentTabState.discountType === 'rate') {
-        let rawDiscount = originalPrice * (currentTabState.discountValue / 100);
-        if (currentTabState.discountCap > 0) {
-          rawDiscount = Math.min(rawDiscount, currentTabState.discountCap);
+      if (discountType === 'amount') {
+        discountAmount = discountValue;
+      } else if (discountType === 'rate') {
+        discountAmount = basePrice * (discountValue / 100);
+        
+        // 최대 할인금액 제한
+        if (discountCap > 0 && discountAmount > discountCap) {
+          discountAmount = discountCap;
         }
-        discountPrice = originalPrice - roundWithType(rawDiscount, currentTabState.roundUnit, currentTabState.roundType);
+
+        // 절사 처리
+        if (roundUnit !== 'none') {
+          discountAmount = roundWithType(discountAmount, roundUnit, roundType);
+        }
       }
 
-      // 쿠폰 가격 계산
-      if (type === 'coupon1') {
-        coupon1Price = discountPrice || originalPrice;
+      // 자사부담 계산
+      const selfBurdenAmount = discountAmount * (selfRatio / 100);
+      const finalDiscountAmount = discountAmount - selfBurdenAmount;
+
+      // 할인가격 업데이트
+      const updatedProduct = { ...product };
+      if (type === 'discount') {
+        updatedProduct.discount_price = basePrice - finalDiscountAmount;
+        updatedProduct.discount = finalDiscountAmount;
+        updatedProduct.discount_rate = (finalDiscountAmount / basePrice) * 100;
+        updatedProduct.discount_unit = discountType;
+        updatedProduct.self_ratio = selfRatio;
+      } else if (type === 'coupon1') {
+        updatedProduct.coupon1_price = basePrice - finalDiscountAmount;
+        updatedProduct.discount = finalDiscountAmount;
+        updatedProduct.discount_rate = (finalDiscountAmount / basePrice) * 100;
+        updatedProduct.discount_unit = discountType;
+        updatedProduct.self_ratio = selfRatio;
       } else if (type === 'coupon2') {
-        coupon2Price = discountPrice || originalPrice;
+        updatedProduct.coupon2_price = basePrice - finalDiscountAmount;
+        updatedProduct.discount = finalDiscountAmount;
+        updatedProduct.discount_rate = (finalDiscountAmount / basePrice) * 100;
+        updatedProduct.discount_unit = discountType;
+        updatedProduct.self_ratio = selfRatio;
       } else if (type === 'coupon3') {
-        coupon3Price = discountPrice || originalPrice;
+        updatedProduct.coupon3_price = basePrice - finalDiscountAmount;
+        updatedProduct.discount = finalDiscountAmount;
+        updatedProduct.discount_rate = (finalDiscountAmount / basePrice) * 100;
+        updatedProduct.discount_unit = discountType;
+        updatedProduct.self_ratio = selfRatio;
       }
-
-      // 할인 부담액 계산
-      const burden1 = Math.round((originalCoupon1Price - (coupon1Price || originalCoupon1Price)) * (currentTabState.selfRatio / 100));
-      const burden2 = Math.round((originalCoupon2Price - (coupon2Price || originalCoupon2Price)) * (currentTabState.selfRatio / 100));
-      const burden3 = Math.round((originalCoupon3Price - (coupon3Price || originalCoupon3Price)) * (currentTabState.selfRatio / 100));
-      
-      const totalBurden = burden1 + burden2 + burden3;
-
-      // 각 탭에 따라 다른 필드 업데이트
-      let updatedProduct: Product;
-      switch (type) {
-        case 'discount':
-          updatedProduct = {
-            ...product,
-            discount: currentTabState.discountValue,
-            discount_unit: currentTabState.discountType,
-            discount_price: discountPrice,
-            discount_rate: discountRate,
-            self_ratio: currentTabState.selfRatio,
-            discount_burden_amount: totalBurden
-          } as Product;
-          break;
-        case 'coupon1':
-          updatedProduct = {
-            ...product,
-            coupon1_price: coupon1Price,
-            coupon1_rate: discountRate,
-            self_ratio: currentTabState.selfRatio,
-            discount_burden_amount: totalBurden
-          } as Product;
-          break;
-        case 'coupon2':
-          updatedProduct = {
-            ...product,
-            coupon2_price: coupon2Price,
-            coupon2_rate: discountRate,
-            self_ratio: currentTabState.selfRatio,
-            discount_burden_amount: totalBurden
-          } as Product;
-          break;
-        case 'coupon3':
-          updatedProduct = {
-            ...product,
-            coupon3_price: coupon3Price,
-            coupon3_rate: discountRate,
-            self_ratio: currentTabState.selfRatio,
-            discount_burden_amount: totalBurden
-          } as Product;
-          break;
-        default:
-          return product;
-      }
-
-      // final_price 계산
-      updatedProduct.final_price = 
-        updatedProduct.coupon3_price || 
-        updatedProduct.coupon2_price || 
-        updatedProduct.coupon1_price || 
-        updatedProduct.discount_price || 
-        updatedProduct.pricing_price || null;
 
       return updatedProduct;
     });
 
     setProducts(updatedProducts);
-    
-    // Firebase에 저장
-    if (user) {
-      try {
-        const docRef = doc(db, 'userCarts', user.uid);
-        await setDoc(docRef, {
-          products: updatedProducts,
-          updatedAt: new Date().toISOString()
-        });
-        console.log('할인 정보 저장 성공');
-      } catch (error) {
-        console.error('할인 정보 저장 중 오류 발생:', error);
-      }
-    }
-    
     setShowDiscountModal(false);
-    setDiscountValue(0);
   };
 
   // 엑셀 다운로드 함수
@@ -1176,92 +1008,6 @@ export default function CartPage() {
     } catch (error) {
       console.error('선택된 상품 삭제 중 오류 발생:', error);
       alert('상품 삭제 중 오류가 발생했습니다.');
-    }
-  };
-
-  // 쿠폰 적용 핸들러
-  const handleApplyCoupons = async (newCoupons: typeof coupons) => {
-    setCoupons(newCoupons);
-    
-    if (!selectedProducts.length) {
-      alert('쿠폰을 적용할 상품을 선택해주세요.');
-      return;
-    }
-    
-    const updatedProducts = products.map(product => {
-      if (!selectedProducts.includes(product.product_id)) {
-        return product;
-      }
-
-      if (!product.discount_price) {
-        return product;
-      }
-
-      // 쿠폰1 계산
-      let coupon1Price = product.discount_price;
-      let coupon1Rate = 0;
-      if (product.discount_price >= newCoupons.coupon1.minAmount) {
-        if (newCoupons.coupon1.type === 'percentage') {
-          coupon1Price = Math.round(product.discount_price * (1 - newCoupons.coupon1.value / 100));
-          coupon1Rate = newCoupons.coupon1.value;
-        } else {
-          coupon1Price = product.discount_price - newCoupons.coupon1.value;
-          coupon1Rate = Math.round((newCoupons.coupon1.value / product.discount_price) * 100);
-        }
-      }
-
-      // 쿠폰2 계산
-      let coupon2Price = coupon1Price;
-      let coupon2Rate = 0;
-      if (coupon1Price >= newCoupons.coupon2.minAmount) {
-        if (newCoupons.coupon2.type === 'percentage') {
-          coupon2Price = Math.round(coupon1Price * (1 - newCoupons.coupon2.value / 100));
-          coupon2Rate = newCoupons.coupon2.value;
-        } else {
-          coupon2Price = coupon1Price - newCoupons.coupon2.value;
-          coupon2Rate = Math.round((newCoupons.coupon2.value / coupon1Price) * 100);
-        }
-      }
-
-      // 쿠폰3 계산
-      let coupon3Price = coupon2Price;
-      let coupon3Rate = 0;
-      if (coupon2Price >= newCoupons.coupon3.minAmount) {
-        if (newCoupons.coupon3.type === 'percentage') {
-          coupon3Price = Math.round(coupon2Price * (1 - newCoupons.coupon3.value / 100));
-          coupon3Rate = newCoupons.coupon3.value;
-        } else {
-          coupon3Price = coupon2Price - newCoupons.coupon3.value;
-          coupon3Rate = Math.round((newCoupons.coupon3.value / coupon2Price) * 100);
-        }
-      }
-
-      return {
-        ...product,
-        coupon1_price: coupon1Price,
-        coupon2_price: coupon2Price,
-        coupon3_price: coupon3Price,
-        coupon1_rate: coupon1Rate,
-        coupon2_rate: coupon2Rate,
-        coupon3_rate: coupon3Rate,
-        final_discount_rate: Math.round(((product.shop_price - (coupon3Price || coupon2Price || coupon1Price || product.discount_price)) / product.shop_price) * 100)
-      };
-    });
-
-    setProducts(updatedProducts);
-    
-    // 파이어스토어에 저장
-    if (user) {
-      try {
-        const docRef = doc(db, 'userCarts', user.uid);
-        await setDoc(docRef, {
-          products: updatedProducts,
-          updatedAt: new Date().toISOString()
-        });
-        console.log('쿠폰 정보 저장 성공');
-      } catch (error) {
-        console.error('쿠폰 정보 저장 중 오류 발생:', error);
-      }
     }
   };
 
@@ -1925,639 +1671,6 @@ export default function CartPage() {
         />
       )}
 
-      {/* 할인 적용 모달 */}
-      <Dialog open={showDiscountModal} onOpenChange={setShowDiscountModal}>
-        <DialogContent className="sm:max-w-[600px] bg-background">
-          <DialogHeader>
-            <DialogTitle>할인 적용</DialogTitle>
-            <DialogDescription>
-              선택한 상품에 할인을 적용합니다.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <Tabs defaultValue="tab1" className="w-full" onValueChange={handleTabChange}>
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="tab1">즉시할인</TabsTrigger>
-                <TabsTrigger value="tab2">쿠폰1</TabsTrigger>
-                <TabsTrigger value="tab3">쿠폰2</TabsTrigger>
-                <TabsTrigger value="tab4">쿠폰3</TabsTrigger>
-              </TabsList>
-              <TabsContent value="tab1">
-                <div className="grid gap-4 py-4">
-                  {/* 사용가능 기준금액 */}
-            <div className="flex items-center gap-2">
-                    <Label className="w-[110px]">사용가능 기준금액</Label>
-                    <Select
-                      value={getCurrentTabState().hurdleTarget}
-                      onValueChange={(value: string) => handleTabStateChange('tab1', 'hurdleTarget', value)}
-                    >
-                      <SelectTrigger className="w-[150px] h-10">
-                        <SelectValue placeholder="기준금액 선택" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pricing_price">채널별판매가</SelectItem>
-                        <SelectItem value="discount_price">즉시할인가</SelectItem>
-                        <SelectItem value="coupon1_price">쿠폰적용가1</SelectItem>
-                        <SelectItem value="coupon2_price">쿠폰적용가2</SelectItem>
-                        <SelectItem value="coupon3_price">쿠폰적용가3</SelectItem>
-                      </SelectContent>
-                    </Select> 
-                    <Label className="w-[110px] ml-4">기준금액 (원 이상)</Label>
-              <Input
-                type="number"
-                      value={getCurrentTabState().hurdleAmount}
-                      onChange={(e) => handleTabStateChange('tab1', 'hurdleAmount', Number(e.target.value))}
-                      className="w-[100px] h-10"
-                      placeholder="예: 50000"
-                    />
-                  </div>
-
-                  {/* 할인 적용 기준금액 및 할인 구분 */}
-                  <div className="flex items-center gap-2">
-                    <Label className="w-[110px]">할인적용 기준금액</Label>
-                    <Select
-                      value={getCurrentTabState().discountBase}
-                      onValueChange={(value: string) => handleTabStateChange('tab1', 'discountBase', value)}
-                    >
-                      <SelectTrigger className="w-[150px] h-10">
-                        <SelectValue placeholder="기준금액 선택" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pricing_price">채널별판매가</SelectItem>
-                        <SelectItem value="discount_price">즉시할인가</SelectItem>
-                        <SelectItem value="coupon1_price">쿠폰적용가1</SelectItem>
-                        <SelectItem value="coupon2_price">쿠폰적용가2</SelectItem>
-                        <SelectItem value="coupon3_price">쿠폰적용가3</SelectItem>
-                      </SelectContent>
-                    </Select> 
-                    <Label className="w-[110px] ml-4">할인 구분</Label>
-                    <Select
-                      value={getCurrentTabState().discountType}
-                      onValueChange={(value: 'amount' | 'rate' | 'min_profit_amount' | 'min_profit_rate') => handleTabStateChange('tab1', 'discountType', value)}
-                    >
-                      <SelectTrigger className="w-[100px] h-10">
-                        <SelectValue placeholder="할인 구분" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="amount">할인금액</SelectItem>
-                        <SelectItem value="rate">할인율</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* 할인금액 입력 필드 */}
-                  {(getCurrentTabState().discountType as DiscountType) === 'amount' && (
-                    <div className="flex items-center gap-2">
-                      <Label className="w-[110px]">할인금액 (원)</Label>
-                      <Input
-                        type="number"
-                        value={getCurrentTabState().discountValue}
-                        onChange={(e) => handleTabStateChange('tab1', 'discountValue', Number(e.target.value))}
-                className="w-[150px] h-10"
-                        placeholder="할인금액 입력"
-                      />
-                      <Label className="w-[110px] ml-4">자사부담</Label>
-                      <Input
-                        type="number"
-                        value={getCurrentTabState().selfRatio}
-                        onChange={(e) => handleTabStateChange('tab1', 'selfRatio', Number(e.target.value))}
-                        className="w-[100px] h-10"
-                        placeholder="%"
-                      />
-                      <span className="text-sm text-muted-foreground">%</span>
-                    </div>
-                  )}
-
-                  {/* 할인율 입력 필드 */}
-                  {(getCurrentTabState().discountType as DiscountType) === 'rate' && (
-                    <>
-                      <div className="flex items-center gap-2">
-                        <Label className="w-[110px]">할인율 (%)</Label>
-                        <Input
-                          type="number"
-                          value={getCurrentTabState().discountValue}
-                          onChange={(e) => handleTabStateChange('tab1', 'discountValue', Number(e.target.value))}
-                          className="w-[100px] h-10"
-                          placeholder="할인율 입력"
-                        />
-                        <span className="text-sm text-muted-foreground">%</span>  
-              <Select
-                          value={getCurrentTabState().roundUnit}
-                          onValueChange={(value: string) => handleTabStateChange('tab1', 'roundUnit', value)}
-              >
-                          <SelectTrigger className="w-[100px] h-10">
-                            <SelectValue placeholder="절사 기준" />
-                </SelectTrigger>
-                <SelectContent>
-                            <SelectItem value="none">절사안함</SelectItem>
-                            <SelectItem value="1">1</SelectItem>
-                            <SelectItem value="10">10</SelectItem>
-                            <SelectItem value="100">100</SelectItem>
-                          </SelectContent>
-                        </Select>  
-                        <Select
-                          value={getCurrentTabState().roundType}
-                          onValueChange={(value: 'floor' | 'ceil') => handleTabStateChange('tab1', 'roundType', value)}
-                        >
-                          <SelectTrigger className="w-[100px] h-10">
-                            <SelectValue placeholder="절사 방식" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="floor">내림</SelectItem>
-                            <SelectItem value="ceil">올림</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-                      <div className="flex items-center gap-2">
-                        <Label className="w-[110px]">최대 할인금액 (원)</Label>
-                        <Input
-                          type="number"
-                          value={getCurrentTabState().discountCap}
-                          onChange={(e) => handleTabStateChange('tab1', 'discountCap', Number(e.target.value))}
-                          className="w-[100px] h-10"
-                          placeholder="최대 할인금액"
-                        />
-                        <Label className="w-[110px] ml-4">자사부담 (%)</Label>
-                        <Input
-                          type="number"
-                          value={getCurrentTabState().selfRatio}
-                          onChange={(e) => handleTabStateChange('tab1', 'selfRatio', Number(e.target.value))}
-                          className="w-[100px] h-10"
-                          placeholder="%"
-                        />
-                        <span className="text-sm text-muted-foreground">%</span>
-          </div>
-                    </>
-                  )}
-                </div> 
-                <div className="mt-4 flex justify-end">
-                  <Button onClick={() => handleApplyDiscount('discount')}>즉시할인 적용</Button>
-                </div>
-              </TabsContent>
-              <TabsContent value="tab2">
-                <div className="grid gap-4 py-4">
-                  {/* 사용가능 기준금액 */}
-                  <div className="flex items-center gap-2">
-                    <Label className="w-[110px]">사용가능 기준금액</Label>
-                    <Select
-                      value={getCurrentTabState().hurdleTarget}
-                      onValueChange={(value: string) => handleTabStateChange('tab2', 'hurdleTarget', value)}
-                    >
-                      <SelectTrigger className="w-[150px] h-10">
-                        <SelectValue placeholder="기준금액 선택" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pricing_price">채널별판매가</SelectItem>
-                        <SelectItem value="discount_price">즉시할인가</SelectItem>
-                        <SelectItem value="coupon1_price">쿠폰적용가1</SelectItem>
-                        <SelectItem value="coupon2_price">쿠폰적용가2</SelectItem>
-                        <SelectItem value="coupon3_price">쿠폰적용가3</SelectItem>
-                      </SelectContent>
-                    </Select> 
-                    <Label className="w-[110px] ml-4">기준금액 (원 이상)</Label>
-                    <Input
-                      type="number"
-                      value={getCurrentTabState().hurdleAmount}
-                      onChange={(e) => handleTabStateChange('tab2', 'hurdleAmount', Number(e.target.value))}
-                      className="w-[100px] h-10"
-                      placeholder="예: 50000"
-                    />
-                  </div>
-
-                  {/* 할인 적용 기준금액 및 할인 구분 */}
-                  <div className="flex items-center gap-2">
-                    <Label className="w-[110px]">할인적용 기준금액</Label>
-                    <Select
-                      value={getCurrentTabState().discountBase}
-                      onValueChange={(value: string) => handleTabStateChange('tab2', 'discountBase', value)}
-                    >
-                      <SelectTrigger className="w-[150px] h-10">
-                        <SelectValue placeholder="기준금액 선택" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pricing_price">채널별판매가</SelectItem>
-                        <SelectItem value="discount_price">즉시할인가</SelectItem>
-                        <SelectItem value="coupon1_price">쿠폰적용가1</SelectItem>
-                        <SelectItem value="coupon2_price">쿠폰적용가2</SelectItem>
-                        <SelectItem value="coupon3_price">쿠폰적용가3</SelectItem>
-                      </SelectContent>
-                    </Select> 
-                    <Label className="w-[110px] ml-4">할인 구분</Label>
-                    <Select
-                      value={getCurrentTabState().discountType}
-                      onValueChange={(value: 'amount' | 'rate' | 'min_profit_amount' | 'min_profit_rate') => handleTabStateChange('tab2', 'discountType', value)}
-                    >
-                      <SelectTrigger className="w-[100px] h-10">
-                        <SelectValue placeholder="할인 구분" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="amount">할인금액</SelectItem>
-                        <SelectItem value="rate">할인율</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* 할인금액 입력 필드 */}
-                  {(getCurrentTabState().discountType as DiscountType) === 'amount' && (
-                    <div className="flex items-center gap-2">
-                      <Label className="w-[110px]">할인금액 (원)</Label>
-                      <Input
-                        type="number"
-                        value={getCurrentTabState().discountValue}
-                        onChange={(e) => handleTabStateChange('tab2', 'discountValue', Number(e.target.value))}
-                        className="w-[150px] h-10"
-                        placeholder="할인금액 입력"
-                      />
-                      <Label className="w-[110px] ml-4">자사부담</Label>
-                      <Input
-                        type="number"
-                        value={getCurrentTabState().selfRatio}
-                        onChange={(e) => handleTabStateChange('tab2', 'selfRatio', Number(e.target.value))}
-                        className="w-[100px] h-10"
-                        placeholder="%"
-                      />
-                      <span className="text-sm text-muted-foreground">%</span>
-                    </div>
-                  )}
-
-                  {/* 할인율 입력 필드 */}
-                  {(getCurrentTabState().discountType as DiscountType) === 'rate' && (
-                    <>
-                      <div className="flex items-center gap-2">
-                        <Label className="w-[110px]">할인율 (%)</Label>
-                        <Input
-                          type="number"
-                          value={getCurrentTabState().discountValue}
-                          onChange={(e) => handleTabStateChange('tab2', 'discountValue', Number(e.target.value))}
-                          className="w-[100px] h-10"
-                          placeholder="할인율 입력"
-                        />
-                        <span className="text-sm text-muted-foreground">%</span>  
-                        <Select
-                          value={getCurrentTabState().roundUnit}
-                          onValueChange={(value: string) => handleTabStateChange('tab2', 'roundUnit', value)}
-                        >
-                          <SelectTrigger className="w-[100px] h-10">
-                            <SelectValue placeholder="절사 기준" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">절사안함</SelectItem>
-                            <SelectItem value="1">1</SelectItem>
-                            <SelectItem value="10">10</SelectItem>
-                            <SelectItem value="100">100</SelectItem>
-                          </SelectContent>
-                        </Select>  
-                        <Select
-                          value={getCurrentTabState().roundType}
-                          onValueChange={(value: 'floor' | 'ceil') => handleTabStateChange('tab2', 'roundType', value)}
-                        >
-                          <SelectTrigger className="w-[100px] h-10">
-                            <SelectValue placeholder="절사 방식" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="floor">내림</SelectItem>
-                            <SelectItem value="ceil">올림</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <Label className="w-[110px]">최대 할인금액 (원)</Label>
-                        <Input
-                          type="number"
-                          value={getCurrentTabState().discountCap}
-                          onChange={(e) => handleTabStateChange('tab2', 'discountCap', Number(e.target.value))}
-                          className="w-[100px] h-10"
-                          placeholder="최대 할인금액"
-                        />
-                        <Label className="w-[110px] ml-4">자사부담 (%)</Label>
-                        <Input
-                          type="number"
-                          value={getCurrentTabState().selfRatio}
-                          onChange={(e) => handleTabStateChange('tab2', 'selfRatio', Number(e.target.value))}
-                          className="w-[100px] h-10"
-                          placeholder="%"
-                        />
-                        <span className="text-sm text-muted-foreground">%</span>
-                      </div>
-                    </>
-                  )}
-                </div> 
-                <div className="mt-4 flex justify-end">
-                  <Button onClick={() => handleApplyDiscount('coupon1')}>쿠폰1 적용</Button>
-                </div>
-              </TabsContent>
-              <TabsContent value="tab3">
-                <div className="grid gap-4 py-4">
-                  {/* 사용가능 기준금액 */}
-                  <div className="flex items-center gap-2">
-                    <Label className="w-[110px]">사용가능 기준금액</Label>
-                    <Select
-                      value={getCurrentTabState().hurdleTarget}
-                      onValueChange={(value: string) => handleTabStateChange('tab3', 'hurdleTarget', value)}
-                    >
-                      <SelectTrigger className="w-[150px] h-10">
-                        <SelectValue placeholder="기준금액 선택" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pricing_price">채널별판매가</SelectItem>
-                        <SelectItem value="discount_price">즉시할인가</SelectItem>
-                        <SelectItem value="coupon1_price">쿠폰적용가1</SelectItem>
-                        <SelectItem value="coupon2_price">쿠폰적용가2</SelectItem>
-                        <SelectItem value="coupon3_price">쿠폰적용가3</SelectItem>
-                      </SelectContent>
-                    </Select> 
-                    <Label className="w-[110px] ml-4">기준금액 (원 이상)</Label>
-                    <Input
-                      type="number"
-                      value={getCurrentTabState().hurdleAmount}
-                      onChange={(e) => handleTabStateChange('tab3', 'hurdleAmount', Number(e.target.value))}
-                      className="w-[100px] h-10"
-                      placeholder="예: 50000"
-                    />
-                  </div>
-
-                  {/* 할인 적용 기준금액 및 할인 구분 */}
-                  <div className="flex items-center gap-2">
-                    <Label className="w-[110px]">할인적용 기준금액</Label>
-                    <Select
-                      value={getCurrentTabState().discountBase}
-                      onValueChange={(value: string) => handleTabStateChange('tab3', 'discountBase', value)}
-                    >
-                      <SelectTrigger className="w-[150px] h-10">
-                        <SelectValue placeholder="기준금액 선택" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pricing_price">채널별판매가</SelectItem>
-                        <SelectItem value="discount_price">즉시할인가</SelectItem>
-                        <SelectItem value="coupon1_price">쿠폰적용가1</SelectItem>
-                        <SelectItem value="coupon2_price">쿠폰적용가2</SelectItem>
-                        <SelectItem value="coupon3_price">쿠폰적용가3</SelectItem>
-                      </SelectContent>
-                    </Select> 
-                    <Label className="w-[110px] ml-4">할인 구분</Label>
-                    <Select
-                      value={getCurrentTabState().discountType}
-                      onValueChange={(value: 'amount' | 'rate' | 'min_profit_amount' | 'min_profit_rate') => handleTabStateChange('tab3', 'discountType', value)}
-                    >
-                      <SelectTrigger className="w-[100px] h-10">
-                        <SelectValue placeholder="할인 구분" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="amount">할인금액</SelectItem>
-                        <SelectItem value="rate">할인율</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* 할인금액 입력 필드 */}
-                  {(getCurrentTabState().discountType as DiscountType) === 'amount' && (
-                    <div className="flex items-center gap-2">
-                      <Label className="w-[110px]">할인금액 (원)</Label>
-                      <Input
-                        type="number"
-                        value={getCurrentTabState().discountValue}
-                        onChange={(e) => handleTabStateChange('tab3', 'discountValue', Number(e.target.value))}
-                        className="w-[150px] h-10"
-                        placeholder="할인금액 입력"
-                      />
-                      <Label className="w-[110px] ml-4">자사부담</Label>
-                      <Input
-                        type="number"
-                        value={getCurrentTabState().selfRatio}
-                        onChange={(e) => handleTabStateChange('tab3', 'selfRatio', Number(e.target.value))}
-                        className="w-[100px] h-10"
-                        placeholder="%"
-                      />
-                      <span className="text-sm text-muted-foreground">%</span>
-                    </div>
-                  )}
-
-                  {/* 할인율 입력 필드 */}
-                  {(getCurrentTabState().discountType as DiscountType) === 'rate' && (
-                    <>
-                      <div className="flex items-center gap-2">
-                        <Label className="w-[110px]">할인율 (%)</Label>
-                        <Input
-                          type="number"
-                          value={getCurrentTabState().discountValue}
-                          onChange={(e) => handleTabStateChange('tab3', 'discountValue', Number(e.target.value))}
-                          className="w-[100px] h-10"
-                          placeholder="할인율 입력"
-                        />
-                        <span className="text-sm text-muted-foreground">%</span>  
-                        <Select
-                          value={getCurrentTabState().roundUnit}
-                          onValueChange={(value: string) => handleTabStateChange('tab3', 'roundUnit', value)}
-                        >
-                          <SelectTrigger className="w-[100px] h-10">
-                            <SelectValue placeholder="절사 기준" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">절사안함</SelectItem>
-                            <SelectItem value="1">1</SelectItem>
-                            <SelectItem value="10">10</SelectItem>
-                            <SelectItem value="100">100</SelectItem>
-                          </SelectContent>
-                        </Select>  
-                        <Select
-                          value={getCurrentTabState().roundType}
-                          onValueChange={(value: 'floor' | 'ceil') => handleTabStateChange('tab3', 'roundType', value)}
-                        >
-                          <SelectTrigger className="w-[100px] h-10">
-                            <SelectValue placeholder="절사 방식" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="floor">내림</SelectItem>
-                            <SelectItem value="ceil">올림</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <Label className="w-[110px]">최대 할인금액 (원)</Label>
-                        <Input
-                          type="number"
-                          value={getCurrentTabState().discountCap}
-                          onChange={(e) => handleTabStateChange('tab3', 'discountCap', Number(e.target.value))}
-                          className="w-[100px] h-10"
-                          placeholder="최대 할인금액"
-                        />
-                        <Label className="w-[110px] ml-4">자사부담 (%)</Label>
-                        <Input
-                          type="number"
-                          value={getCurrentTabState().selfRatio}
-                          onChange={(e) => handleTabStateChange('tab3', 'selfRatio', Number(e.target.value))}
-                          className="w-[100px] h-10"
-                          placeholder="%"
-                        />
-                        <span className="text-sm text-muted-foreground">%</span>
-                      </div>
-                    </>
-                  )}
-                </div> 
-                <div className="mt-4 flex justify-end">
-                  <Button onClick={() => handleApplyDiscount('coupon2')}>쿠폰2 적용</Button>
-                </div>
-              </TabsContent>
-              <TabsContent value="tab4">
-                <div className="grid gap-4 py-4">
-                  {/* 사용가능 기준금액 */}
-                  <div className="flex items-center gap-2">
-                    <Label className="w-[110px]">사용가능 기준금액</Label>
-                    <Select
-                      value={getCurrentTabState().hurdleTarget}
-                      onValueChange={(value: string) => handleTabStateChange('tab4', 'hurdleTarget', value)}
-                    >
-                      <SelectTrigger className="w-[150px] h-10">
-                        <SelectValue placeholder="기준금액 선택" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pricing_price">채널별판매가</SelectItem>
-                        <SelectItem value="discount_price">즉시할인가</SelectItem>
-                        <SelectItem value="coupon1_price">쿠폰적용가1</SelectItem>
-                        <SelectItem value="coupon2_price">쿠폰적용가2</SelectItem>
-                        <SelectItem value="coupon3_price">쿠폰적용가3</SelectItem>
-                      </SelectContent>
-                    </Select> 
-                    <Label className="w-[110px] ml-4">기준금액 (원 이상)</Label>
-                    <Input
-                      type="number"
-                      value={getCurrentTabState().hurdleAmount}
-                      onChange={(e) => handleTabStateChange('tab4', 'hurdleAmount', Number(e.target.value))}
-                      className="w-[100px] h-10"
-                      placeholder="예: 50000"
-                    />
-                  </div>
-
-                  {/* 할인 적용 기준금액 및 할인 구분 */}
-                  <div className="flex items-center gap-2">
-                    <Label className="w-[110px]">할인적용 기준금액</Label>
-                    <Select
-                      value={getCurrentTabState().discountBase}
-                      onValueChange={(value: string) => handleTabStateChange('tab4', 'discountBase', value)}
-                    >
-                      <SelectTrigger className="w-[150px] h-10">
-                        <SelectValue placeholder="기준금액 선택" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pricing_price">채널별판매가</SelectItem>
-                        <SelectItem value="discount_price">즉시할인가</SelectItem>
-                        <SelectItem value="coupon1_price">쿠폰적용가1</SelectItem>
-                        <SelectItem value="coupon2_price">쿠폰적용가2</SelectItem>
-                        <SelectItem value="coupon3_price">쿠폰적용가3</SelectItem>
-                      </SelectContent>
-                    </Select> 
-                    <Label className="w-[110px] ml-4">할인 구분</Label>
-                    <Select
-                      value={getCurrentTabState().discountType}
-                      onValueChange={(value: 'amount' | 'rate' | 'min_profit_amount' | 'min_profit_rate') => handleTabStateChange('tab4', 'discountType', value)}
-                    >
-                      <SelectTrigger className="w-[100px] h-10">
-                        <SelectValue placeholder="할인 구분" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="amount">할인금액</SelectItem>
-                        <SelectItem value="rate">할인율</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* 할인금액 입력 필드 */}
-                  {(getCurrentTabState().discountType as DiscountType) === 'amount' && (
-                    <div className="flex items-center gap-2">
-                      <Label className="w-[110px]">할인금액 (원)</Label>
-                      <Input
-                        type="number"
-                        value={getCurrentTabState().discountValue}
-                        onChange={(e) => handleTabStateChange('tab4', 'discountValue', Number(e.target.value))}
-                        className="w-[150px] h-10"
-                        placeholder="할인금액 입력"
-                      />
-                      <Label className="w-[110px] ml-4">자사부담</Label>
-                      <Input
-                        type="number"
-                        value={getCurrentTabState().selfRatio}
-                        onChange={(e) => handleTabStateChange('tab4', 'selfRatio', Number(e.target.value))}
-                        className="w-[100px] h-10"
-                        placeholder="%"
-                      />
-                      <span className="text-sm text-muted-foreground">%</span>
-                    </div>
-                  )}
-
-                  {/* 할인율 입력 필드 */}
-                  {(getCurrentTabState().discountType as DiscountType) === 'rate' && (
-                    <>
-                      <div className="flex items-center gap-2">
-                        <Label className="w-[110px]">할인율 (%)</Label>
-                        <Input
-                          type="number"
-                          value={getCurrentTabState().discountValue}
-                          onChange={(e) => handleTabStateChange('tab4', 'discountValue', Number(e.target.value))}
-                          className="w-[100px] h-10"
-                          placeholder="할인율 입력"
-                        />
-                        <span className="text-sm text-muted-foreground">%</span>  
-                        <Select
-                          value={getCurrentTabState().roundUnit}
-                          onValueChange={(value: string) => handleTabStateChange('tab4', 'roundUnit', value)}
-                        >
-                          <SelectTrigger className="w-[100px] h-10">
-                            <SelectValue placeholder="절사 기준" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">절사안함</SelectItem>
-                            <SelectItem value="1">1</SelectItem>
-                            <SelectItem value="10">10</SelectItem>
-                            <SelectItem value="100">100</SelectItem>
-                          </SelectContent>
-                        </Select>  
-                        <Select
-                          value={getCurrentTabState().roundType}
-                          onValueChange={(value: 'floor' | 'ceil') => handleTabStateChange('tab4', 'roundType', value)}
-                        >
-                          <SelectTrigger className="w-[100px] h-10">
-                            <SelectValue placeholder="절사 방식" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="floor">내림</SelectItem>
-                            <SelectItem value="ceil">올림</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <Label className="w-[110px]">최대 할인금액 (원)</Label>
-                        <Input
-                          type="number"
-                          value={getCurrentTabState().discountCap}
-                          onChange={(e) => handleTabStateChange('tab4', 'discountCap', Number(e.target.value))}
-                          className="w-[100px] h-10"
-                          placeholder="최대 할인금액"
-                        />
-                        <Label className="w-[110px] ml-4">자사부담 (%)</Label>
-                        <Input
-                          type="number"
-                          value={getCurrentTabState().selfRatio}
-                          onChange={(e) => handleTabStateChange('tab4', 'selfRatio', Number(e.target.value))}
-                          className="w-[100px] h-10"
-                          placeholder="%"
-                        />
-                        <span className="text-sm text-muted-foreground">%</span>
-                      </div>
-                    </>
-                  )}
-                </div> 
-                <div className="mt-4 flex justify-end">
-                  <Button onClick={() => handleApplyDiscount('coupon3')}>쿠폰3 적용</Button>
-                </div>
-              </TabsContent>
-            </Tabs>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {showExcelSettings && (
         <ExcelSettingsModal
@@ -2607,107 +1720,20 @@ export default function CartPage() {
         </DialogContent>
       </Dialog>
 
-      {/* 구분자 모달 */}
-      <Dialog open={showDividerModal} onOpenChange={setShowDividerModal}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>구분자 설정</DialogTitle>
-            <DialogDescription>
-              행 범위별로 구분자를 설정합니다.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-6 py-4">
-            {dividerRules.map((rule, index) => (
-              <div key={rule.id} className="flex flex-col gap-4 p-4 border rounded-lg">
-                <div className="flex justify-between items-center">
-                  <h3 className="font-medium">구분자 {index + 1}</h3>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="flex-1"> 
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="number"
-                        value={rule.range[0]}
-                        onChange={(e) => handleUpdateDividerRule(rule.id, 'range', [Number(e.target.value), rule.range[1]])}
-                        min={0}
-                        max={products.length}
-                        className="w-[70px]"
-                        placeholder="시작"
-                      />
-                      <span className="text-muted-foreground">~</span>
-                      <Input
-                        type="number"
-                        value={rule.range[1]}
-                        onChange={(e) => handleUpdateDividerRule(rule.id, 'range', [rule.range[0], Number(e.target.value)])}
-                        min={0}
-                        max={products.length}
-                        className="w-[70px]"
-                        placeholder="끝"
-                      />
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-2"> 
-                    <Select
-                      value={rule.color || '#FFE4E1'}
-                      onValueChange={(value) => handleUpdateDividerRule(rule.id, 'color', value)}
-                    >
-                      <SelectTrigger className="w-[70px] h-10">
-                        <SelectValue>
-                          <div className="flex items-center gap-2">
-                            <div
-                              className="w-4 h-4 rounded-full"
-                              style={{ backgroundColor: rule.color || '#FFE4E1' }}
-                            />
-                          </div>
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="#FFE4E1">
-                          <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 rounded-full bg-[#FFE4E1]" />
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="#E6E6FA">
-                          <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 rounded-full bg-[#E6E6FA]" />
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="#F0FFF0">
-                          <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 rounded-full bg-[#F0FFF0]" />
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="#FFF0F5">
-                          <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 rounded-full bg-[#FFF0F5]" />
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="#F0FFFF">
-                          <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 rounded-full bg-[#F0FFFF]" />
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div> 
-                  <div className="flex flex-col gap-2"> 
-                  <Input
-                    value={rule.text}
-                    onChange={(e) => handleUpdateDividerRule(rule.id, 'text', e.target.value)}
-                    placeholder="구분자 텍스트 입력" 
-                    className="w-[245px]"
-                  />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={handleResetDividerRules}>초기화</Button>
-            <Button onClick={handleApplyDivider}>적용</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <DividerModal
+        showDividerModal={showDividerModal}
+        setShowDividerModal={setShowDividerModal}
+        products={products}
+        onApplyDivider={(rules) => {
+          // 구분자 규칙을 적용하는 로직
+        }}
+      />
+      
+      <DiscountModal 
+        showDiscountModal={showDiscountModal}
+        setShowDiscountModal={setShowDiscountModal}
+        onApplyDiscount={handleApplyDiscount}
+      />
     </div>
   )
 } 
