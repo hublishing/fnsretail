@@ -110,13 +110,29 @@ export function DiscountModal({
   }
 
   const handleTabStateChange = (tab: string, field: keyof TabState, value: any) => {
-    setTabStates(prev => ({
-      ...prev,
-      [tab]: {
-        ...prev[tab],
-        [field]: value
+    setTabStates(prev => {
+      const currentState = prev[tab];
+      
+      // 단위 변경 시 입력값 초기화
+      if (field === 'unitType') {
+        return {
+          ...prev,
+          [tab]: {
+            ...currentState,
+            [field]: value,
+            discountValue: 0  // 입력값 초기화
+          }
+        };
       }
-    }))
+      
+      return {
+        ...prev,
+        [tab]: {
+          ...currentState,
+          [field]: value
+        }
+      };
+    });
   }
 
   const handleApplyDiscount = async (type: 'discount' | 'coupon1' | 'coupon2' | 'coupon3', state: TabState) => {
@@ -433,23 +449,6 @@ export function DiscountModal({
                   </Select>
                 </div>
 
-                {/* 단위 선택 */}
-                <div className="flex items-center gap-2">
-                  <Label className="w-[110px]">단위 선택</Label>
-                  <Select
-                    value={getCurrentTabState().unitType}
-                    onValueChange={(value: string) => handleTabStateChange('tab1', 'unitType', value)}
-                  >
-                    <SelectTrigger className="w-[100px] h-10">
-                      <SelectValue placeholder="단위" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="%">%</SelectItem>
-                      <SelectItem value="원">원</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
                 {/* 할인 값 입력 */}
                 <div className="flex items-center gap-2">
                   <Label className="w-[110px]">
@@ -462,8 +461,21 @@ export function DiscountModal({
                     className="w-[150px] h-10"
                     placeholder={`예: ${getCurrentTabState().unitType === '%' ? '10 (10%)' : '1000 (1000원)'}`}
                   />
-                  <span className="text-sm text-muted-foreground">{getCurrentTabState().unitType}</span>
-                </div>
+                  
+                  <Select
+                    value={getCurrentTabState().unitType}
+                    onValueChange={(value: string) => handleTabStateChange('tab1', 'unitType', value)}
+                  >
+                    <SelectTrigger className="w-[100px] h-10">
+                      <SelectValue placeholder="단위" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="%">%</SelectItem>
+                      <SelectItem value="원">원</SelectItem>
+                    </SelectContent>
+                  </Select> 
+                </div> 
+
               </div> 
               <div className="mt-4 flex justify-end">
                 <Button onClick={() => handleApplyDiscount('discount', getCurrentTabState())}>즉시할인 적용</Button>
