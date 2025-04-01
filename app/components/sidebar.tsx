@@ -95,7 +95,7 @@ export function Sidebar() {
   const handleLogout = async () => {
     try {
       await signOut()
-      router.push('/login')
+      router.push('/page/login')
     } catch (error) {
       console.error('로그아웃 오류:', error)
     }

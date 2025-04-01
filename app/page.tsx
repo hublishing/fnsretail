@@ -13,13 +13,13 @@ export default function HomePage() {
       try {
         const session = await getSession()
         if (session) {
-          router.push('/dashboard')
+          router.push('/page/dashboard')
         } else {
-          router.push('/login')
+          router.push('/page/login')
         }
       } catch (error) {
         console.error('인증 확인 오류:', error)
-        router.push('/login')
+        router.push('/page/login')
       } finally {
         setIsLoading(false)
       }
