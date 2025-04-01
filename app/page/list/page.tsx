@@ -256,6 +256,9 @@ export default function CartPage() {
   ]);
   const [showImmediateDiscountModal, setShowImmediateDiscountModal] = useState(false);
   const [showCouponDiscountModal, setShowCouponDiscountModal] = useState(false);
+  const [memo1, setMemo1] = useState<string>('');
+  const [memo2, setMemo2] = useState<string>('');
+  const [memo3, setMemo3] = useState<string>('');
 
   // 각 탭별 상태 변수들
   const [tabStates, setTabStates] = useState<{
@@ -361,7 +364,6 @@ export default function CartPage() {
     if (!user) return;
 
     try {
-      // undefined 값을 가진 필드 제거
       const cartData = {
         products: products.map(product => {
           const cleanProduct = { ...product };
@@ -377,7 +379,9 @@ export default function CartPage() {
         delivery_type: filters.delivery_type || '',
         start_date: startDate || '',
         end_date: endDate || '',
-        memo: memo || '',
+        memo1: memo1 || '',
+        memo2: memo2 || '',
+        memo3: memo3 || '',
         divider_rules: dividerRules.map(rule => ({
           id: rule.id,
           range: rule.range,
@@ -390,6 +394,7 @@ export default function CartPage() {
       const docRef = doc(db, 'userCarts', user.uid);
       await setDoc(docRef, cartData);
     } catch (error) {
+      console.error('장바구니 정보 저장 중 오류:', error);
     }
   };
 
@@ -415,36 +420,69 @@ export default function CartPage() {
         
         if (docSnap.exists()) {
           const data = docSnap.data();
-          if (data.products && Array.isArray(data.products)) {
-            setProducts(data.products);
-          }
-          // 저장된 정보 로드
-          if (data.title) setTitle(data.title);
-          if (data.channel_name_2) {
-            setChannelSearchTerm(data.channel_name_2);
-            setFilters(prev => ({ ...prev, channel_name_2: data.channel_name_2 }));
-          }
-          if (data.delivery_type) {
-            setDeliveryType(data.delivery_type);
-            setFilters(prev => ({ ...prev, delivery_type: data.delivery_type }));
-          }
-          if (data.start_date) setStartDate(data.start_date);
-          if (data.end_date) setEndDate(data.end_date);
-          if (data.memo) setMemo(data.memo);
-          if (data.divider_rules && Array.isArray(data.divider_rules)) {
-            // 구분자 규칙이 있는 경우 해당 규칙으로 설정
-            setDividerRules(data.divider_rules);
-          } else {
-            // 구분자 규칙이 없는 경우 기본값 설정
-            setDividerRules([
-              { id: uuidv4(), range: [0, 0] as [number, number], color: '#FFE4E1', text: '' },
-              { id: uuidv4(), range: [0, 0] as [number, number], color: '#FFE4E1', text: '' },
-              { id: uuidv4(), range: [0, 0] as [number, number], color: '#FFE4E1', text: '' }
-            ]);
+          
+          // 데이터 유효성 검사 추가
+          if (data && typeof data === 'object') {
+            // products 배열 처리
+            if (Array.isArray(data.products)) {
+              setProducts(data.products);
+            }
+            
+            // 문자열 데이터 처리
+            if (typeof data.title === 'string') setTitle(data.title);
+            if (typeof data.channel_name_2 === 'string') {
+              setChannelSearchTerm(data.channel_name_2);
+              setFilters(prev => ({ ...prev, channel_name_2: data.channel_name_2 }));
+            }
+            if (typeof data.delivery_type === 'string') {
+              setDeliveryType(data.delivery_type);
+              setFilters(prev => ({ ...prev, delivery_type: data.delivery_type }));
+            }
+            if (typeof data.start_date === 'string') setStartDate(data.start_date);
+            if (typeof data.end_date === 'string') setEndDate(data.end_date);
+            if (typeof data.memo1 === 'string') setMemo1(data.memo1);
+            if (typeof data.memo2 === 'string') setMemo2(data.memo2);
+            if (typeof data.memo3 === 'string') setMemo3(data.memo3);
+            
+            // divider_rules 배열 처리
+            if (Array.isArray(data.divider_rules)) {
+              const validRules = data.divider_rules.filter(rule => 
+                rule && 
+                typeof rule === 'object' && 
+                Array.isArray(rule.range) && 
+                rule.range.length === 2
+              );
+              setDividerRules(validRules);
+            } else {
+              setDividerRules([
+                { id: uuidv4(), range: [0, 0] as [number, number], color: '#FFE4E1', text: '' },
+                { id: uuidv4(), range: [0, 0] as [number, number], color: '#FFE4E1', text: '' },
+                { id: uuidv4(), range: [0, 0] as [number, number], color: '#FFE4E1', text: '' }
+              ]);
+            }
           }
         }
       } catch (error) {
         console.error('세션 또는 장바구니 데이터 로드 오류:', error);
+        // 오류 발생 시 기본값으로 초기화
+        setProducts([]);
+        setTitle('');
+        setChannelSearchTerm('');
+        setDeliveryType('');
+        setStartDate('');
+        setEndDate('');
+        setMemo1('');
+        setMemo2('');
+        setMemo3('');
+        setFilters({
+          channel_name_2: '',
+          delivery_type: ''
+        });
+        setDividerRules([
+          { id: uuidv4(), range: [0, 0] as [number, number], color: '#FFE4E1', text: '' },
+          { id: uuidv4(), range: [0, 0] as [number, number], color: '#FFE4E1', text: '' },
+          { id: uuidv4(), range: [0, 0] as [number, number], color: '#FFE4E1', text: '' }
+        ]);
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -894,10 +932,22 @@ export default function CartPage() {
     await saveCartInfo();
   };
 
-  // 메모 변경 핸들러
-  const handleMemoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // 메모 변경 핸들러들
+  const handleMemo1Change = async (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
-    setMemo(value);
+    setMemo1(value);
+    await saveCartInfo();
+  };
+
+  const handleMemo2Change = async (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    setMemo2(value);
+    await saveCartInfo();
+  };
+
+  const handleMemo3Change = async (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    setMemo3(value);
     await saveCartInfo();
   };
 
@@ -1054,7 +1104,9 @@ export default function CartPage() {
           delivery_type: '',
           start_date: '',
           end_date: '',
-          memo: '',
+          memo1: '',
+          memo2: '',
+          memo3: '',
           divider_rules: [
             { id: uuidv4(), range: [0, 0] as [number, number], color: '#FFE4E1', text: '' },
             { id: uuidv4(), range: [0, 0] as [number, number], color: '#FFE4E1', text: '' },
@@ -1070,7 +1122,9 @@ export default function CartPage() {
         setDeliveryType('');
         setStartDate('');
         setEndDate('');
-        setMemo('');
+        setMemo1('');
+        setMemo2('');
+        setMemo3('');
         setFilters({
           channel_name_2: '',
           delivery_type: ''
@@ -1317,9 +1371,9 @@ export default function CartPage() {
   const handleResetDividerRules = async () => {
     try {
       const defaultRules = [
-        { id: uuidv4(), range: [0, 0] as [number, number], color: '#FFE4E1', text: '' },
-        { id: uuidv4(), range: [0, 0] as [number, number], color: '#FFE4E1', text: '' },
-        { id: uuidv4(), range: [0, 0] as [number, number], color: '#FFE4E1', text: '' }
+        { id: uuidv4(), range: [0, 0] as [number, number], color: '#fef9c3', text: '' },
+        { id: uuidv4(), range: [0, 0] as [number, number], color: '#d1fae5', text: '' },
+        { id: uuidv4(), range: [0, 0] as [number, number], color: '#dbeafe', text: '' }
       ];
 
       setDividerRules(defaultRules);
@@ -1507,14 +1561,43 @@ export default function CartPage() {
             </div>
 
             {/* 메모 입력창 수정 */}
-            <div className="w-full">
-              <input
-                type="text"
-                value={memo}
-                onChange={handleMemoChange}
-                placeholder="메모를 입력해주세요"
-                className="w-full h-10 px-3 border-[1px] rounded-md shadow-sm focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm border-input bg-background"
-              />
+            <div className="w-full flex gap-4">
+              <div className="relative w-full">
+                <textarea
+                  value={memo1}
+                  onChange={handleMemo1Change}
+                  placeholder="메모 1"
+                  className="w-full h-10 px-3 py-2 border-[1px] rounded-md shadow-sm focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm border-input bg-background resize"
+                  style={{ resize: 'both' }}
+                />
+              </div>
+              <div className="relative w-full">
+                <textarea
+                  value={memo.split('\n')[1] || ''}
+                  onChange={(e) => {
+                    const lines = memo.split('\n');
+                    lines[1] = e.target.value;
+                    setMemo(lines.join('\n'));
+                  }}
+                  placeholder="메모 2"
+                  className="w-full h-10 px-3 py-2 border-[1px] rounded-md shadow-sm focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm border-input bg-background resize"
+                  style={{ resize: 'both' }}
+                />
+              </div>
+              <div className="relative w-full">
+                <textarea
+                  value={memo.split('\n')[2] || ''}
+                  onChange={(e) => {
+                    const lines = memo.split('\n');
+                    lines[2] = e.target.value;
+                    setMemo(lines.join('\n'));
+                  }}
+                  placeholder="메모 3"
+                  className="w-full h-10 px-3 py-2 border-[1px] rounded-md shadow-sm focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm border-input bg-background resize"
+                  style={{ resize: 'both' }}
+                />
+              </div>
+              
             </div>
           </div>
         </CardContent>

@@ -109,9 +109,9 @@ export function DividerModal({
       console.log('현재 구분자 규칙:', dividerRules);
       
       const defaultRules = [
-        { id: uuidv4(), range: [0, 0] as [number, number], color: '#FFE4E1', text: '' },
-        { id: uuidv4(), range: [0, 0] as [number, number], color: '#FFE4E1', text: '' },
-        { id: uuidv4(), range: [0, 0] as [number, number], color: '#FFE4E1', text: '' }
+        { id: uuidv4(), range: [0, 0] as [number, number], color: '#fef9c3', text: '' },
+        { id: uuidv4(), range: [0, 0] as [number, number], color: '#d1fae5', text: '' },
+        { id: uuidv4(), range: [0, 0] as [number, number], color: '#dbeafe', text: '' }
       ];
       
       // 각 규칙 업데이트
@@ -176,7 +176,7 @@ export function DividerModal({
                 </div>
                 <div className="flex flex-col gap-2"> 
                   <Select
-                    value={rule.color || '#FFE4E1'}
+                    value={rule.color || '#fef9c3'}
                     onValueChange={(value) => handleColorChange(rule.id, value, rule)}
                   >
                     <SelectTrigger className="w-[70px] h-10">
@@ -184,35 +184,35 @@ export function DividerModal({
                         <div className="flex items-center gap-2">
                           <div
                             className="w-4 h-4 rounded-full"
-                            style={{ backgroundColor: rule.color || '#FFE4E1' }}
+                            style={{ backgroundColor: rule.color || '#fef9c3' }}
                           />
                         </div>
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="#FFE4E1">
+                      <SelectItem value="#fef9c3">
                         <div className="flex items-center gap-2">
-                          <div className="w-4 h-4 rounded-full bg-[#FFE4E1]" />
+                          <div className="w-4 h-4 rounded-full bg-[#fef9c3]" />
                         </div>
                       </SelectItem>
-                      <SelectItem value="#E6E6FA">
+                      <SelectItem value="#d1fae5">
                         <div className="flex items-center gap-2">
-                          <div className="w-4 h-4 rounded-full bg-[#E6E6FA]" />
+                          <div className="w-4 h-4 rounded-full bg-[#d1fae5]" />
                         </div>
                       </SelectItem>
-                      <SelectItem value="#F0FFF0">
+                      <SelectItem value="#dbeafe">
                         <div className="flex items-center gap-2">
-                          <div className="w-4 h-4 rounded-full bg-[#F0FFF0]" />
+                          <div className="w-4 h-4 rounded-full bg-[#dbeafe]" />
                         </div>
                       </SelectItem>
-                      <SelectItem value="#FFF0F5">
+                      <SelectItem value="#fee2e2">
                         <div className="flex items-center gap-2">
-                          <div className="w-4 h-4 rounded-full bg-[#FFF0F5]" />
+                          <div className="w-4 h-4 rounded-full bg-[#fee2e2]" />
                         </div>
                       </SelectItem>
-                      <SelectItem value="#F0FFFF">
+                      <SelectItem value="#f3e8ff">
                         <div className="flex items-center gap-2">
-                          <div className="w-4 h-4 rounded-full bg-[#F0FFFF]" />
+                          <div className="w-4 h-4 rounded-full bg-[#f3e8ff]" />
                         </div>
                       </SelectItem>
                     </SelectContent>
