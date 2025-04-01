@@ -1098,6 +1098,7 @@ export default function CartPage() {
         delete newProduct.coupon_price_3;
         delete newProduct.self_ratio;
         delete newProduct.discount_burden_amount;
+        delete newProduct.expected_commission_fee;
         return newProduct;
       });
 
