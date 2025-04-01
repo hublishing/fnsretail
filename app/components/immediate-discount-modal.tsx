@@ -76,16 +76,24 @@ export function ImmediateDiscountModal({
   }
 
   const calculateDiscount = (price: number, rate: number) => {
-    // 1. 할인금액 계산 (소수점 1자리 반올림)
-    const discountAmount = Math.round(price * (rate / 100) * 10) / 10;
-    
-    // 2. 실제 할인된 금액 계산
-    const discountedPrice = price - discountAmount;
-    
-    // 3. 할인된 금액의 1의자리 올림 처리
-    const finalPrice = Math.ceil(discountedPrice / 10) * 10;
-    
-    return finalPrice;
+    // 채널 타입이 국내인 경우에만 특별한 계산 방식 적용
+    if (selectedChannelInfo?.type === '국내') {
+      // 1. 할인금액 계산 (소수점 1자리 반올림)
+      const discountAmount = Math.round(price * (rate / 100) * 10) / 10;
+      
+      // 2. 실제 할인된 금액 계산
+      const discountedPrice = price - discountAmount;
+      
+      // 3. 할인된 금액의 1의자리 올림 처리
+      const finalPrice = Math.ceil(discountedPrice / 10) * 10;
+      
+      return finalPrice;
+    } else {
+      // 국내가 아닌 경우 일반적인 할인 계산
+      const result = price * (1 - rate / 100);
+      // 소수점이 있는 경우 소수점 유지, 정수인 경우 정수로 반환
+      return Number.isInteger(result) ? result : Number(result.toFixed(2));
+    }
   };
 
   const handleApplyDiscount = async () => {

@@ -1729,8 +1729,8 @@ export default function CartPage() {
                        <DraggableCell className="text-center">
                          <div>{product.discount_price?.toLocaleString() || '-'}</div>
                          <div className="text-sm text-muted-foreground">
-                           {product.discount_price && product.shop_price 
-                             ? `${Math.round(((product.shop_price - product.discount_price) / product.shop_price) * 100)}%`
+                           {product.discount_price && product.pricing_price 
+                             ? `${Math.round(((product.pricing_price - product.discount_price) / product.pricing_price) * 100)}%`
                              : '-'}
                          </div>
                        </DraggableCell>
@@ -1766,14 +1766,14 @@ export default function CartPage() {
                             product.discount_price?.toLocaleString() || '-'}
                          </div>
                          <div className="text-sm text-muted-foreground">
-                           {product.coupon_price_3 && product.shop_price
-                             ? `${Math.round(((product.shop_price - product.coupon_price_3) / product.shop_price) * 100)}%`
-                             : product.coupon_price_2 && product.shop_price
-                             ? `${Math.round(((product.shop_price - product.coupon_price_2) / product.shop_price) * 100)}%`
-                             : product.coupon_price_1 && product.shop_price
-                             ? `${Math.round(((product.shop_price - product.coupon_price_1) / product.shop_price) * 100)}%`
-                             : product.discount_price && product.shop_price
-                             ? `${Math.round(((product.shop_price - product.discount_price) / product.shop_price) * 100)}%`
+                           {product.coupon_price_3 && product.pricing_price
+                             ? `${Math.round(((product.pricing_price - product.coupon_price_3) / product.pricing_price) * 100)}%`
+                             : product.coupon_price_2 && product.pricing_price
+                             ? `${Math.round(((product.pricing_price - product.coupon_price_2) / product.pricing_price) * 100)}%`
+                             : product.coupon_price_1 && product.pricing_price
+                             ? `${Math.round(((product.pricing_price - product.coupon_price_1) / product.pricing_price) * 100)}%`
+                             : product.discount_price && product.pricing_price
+                             ? `${Math.round(((product.pricing_price - product.discount_price) / product.pricing_price) * 100)}%`
                              : '-'}
                          </div>
                        </DraggableCell>
