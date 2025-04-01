@@ -572,32 +572,63 @@ export default function CartPage() {
     }
   };
 
-  // 물류비 계산 함수 추가
+  // 물류비 계산 함수 수정
   const calculateLogisticsCost = (
     channel: ChannelInfo,
     deliveryType: string,
     amazonShippingCost?: number
   ): number => {
-    // 환율 변환
+    // 환율 변환 (쉼표 제거 후 숫자로 변환)
     const exchangeRate = Number(channel.applied_exchange_rate?.replace(/,/g, '') || 0);
+    
+    console.log('물류비 계산 시작:', {
+      channel_name: channel.channel_name_2,
+      delivery_type: deliveryType,
+      exchange_rate: exchangeRate,
+      free_shipping: channel.free_shipping,
+      conditional_shipping: channel.conditional_shipping,
+      amazon_shipping_cost: amazonShippingCost
+    });
     
     // SG_아마존US & 무료배송
     if (channel.channel_name_2 === 'SG_아마존US' && deliveryType === 'free') {
-      return (amazonShippingCost || 0) * 2;
+      const result = (amazonShippingCost || 0) * 2;
+      console.log('아마존 무료배송 결과:', result);
+      return result;
     }
     
     // SG_아마존US & 조건부배송
     if (channel.channel_name_2 === 'SG_아마존US') {
-      return amazonShippingCost || 0;
+      const result = amazonShippingCost || 0;
+      console.log('아마존 조건부배송 결과:', result);
+      return result;
     }
     
     // 일반 무료배송
     if (deliveryType === 'free') {
-      return Number(channel.free_shipping || 0) / exchangeRate;
+      const freeShipping = channel.free_shipping
+        ? Number(String(channel.free_shipping).replace(/,/g, ''))
+        : 0;
+      const result = exchangeRate > 0 ? freeShipping / exchangeRate : 0;
+      console.log('일반 무료배송 계산:', {
+        free_shipping: freeShipping,
+        exchange_rate: exchangeRate,
+        result: result
+      });
+      return result;
     }
     
     // 일반 조건부배송
-    return Number(channel.conditional_shipping || 0) / exchangeRate;
+    const conditionalShipping = channel.conditional_shipping
+      ? Number(String(channel.conditional_shipping).replace(/,/g, ''))
+      : 0;
+    const result = exchangeRate > 0 ? conditionalShipping / exchangeRate : 0;
+    console.log('일반 조건부배송 계산:', {
+      conditional_shipping: conditionalShipping,
+      exchange_rate: exchangeRate,
+      result: result
+    });
+    return result;
   };
 
   // 예상수수료 계산 함수 추가
@@ -620,18 +651,19 @@ export default function CartPage() {
     const averageFeeRate = channelInfo?.average_fee_rate ? parseFloat(String(channelInfo.average_fee_rate)) : 0;
 
     // 할인율 계산 (0~1 사이 값)
-    const discountRatio = pricingPrice > 0 ? (pricingPrice - discountPrice) / pricingPrice : 0;
+    const discountRatio = pricingPrice > 0 && discountPrice > 0 ? (pricingPrice - discountPrice) / pricingPrice : 0;
 
     // 수수료율 조정
     let adjustedFeeRate = averageFeeRate;
-    if (adjustByDiscount) {
+    if (adjustByDiscount && discountRatio > 0) {
       // 할인율에 따른 수수료 조정 (10% 단위로 1%씩 차감)
       const feeRateReduction = Math.floor(discountRatio * 100 / 10);
       adjustedFeeRate = Math.max(averageFeeRate - feeRateReduction, 0);
       console.log('수수료율 조정:', {
         원래수수료율: averageFeeRate,
         차감: feeRateReduction,
-        조정된수수료율: adjustedFeeRate
+        조정된수수료율: adjustedFeeRate,
+        할인율: discountRatio
       });
     }
 
@@ -1418,6 +1450,40 @@ export default function CartPage() {
     }
   };
 
+  // 예상수수료율 계산 함수
+  const calculateExpectedFeeRate = (channel: ChannelInfo, price: number): number => {
+    if (!channel.average_fee_rate) return 0;
+    
+    // 문자열을 숫자로 변환
+    const averageFeeRate = Number(channel.average_fee_rate);
+    
+    console.log('예상수수료율 계산:', {
+      channel_name: channel.channel_name_2,
+      original_average_fee_rate: channel.average_fee_rate,
+      converted_average_fee_rate: averageFeeRate,
+      price: price
+    });
+    
+    // 평균 수수료율이 0.15(15%)인 경우
+    if (averageFeeRate === 0.15) {
+      // 가격이 10000원 미만이면 0.15(15%)
+      if (price < 10000) return 0.15;
+      // 가격이 10000원 이상이면 0.12(12%)
+      return 0.12;
+    }
+    
+    // 평균 수수료율이 0.12(12%)인 경우
+    if (averageFeeRate === 0.12) {
+      // 가격이 10000원 미만이면 0.12(12%)
+      if (price < 10000) return 0.12;
+      // 가격이 10000원 이상이면 0.08(8%)
+      return 0.08;
+    }
+    
+    // 그 외의 경우 평균 수수료율 그대로 사용
+    return averageFeeRate;
+  };
+
   return (
     <div className="container mx-auto py-8">
       <div className="flex justify-between items-center mb-6">
@@ -1887,7 +1953,7 @@ export default function CartPage() {
                                product.coupon_price_1 || 
                                product.discount_price
                              ) || 0;
-                             const discountRatio = pricingPrice > 0 ? (pricingPrice - discountPrice) / pricingPrice : 0;
+                             const discountRatio = pricingPrice > 0 && discountPrice > 0 ? (pricingPrice - discountPrice) / pricingPrice : 0;
                              const averageFeeRate = selectedChannelInfo?.average_fee_rate ? parseFloat(String(selectedChannelInfo.average_fee_rate)) : 0;
                              const feeRateReduction = Math.floor(discountRatio * 100 / 10);
                              const adjustedFeeRate = Math.max(averageFeeRate - feeRateReduction, 0);
