@@ -386,9 +386,7 @@ export default function CartPage() {
 
       const docRef = doc(db, 'userCarts', user.uid);
       await setDoc(docRef, cartData);
-      console.log('장바구니 정보 저장 성공');
     } catch (error) {
-      console.error('장바구니 정보 저장 중 오류 발생:', error);
     }
   };
 
@@ -563,25 +561,15 @@ export default function CartPage() {
 
   // 예상수수료 계산 함수 추가
   const calculateExpectedCommissionFee = (product: Product, adjustByDiscount: boolean = true) => {
-    console.log('=== 예상수수료 계산 시작 ===');
-    console.log('채널 정보:', selectedChannelInfo);
-    console.log('상품 정보:', product);
     
     const pricingPrice = Number(product.pricing_price) || 0;
     const discountPrice = Number(product.discount_price) || 0;
     // 수정: average_fee_rate가 문자열일 수 있으므로 명시적으로 숫자로 변환
     const averageFeeRate = selectedChannelInfo?.average_fee_rate ? parseFloat(String(selectedChannelInfo.average_fee_rate)) : 0;
 
-    console.log('기본 값들:', {
-      pricingPrice,
-      discountPrice,
-      averageFeeRate,
-      원본average_fee_rate: selectedChannelInfo?.average_fee_rate
-    });
 
     // 할인율 계산 (0~1 사이 값)
     const discountRatio = pricingPrice > 0 ? (pricingPrice - discountPrice) / pricingPrice : 0;
-    console.log('할인율:', discountRatio * 100 + '%');
 
     // 수수료율 조정
     let adjustedFeeRate = averageFeeRate;
@@ -599,7 +587,7 @@ export default function CartPage() {
     // 최종 수수료 계산
     const finalPrice = discountPrice > 0 ? discountPrice : pricingPrice;
     const commissionFee = finalPrice * (adjustedFeeRate / 100);
-    console.log('최종 계산:', {
+    console.log('수수료율 최종 계산:', {
       최종가격: finalPrice,
       적용수수료율: adjustedFeeRate,
       예상수수료: Math.round(commissionFee)
@@ -1864,6 +1852,7 @@ export default function CartPage() {
       {showDiscountModal && (
         <DiscountModal
           products={products}
+          currentProducts={products} 
           selectedProducts={selectedProducts}
           showDiscountModal={showDiscountModal}
           setShowDiscountModal={setShowDiscountModal}

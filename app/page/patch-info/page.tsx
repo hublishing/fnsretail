@@ -58,7 +58,7 @@ export default function PatchInfoPage() {
       }
 
       alert('패치정보가 저장되었습니다.')
-      router.push('/patch-notes')
+      router.push('/page/patch-notes')
     } catch (error: any) {
       setError(error.message)
       console.error('패치정보 저장 오류:', error)

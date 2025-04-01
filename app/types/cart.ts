@@ -52,6 +52,9 @@ export interface Product {
   domestic_delivery_fee?: number;
   shipping_fee?: number;
   average_fee_rate?: number;
+  self_burden_1?: number;
+  self_burden_2?: number;
+  self_burden_3?: number;
 }
 
 export interface Column {

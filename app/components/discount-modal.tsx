@@ -45,6 +45,7 @@ interface DiscountModalProps {
   calculateExpectedNetProfit: (product: Product) => number
   calculateExpectedCommissionFee: (product: Product, adjustByDiscount?: boolean) => number
   selectedChannelInfo: ChannelInfo | null
+  currentProducts: Product[]
 }
 
 export function DiscountModal({ 
@@ -57,7 +58,8 @@ export function DiscountModal({
   calculateExpectedSettlementAmount,
   calculateExpectedNetProfit,
   calculateExpectedCommissionFee,
-  selectedChannelInfo
+  selectedChannelInfo,
+  currentProducts
 }: DiscountModalProps) {
   const [currentTab, setCurrentTab] = useState('tab1')
   const [tabStates, setTabStates] = useState<Record<string, TabState>>({
@@ -69,7 +71,7 @@ export function DiscountModal({
       discountValue: 0,
       selfRatio: 0,
       roundUnit: 'none',
-      roundType: 'floor',
+      roundType: 'ceil',
       discountCap: 0,
       unitType: '%'
     },
@@ -80,8 +82,8 @@ export function DiscountModal({
       discountType: 'amount',
       discountValue: 0,
       selfRatio: 0,
-      roundUnit: 'none',
-      roundType: 'floor',
+      roundUnit: 'none', 
+      roundType: 'ceil',
       discountCap: 0,
       unitType: '%'
     },
@@ -93,7 +95,7 @@ export function DiscountModal({
       discountValue: 0,
       selfRatio: 0,
       roundUnit: 'none',
-      roundType: 'floor',
+      roundType: 'ceil',
       discountCap: 0,
       unitType: '%'
     },
@@ -105,7 +107,7 @@ export function DiscountModal({
       discountValue: 0,
       selfRatio: 0,
       roundUnit: 'none',
-      roundType: 'floor',
+      roundType: 'ceil',
       discountCap: 0,
       unitType: '%'
     }
@@ -145,318 +147,186 @@ export function DiscountModal({
     });
   }
 
+  const calculateDiscount = (price: number, rate: number, roundType: 'floor' | 'ceil' = 'ceil') => {
+    
+    // 1. 할인금액 계산 (소수점 1자리 반올림)
+    const discountAmount = Math.round(price * (rate / 100) * 10) / 10;
+    console.log('할인금액:', discountAmount);
+    
+    // 2. 실제 할인된 금액 계산
+    const discountedPrice = price - discountAmount;
+    
+    // 3. 할인된 금액의 1의자리 올림/내림 처리
+    let finalPrice;
+    switch (roundType) {
+      case 'floor':
+        // 1의자리 내림 (예: 45857 -> 45850)
+        finalPrice = Math.floor(discountedPrice / 10) * 10;
+        console.log('1의자리 내림 처리:', finalPrice);
+        break;
+      case 'ceil':
+        // 1의자리 올림 (예: 45857 -> 45860)
+        finalPrice = Math.ceil(discountedPrice / 10) * 10;
+        console.log('1의자리 올림 처리:', finalPrice);
+        break;
+      default:
+        finalPrice = discountedPrice;
+    }
+    
+    return finalPrice;
+  };
+
   const handleApplyDiscount = async (type: 'discount' | 'coupon1' | 'coupon2' | 'coupon3', state: TabState) => {
     try {
-      console.log('=== 할인 적용 시작 ===');
-      console.log('할인 유형:', type);
-      console.log('현재 탭 상태:', state);
+      // 선택된 상품이 없으면 리턴
+      if (!selectedProducts.length) {
+        console.log('선택된 상품이 없음');
+        return;
+      }
 
-      const updatedProducts = products.map(product => {
-        // 선택되지 않은 상품은 그대로 반환
-        if (!selectedProducts.includes(product.product_id)) {
-          return product;
-        }
-
-        console.log(`\n=== 상품 ${product.product_id} 처리 시작 ===`);
-        const newProduct = { ...product };
-        
-        if (type === 'discount') {
-          console.log('즉시할인 적용');
-          // 즉시할인 로직
-          const basePrice = Number(newProduct.pricing_price) || 0;
-          console.log('기본 가격:', basePrice);
-          let discountAmount = 0;
+      // 할인 적용
+      const updatedProducts = currentProducts.map(product => {
+        if (selectedProducts.includes(product.product_id)) {
+          const basePrice = Number(product[state.discountBase as keyof Product]) || 0;
+          let newPrice;
           
-          if (state.discountType === '즉시할인') {
-            console.log('즉시할인 타입: 퍼센트/금액');
-            // 즉시할인 계산
-            if (state.unitType === '%') {
+          // 할인 타입에 따라 다른 계산 방식 적용
+          if (type === 'discount') {
+            // 즉시할인 탭
+            if (state.discountType === '즉시할인') {
               // 퍼센트 할인
-              discountAmount = Math.floor(basePrice * (state.discountValue / 100));
-              console.log('퍼센트 할인:', state.discountValue, '%');
+              newPrice = calculateDiscount(basePrice, state.discountValue, state.roundType);
             } else {
-              // 금액 할인
-              discountAmount = state.discountValue;
-              console.log('금액 할인:', state.discountValue, '원');
-            }
-          } else if (state.discountType === '최저손익') {
-            console.log('최저손익 타입');
-            // 최저손익 계산
-            const costSum = (Number(newProduct.org_price) || 0) + 
-                          (Number(newProduct.domestic_delivery_fee) || 0) + 
-                          (Number(newProduct.shipping_fee) || 0);
-            const averageFeeRate = Number(newProduct.average_fee_rate) || 0;
-            
-            console.log('원가:', newProduct.org_price);
-            console.log('국내배송비:', newProduct.domestic_delivery_fee);
-            console.log('해외배송비:', newProduct.shipping_fee);
-            console.log('평균수수료율:', averageFeeRate);
-            
-            // 목표가격 = (원가 + 배송비) / (1 - 평균수수료율)
-            const targetPrice = costSum / (1 - (averageFeeRate / 100));
-            console.log('목표가격:', targetPrice);
-            
-            if (state.unitType === '%') {
-              // 퍼센트 기준 최저손익
-              const targetDiscountRate = state.discountValue;
-              const currentDiscountRate = ((basePrice - targetPrice) / basePrice) * 100;
-              
-              console.log('목표할인율:', targetDiscountRate, '%');
-              console.log('현재할인율:', currentDiscountRate, '%');
-              
-              if (currentDiscountRate > targetDiscountRate) {
-                discountAmount = basePrice - targetPrice;
-                console.log('현재할인율이 더 높음 - 목표가격 기준 적용');
+              // 최저손익
+              newPrice = basePrice - state.discountValue;
+              if (state.roundType === 'floor') {
+                newPrice = Math.floor(newPrice / 10) * 10;
               } else {
-                discountAmount = Math.floor(basePrice * (targetDiscountRate / 100));
-                console.log('목표할인율 기준 적용');
+                newPrice = Math.ceil(newPrice / 10) * 10;
               }
+            }
+          } else {
+            // 쿠폰 탭
+            if (state.discountType === 'rate') {
+              // 할인율 적용
+              newPrice = calculateDiscount(basePrice, state.discountValue, state.roundType);
             } else {
-              // 금액 기준 최저손익
-              const targetDiscount = state.discountValue;
-              const currentDiscount = basePrice - targetPrice;
-              
-              console.log('목표할인금액:', targetDiscount, '원');
-              console.log('현재할인금액:', currentDiscount, '원');
-              
-              if (currentDiscount > targetDiscount) {
-                discountAmount = basePrice - targetPrice;
-                console.log('현재할인금액이 더 높음 - 목표가격 기준 적용');
+              // 할인금액 적용
+              newPrice = basePrice - state.discountValue;
+              if (state.roundType === 'floor') {
+                newPrice = Math.floor(newPrice / 10) * 10;
               } else {
-                discountAmount = targetDiscount;
-                console.log('목표할인금액 기준 적용');
+                newPrice = Math.ceil(newPrice / 10) * 10;
               }
             }
           }
           
-          console.log('최종 할인금액:', discountAmount);
-          // 할인금액 적용
-          newProduct.discount_price = basePrice - discountAmount;
-          newProduct.discount = discountAmount;
-          newProduct.discount_rate = (discountAmount / basePrice) * 100;
-          newProduct.discount_unit = state.unitType;
+          // 할인 타입에 따라 다른 가격 필드 업데이트
+          const updatedProduct = { ...product };
+          switch (type) {
+            case 'discount':
+              // 판매가는 그대로 유지하고 즉시할인가만 변경
+              updatedProduct.discount_price = newPrice;
+              updatedProduct.discount = Number(product.pricing_price) - newPrice;
+              updatedProduct.discount_rate = ((Number(product.pricing_price) - newPrice) / Number(product.pricing_price)) * 100;
+              updatedProduct.discount_unit = state.unitType;
+              break;
+            case 'coupon1':
+              updatedProduct.coupon_price_1 = newPrice;
+              break;
+            case 'coupon2':
+              updatedProduct.coupon_price_2 = newPrice;
+              break;
+            case 'coupon3':
+              updatedProduct.coupon_price_3 = newPrice;
+              break;
+          }
+
+          // 각 쿠폰별 할인금액 계산
+          const discountAmount1 = updatedProduct.coupon_price_1 ? 
+            Number(product[state.discountBase as keyof Product]) - updatedProduct.coupon_price_1 : 0;
+          const discountAmount2 = updatedProduct.coupon_price_2 ? 
+            Number(product[state.discountBase as keyof Product]) - updatedProduct.coupon_price_2 : 0;
+          const discountAmount3 = updatedProduct.coupon_price_3 ? 
+            Number(product[state.discountBase as keyof Product]) - updatedProduct.coupon_price_3 : 0;
           
-          // props로 받은 함수 사용
-          newProduct.expected_settlement_amount = calculateExpectedSettlementAmount(newProduct);
+          // 쿠폰별 자사부담액 계산 및 저장
+          // 이전 자사부담액 유지
+          const prevSelfBurden1 = product.self_burden_1 || 0;
+          const prevSelfBurden2 = product.self_burden_2 || 0;
+          const prevSelfBurden3 = product.self_burden_3 || 0;
           
-          // 예상순이익 재계산
-          newProduct.expected_net_profit = calculateExpectedNetProfit(newProduct);
+          // 현재 적용되는 쿠폰의 자사부담액만 새로 계산
+          let selfBurden1 = prevSelfBurden1;
+          let selfBurden2 = prevSelfBurden2;
+          let selfBurden3 = prevSelfBurden3;
           
-          // 예상수수료 재계산
-          console.log('=== 할인 모달에서 예상수수료 계산 ===');
-          console.log('채널 정보:', selectedChannelInfo);
-          console.log('상품 정보:', newProduct);
-          newProduct.expected_commission_fee = calculateExpectedCommissionFee(newProduct);
-          console.log('계산된 예상수수료:', newProduct.expected_commission_fee);
-          
-          console.log('최종 가격:', newProduct.discount_price);
-          console.log('할인율:', newProduct.discount_rate, '%');
-        } else if (type === 'coupon1') {
-          console.log('쿠폰1 적용');
-          // 쿠폰1 로직
-          const basePrice = Number(newProduct[state.discountBase as keyof Product]) || 0;
-          const hurdlePrice = Number(newProduct[state.hurdleTarget as keyof Product]) || 0;
-          
-          console.log('기준가격:', basePrice);
-          console.log('기준가격 필드:', state.discountBase);
-          console.log('사용가능 기준가격:', hurdlePrice);
-          console.log('사용가능 기준가격 필드:', state.hurdleTarget);
-          console.log('사용가능 기준금액:', state.hurdleAmount);
-          
-          if (hurdlePrice >= state.hurdleAmount) {
-            console.log('사용가능 기준 충족');
-            let discountAmount = 0;
-            
-            if (state.discountType === 'amount') {
-              discountAmount = state.discountValue;
-              console.log('금액 할인:', discountAmount, '원');
-            } else if (state.discountType === 'rate') {
-              discountAmount = Math.floor(basePrice * (state.discountValue / 100));
-              console.log('율 할인:', state.discountValue, '%');
-              
-              // 절사 처리
-              if (state.roundUnit !== 'none') {
-                const roundValue = parseInt(state.roundUnit);
-                if (state.roundType === 'floor') {
-                  discountAmount = Math.floor(discountAmount / roundValue) * roundValue;
-                  console.log('절사(내림) 적용:', roundValue);
-                } else {
-                  discountAmount = Math.ceil(discountAmount / roundValue) * roundValue;
-                  console.log('절사(올림) 적용:', roundValue);
-                }
-              }
-              
-              // 최대 할인금액 제한
-              if (state.discountCap > 0 && discountAmount > state.discountCap) {
-                console.log('최대 할인금액 제한 적용:', state.discountCap);
-                discountAmount = state.discountCap;
-              }
-            }
-            
-            // 자사부담 계산
-            const selfBurdenAmount = Math.floor(discountAmount * (state.selfRatio / 100));
-            discountAmount = discountAmount - selfBurdenAmount;
-            
-            console.log('자사부담:', selfBurdenAmount, '원');
-            console.log('최종 할인금액:', discountAmount, '원');
-            
-            newProduct.coupon_price_1 = basePrice - discountAmount;
-            newProduct.discount_burden_amount = selfBurdenAmount;
-            
-            // 예상수수료 재계산
-            newProduct.expected_commission_fee = calculateExpectedCommissionFee(newProduct);
-            
-            // 정산예정금액 재계산
-            newProduct.expected_settlement_amount = calculateExpectedSettlementAmount(newProduct);
-            
-            // 예상순이익 재계산
-            newProduct.expected_net_profit = calculateExpectedNetProfit(newProduct);
-            
-            console.log('최종 가격:', newProduct.coupon_price_1);
+          // 즉시할인인 경우 자사부담액 초기화
+          if (type === 'discount') {
+            selfBurden1 = 0;
+            selfBurden2 = 0;
+            selfBurden3 = 0;
           } else {
-            console.log('사용가능 기준 미충족 - 쿠폰 적용 안함');
-          }
-        } else if (type === 'coupon2') {
-          console.log('쿠폰2 적용');
-          // 쿠폰2 로직
-          const basePrice = Number(newProduct[state.discountBase as keyof Product]) || 0;
-          const hurdlePrice = Number(newProduct[state.hurdleTarget as keyof Product]) || 0;
-          
-          console.log('기준가격:', basePrice);
-          console.log('기준가격 필드:', state.discountBase);
-          console.log('사용가능 기준가격:', hurdlePrice);
-          console.log('사용가능 기준가격 필드:', state.hurdleTarget);
-          console.log('사용가능 기준금액:', state.hurdleAmount);
-          
-          if (hurdlePrice >= state.hurdleAmount) {
-            console.log('사용가능 기준 충족');
-            let discountAmount = 0;
-            
-            if (state.discountType === 'amount') {
-              discountAmount = state.discountValue;
-              console.log('금액 할인:', discountAmount, '원');
-            } else if (state.discountType === 'rate') {
-              discountAmount = Math.floor(basePrice * (state.discountValue / 100));
-              console.log('율 할인:', state.discountValue, '%');
-              
-              // 절사 처리
-              if (state.roundUnit !== 'none') {
-                const roundValue = parseInt(state.roundUnit);
-                if (state.roundType === 'floor') {
-                  discountAmount = Math.floor(discountAmount / roundValue) * roundValue;
-                  console.log('절사(내림) 적용:', roundValue);
-                } else {
-                  discountAmount = Math.ceil(discountAmount / roundValue) * roundValue;
-                  console.log('절사(올림) 적용:', roundValue);
-                }
-              }
-              
-              // 최대 할인금액 제한
-              if (state.discountCap > 0 && discountAmount > state.discountCap) {
-                console.log('최대 할인금액 제한 적용:', state.discountCap);
-                discountAmount = state.discountCap;
-              }
+            switch (type) {
+              case 'coupon1':
+                selfBurden1 = Math.floor(discountAmount1 * (state.selfRatio / 100));
+                break;
+              case 'coupon2':
+                selfBurden2 = Math.floor(discountAmount2 * (state.selfRatio / 100));
+                break;
+              case 'coupon3':
+                selfBurden3 = Math.floor(discountAmount3 * (state.selfRatio / 100));
+                break;
             }
-            
-            // 자사부담 계산
-            const selfBurdenAmount = Math.floor(discountAmount * (state.selfRatio / 100));
-            discountAmount = discountAmount - selfBurdenAmount;
-            
-            console.log('자사부담:', selfBurdenAmount, '원');
-            console.log('최종 할인금액:', discountAmount, '원');
-            
-            newProduct.coupon_price_2 = basePrice - discountAmount;
-            newProduct.discount_burden_amount = selfBurdenAmount;
-            
-            // 예상수수료 재계산
-            newProduct.expected_commission_fee = calculateExpectedCommissionFee(newProduct);
-            
-            // 정산예정금액 재계산
-            newProduct.expected_settlement_amount = calculateExpectedSettlementAmount(newProduct);
-            
-            // 예상순이익 재계산
-            newProduct.expected_net_profit = calculateExpectedNetProfit(newProduct);
-            
-            console.log('최종 가격:', newProduct.coupon_price_2);
-          } else {
-            console.log('사용가능 기준 미충족 - 쿠폰 적용 안함');
           }
-        } else if (type === 'coupon3') {
-          console.log('쿠폰3 적용');
-          // 쿠폰3 로직
-          const basePrice = Number(newProduct[state.discountBase as keyof Product]) || 0;
-          const hurdlePrice = Number(newProduct[state.hurdleTarget as keyof Product]) || 0;
           
-          console.log('기준가격:', basePrice);
-          console.log('기준가격 필드:', state.discountBase);
-          console.log('사용가능 기준가격:', hurdlePrice);
-          console.log('사용가능 기준가격 필드:', state.hurdleTarget);
-          console.log('사용가능 기준금액:', state.hurdleAmount);
+          // 각 쿠폰별 자사부담액 저장
+          updatedProduct.self_burden_1 = selfBurden1;
+          updatedProduct.self_burden_2 = selfBurden2;
+          updatedProduct.self_burden_3 = selfBurden3;
           
-          if (hurdlePrice >= state.hurdleAmount) {
-            console.log('사용가능 기준 충족');
-            let discountAmount = 0;
-            
-            if (state.discountType === 'amount') {
-              discountAmount = state.discountValue;
-              console.log('금액 할인:', discountAmount, '원');
-            } else if (state.discountType === 'rate') {
-              discountAmount = Math.floor(basePrice * (state.discountValue / 100));
-              console.log('율 할인:', state.discountValue, '%');
-              
-              // 절사 처리
-              if (state.roundUnit !== 'none') {
-                const roundValue = parseInt(state.roundUnit);
-                if (state.roundType === 'floor') {
-                  discountAmount = Math.floor(discountAmount / roundValue) * roundValue;
-                  console.log('절사(내림) 적용:', roundValue);
-                } else {
-                  discountAmount = Math.ceil(discountAmount / roundValue) * roundValue;
-                  console.log('절사(올림) 적용:', roundValue);
-                }
-              }
-              
-              // 최대 할인금액 제한
-              if (state.discountCap > 0 && discountAmount > state.discountCap) {
-                console.log('최대 할인금액 제한 적용:', state.discountCap);
-                discountAmount = state.discountCap;
-              }
-            }
-            
-            // 자사부담 계산
-            const selfBurdenAmount = Math.floor(discountAmount * (state.selfRatio / 100));
-            discountAmount = discountAmount - selfBurdenAmount;
-            
-            console.log('자사부담:', selfBurdenAmount, '원');
-            console.log('최종 할인금액:', discountAmount, '원');
-            
-            newProduct.coupon_price_3 = basePrice - discountAmount;
-            newProduct.discount_burden_amount = selfBurdenAmount;
-            
-            // 예상수수료 재계산
-            newProduct.expected_commission_fee = calculateExpectedCommissionFee(newProduct);
-            
-            // 정산예정금액 재계산
-            newProduct.expected_settlement_amount = calculateExpectedSettlementAmount(newProduct);
-            
-            // 예상순이익 재계산
-            newProduct.expected_net_profit = calculateExpectedNetProfit(newProduct);
-            
-            console.log('최종 가격:', newProduct.coupon_price_3);
-          } else {
-            console.log('사용가능 기준 미충족 - 쿠폰 적용 안함');
-          }
+          // 총 자사부담액 계산 (누적 합계)
+          const totalBurdenAmount = selfBurden1 + selfBurden2 + selfBurden3;
+          
+          console.log('할인부담액 계산 상세:', {
+            productId: updatedProduct.product_id,
+            couponPrice1: updatedProduct.coupon_price_1,
+            couponPrice2: updatedProduct.coupon_price_2,
+            couponPrice3: updatedProduct.coupon_price_3,
+            selfRatio: state.selfRatio,
+            discountAmount1,
+            discountAmount2,
+            discountAmount3,
+            selfBurden1,
+            selfBurden2,
+            selfBurden3,
+            totalBurdenAmount,
+            calculation1: updatedProduct.coupon_price_1 ? `${discountAmount1} * (${state.selfRatio} / 100)` : '0',
+            calculation2: updatedProduct.coupon_price_2 ? `${discountAmount2} * (${state.selfRatio} / 100)` : '0',
+            calculation3: updatedProduct.coupon_price_3 ? `${discountAmount3} * (${state.selfRatio} / 100)` : '0'
+          });
+          
+          updatedProduct.discount_burden_amount = totalBurdenAmount;
+
+          // 예상수수료, 정산예정금액, 예상순이익 재계산
+          updatedProduct.expected_settlement_amount = calculateExpectedSettlementAmount(updatedProduct);
+          updatedProduct.expected_net_profit = calculateExpectedNetProfit(updatedProduct);
+          updatedProduct.expected_commission_fee = calculateExpectedCommissionFee(updatedProduct);
+
+          return updatedProduct;
         }
-        
-        console.log(`=== 상품 ${product.product_id} 처리 완료 ===\n`);
-        return newProduct;
+        return product;
       });
 
+      // 상태 업데이트
       onApplyDiscount(updatedProducts);
+      console.log('할인 적용 완료:', updatedProducts);
+      
+      // 모달 닫기
       setShowDiscountModal(false);
       alert('할인이 적용되었습니다.');
     } catch (error) {
-      console.error('할인 적용 중 오류 발생:', error);
+      console.error('할인 적용 중 오류:', error);
       alert('할인 적용 중 오류가 발생했습니다.');
     }
   };
@@ -632,27 +502,14 @@ export function DiscountModal({
                         className="w-[100px] h-10"
                         placeholder="할인율 입력"
                       />
-                      <span className="text-sm text-muted-foreground">%</span>  
-                      <Select
-                        value={getCurrentTabState().roundUnit}
-                        onValueChange={(value: string) => handleTabStateChange('tab2', 'roundUnit', value)}
-                      >
-                        <SelectTrigger className="w-[100px] h-10">
-                          <SelectValue placeholder="절사 기준" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">절사안함</SelectItem>
-                          <SelectItem value="1">1</SelectItem>
-                          <SelectItem value="10">10</SelectItem>
-                          <SelectItem value="100">100</SelectItem>
-                        </SelectContent>
-                      </Select>  
+                      <span className="text-sm text-muted-foreground">%</span>
+                      <Label className="w-[80px]">1의자리</Label>
                       <Select
                         value={getCurrentTabState().roundType}
                         onValueChange={(value: 'floor' | 'ceil') => handleTabStateChange('tab2', 'roundType', value)}
                       >
                         <SelectTrigger className="w-[100px] h-10">
-                          <SelectValue placeholder="절사 방식" />
+                          <SelectValue placeholder="내림" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="floor">내림</SelectItem>
@@ -788,27 +645,14 @@ export function DiscountModal({
                         className="w-[100px] h-10"
                         placeholder="할인율 입력"
                       />
-                      <span className="text-sm text-muted-foreground">%</span>  
-                      <Select
-                        value={getCurrentTabState().roundUnit}
-                        onValueChange={(value: string) => handleTabStateChange('tab3', 'roundUnit', value)}
-                      >
-                        <SelectTrigger className="w-[100px] h-10">
-                          <SelectValue placeholder="절사 기준" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">절사안함</SelectItem>
-                          <SelectItem value="1">1</SelectItem>
-                          <SelectItem value="10">10</SelectItem>
-                          <SelectItem value="100">100</SelectItem>
-                        </SelectContent>
-                      </Select>  
+                      <span className="text-sm text-muted-foreground">%</span>
+                      <Label className="w-[80px]">1의자리</Label>
                       <Select
                         value={getCurrentTabState().roundType}
                         onValueChange={(value: 'floor' | 'ceil') => handleTabStateChange('tab3', 'roundType', value)}
                       >
                         <SelectTrigger className="w-[100px] h-10">
-                          <SelectValue placeholder="절사 방식" />
+                          <SelectValue placeholder="내림" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="floor">내림</SelectItem>
@@ -944,27 +788,14 @@ export function DiscountModal({
                         className="w-[100px] h-10"
                         placeholder="할인율 입력"
                       />
-                      <span className="text-sm text-muted-foreground">%</span>  
-                      <Select
-                        value={getCurrentTabState().roundUnit}
-                        onValueChange={(value: string) => handleTabStateChange('tab4', 'roundUnit', value)}
-                      >
-                        <SelectTrigger className="w-[100px] h-10">
-                          <SelectValue placeholder="절사 기준" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">절사안함</SelectItem>
-                          <SelectItem value="1">1</SelectItem>
-                          <SelectItem value="10">10</SelectItem>
-                          <SelectItem value="100">100</SelectItem>
-                        </SelectContent>
-                      </Select>  
+                      <span className="text-sm text-muted-foreground">%</span>
+                      <Label className="w-[80px]">1의자리</Label>
                       <Select
                         value={getCurrentTabState().roundType}
                         onValueChange={(value: 'floor' | 'ceil') => handleTabStateChange('tab4', 'roundType', value)}
                       >
                         <SelectTrigger className="w-[100px] h-10">
-                          <SelectValue placeholder="절사 방식" />
+                          <SelectValue placeholder="내림" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="floor">내림</SelectItem>
