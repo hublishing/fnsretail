@@ -18,7 +18,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/components/ui/tabs"
 import { useState } from "react"
 
-type DiscountType = 'amount' | 'rate' | 'min_profit_amount' | 'min_profit_rate'
+type DiscountType = '즉시할인' | '최저손익' | 'amount' | 'rate'
 
 interface TabState {
   hurdleTarget: string
@@ -30,6 +30,7 @@ interface TabState {
   roundUnit: string
   roundType: 'floor' | 'ceil'
   discountCap: number
+  unitType: string
 }
 
 interface DiscountModalProps {
@@ -45,12 +46,13 @@ export function DiscountModal({ showDiscountModal, setShowDiscountModal, onApply
       hurdleTarget: 'pricing_price',
       hurdleAmount: 0,
       discountBase: 'pricing_price',
-      discountType: 'amount',
+      discountType: '즉시할인',
       discountValue: 0,
       selfRatio: 0,
       roundUnit: 'none',
       roundType: 'floor',
-      discountCap: 0
+      discountCap: 0,
+      unitType: '%'
     },
     tab2: {
       hurdleTarget: 'pricing_price',
@@ -61,7 +63,8 @@ export function DiscountModal({ showDiscountModal, setShowDiscountModal, onApply
       selfRatio: 0,
       roundUnit: 'none',
       roundType: 'floor',
-      discountCap: 0
+      discountCap: 0,
+      unitType: '%'
     },
     tab3: {
       hurdleTarget: 'pricing_price',
@@ -72,7 +75,8 @@ export function DiscountModal({ showDiscountModal, setShowDiscountModal, onApply
       selfRatio: 0,
       roundUnit: 'none',
       roundType: 'floor',
-      discountCap: 0
+      discountCap: 0,
+      unitType: '%'
     },
     tab4: {
       hurdleTarget: 'pricing_price',
@@ -83,7 +87,8 @@ export function DiscountModal({ showDiscountModal, setShowDiscountModal, onApply
       selfRatio: 0,
       roundUnit: 'none',
       roundType: 'floor',
-      discountCap: 0
+      discountCap: 0,
+      unitType: '%'
     }
   })
 
@@ -131,77 +136,54 @@ export function DiscountModal({ showDiscountModal, setShowDiscountModal, onApply
             {/* ===== 즉시할인 탭 시작 ===== */}
             <TabsContent value="tab1">
               <div className="grid gap-4 py-4">
-                {/* 할인 구분 */}
+                {/* 할인 유형 */}
                 <div className="flex items-center gap-2">
-                  <Label className="w-[110px]">할인 구분</Label>
+                  <Label className="w-[110px]">할인 유형</Label>
                   <Select
                     value={getCurrentTabState().discountType}
                     onValueChange={(value: DiscountType) => handleTabStateChange('tab1', 'discountType', value)}
                   >
-                    <SelectTrigger className="w-[100px] h-10">
-                      <SelectValue placeholder="할인 구분" />
+                    <SelectTrigger className="w-[150px] h-10">
+                      <SelectValue placeholder="할인 유형" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="amount">할인금액</SelectItem>
-                      <SelectItem value="rate">할인율</SelectItem>
+                      <SelectItem value="즉시할인">즉시할인</SelectItem>
+                      <SelectItem value="최저손익">최저손익</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
-                {/* 할인금액 입력 필드 */}
-                {(getCurrentTabState().discountType as DiscountType) === 'amount' && (
-                  <div className="flex items-center gap-2">
-                    <Label className="w-[110px]">할인금액 (원)</Label>
-                    <Input
-                      type="number"
-                      value={getCurrentTabState().discountValue}
-                      onChange={(e) => handleTabStateChange('tab1', 'discountValue', Number(e.target.value))}
-                      className="w-[150px] h-10"
-                      placeholder="할인금액 입력"
-                    />
-                  </div>
-                )}
+                {/* 단위 선택 */}
+                <div className="flex items-center gap-2">
+                  <Label className="w-[110px]">단위 선택</Label>
+                  <Select
+                    value={getCurrentTabState().unitType}
+                    onValueChange={(value: string) => handleTabStateChange('tab1', 'unitType', value)}
+                  >
+                    <SelectTrigger className="w-[100px] h-10">
+                      <SelectValue placeholder="단위" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="%">%</SelectItem>
+                      <SelectItem value="원">원</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-                {/* 할인율 입력 필드 */}
-                {(getCurrentTabState().discountType as DiscountType) === 'rate' && (
-                  <div className="flex items-center gap-2">
-                    <Label className="w-[110px]">할인율 (%)</Label>
-                    <Input
-                      type="number"
-                      value={getCurrentTabState().discountValue}
-                      onChange={(e) => handleTabStateChange('tab1', 'discountValue', Number(e.target.value))}
-                      className="w-[100px] h-10"
-                      placeholder="할인율 입력"
-                    />
-                    <span className="text-sm text-muted-foreground">%</span>  
-                    <Select
-                      value={getCurrentTabState().roundUnit}
-                      onValueChange={(value: string) => handleTabStateChange('tab1', 'roundUnit', value)}
-                    >
-                      <SelectTrigger className="w-[100px] h-10">
-                        <SelectValue placeholder="절사 기준" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">절사안함</SelectItem>
-                        <SelectItem value="1">1</SelectItem>
-                        <SelectItem value="10">10</SelectItem>
-                        <SelectItem value="100">100</SelectItem>
-                      </SelectContent>
-                    </Select>  
-                    <Select
-                      value={getCurrentTabState().roundType}
-                      onValueChange={(value: 'floor' | 'ceil') => handleTabStateChange('tab1', 'roundType', value)}
-                    >
-                      <SelectTrigger className="w-[100px] h-10">
-                        <SelectValue placeholder="절사 방식" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="floor">내림</SelectItem>
-                        <SelectItem value="ceil">올림</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
+                {/* 할인 값 입력 */}
+                <div className="flex items-center gap-2">
+                  <Label className="w-[110px]">
+                    {getCurrentTabState().discountType === '최저손익' ? '최저손익 값' : '할인 값'}
+                  </Label>
+                  <Input
+                    type="number"
+                    value={getCurrentTabState().discountValue}
+                    onChange={(e) => handleTabStateChange('tab1', 'discountValue', Number(e.target.value))}
+                    className="w-[150px] h-10"
+                    placeholder={`예: ${getCurrentTabState().unitType === '%' ? '10 (10%)' : '1000 (1000원)'}`}
+                  />
+                  <span className="text-sm text-muted-foreground">{getCurrentTabState().unitType}</span>
+                </div>
               </div> 
               <div className="mt-4 flex justify-end">
                 <Button onClick={() => handleApplyDiscount('discount')}>즉시할인 적용</Button>
