@@ -11,6 +11,7 @@ export async function GET() {
     const query = `
       SELECT 
         channel_name,
+        channel_name_2,
         channel_category_2,
         channel_category_3,
         team,
@@ -44,8 +45,8 @@ export async function GET() {
         free_shipping,
         conditional_shipping
       FROM \`third-current-410914.project_m.channel_db\`
-      WHERE channel_name IS NOT NULL
-      ORDER BY channel_name
+      WHERE channel_name_2 IS NOT NULL
+      ORDER BY channel_name_2
     `;
 
     // JWT 토큰 생성
@@ -121,38 +122,39 @@ export async function GET() {
     // 결과 처리
     const channels = data.rows?.map((row: any) => ({
       channel_name: row.f[0].v,
-      channel_category_2: row.f[1].v,
-      channel_category_3: row.f[2].v,
-      team: row.f[3].v,
-      manager: row.f[4].v,
-      shop_id: row.f[5].v,
-      shop_name: row.f[6].v,
-      used: row.f[7].v,
-      price_formula: row.f[8].v,
-      shipping_formula: row.f[9].v,
-      exchange_rate: row.f[10].v,
-      currency: row.f[11].v,
-      correction_rate: row.f[12].v,
-      amount: row.f[13].v,
-      comment: row.f[14].v,
-      use_yn: row.f[15].v,
-      type: row.f[16].v,
-      markup_ratio: row.f[17].v,
-      applied_exchange_rate: row.f[18].v,
-      rounddown: row.f[19].v,
-      digit_adjustment: row.f[20].v,
-      currency_2: row.f[21].v,
-      average_fee_rate: row.f[22].v,
-      shipping_condition: row.f[23].v,
-      outerbox_fee: row.f[24].v,
-      domestic_delivery_fee: row.f[25].v,
-      shipping_fee: row.f[26].v,
-      customs_fee: row.f[27].v,
-      declaration_fee: row.f[28].v,
-      innerbox_fee: row.f[29].v,
-      packingbox_fee: row.f[30].v,
-      free_shipping: row.f[31].v ? parseFloat(row.f[31].v) : 0,
-      conditional_shipping: row.f[32].v ? parseFloat(row.f[32].v) : 0
+      channel_name_2: row.f[1].v,
+      channel_category_2: row.f[2].v,
+      channel_category_3: row.f[3].v,
+      team: row.f[4].v,
+      manager: row.f[5].v,
+      shop_id: row.f[6].v,
+      shop_name: row.f[7].v,
+      used: row.f[8].v,
+      price_formula: row.f[9].v,
+      shipping_formula: row.f[10].v,
+      exchange_rate: row.f[11].v,
+      currency: row.f[12].v,
+      correction_rate: row.f[13].v,
+      amount: row.f[14].v,
+      comment: row.f[15].v,
+      use_yn: row.f[16].v,
+      type: row.f[17].v,
+      markup_ratio: row.f[18].v,
+      applied_exchange_rate: row.f[19].v,
+      rounddown: row.f[20].v,
+      digit_adjustment: row.f[21].v,
+      currency_2: row.f[22].v,
+      average_fee_rate: row.f[23].v,
+      shipping_condition: row.f[24].v,
+      outerbox_fee: row.f[25].v,
+      domestic_delivery_fee: row.f[26].v,
+      shipping_fee: row.f[27].v,
+      customs_fee: row.f[28].v,
+      declaration_fee: row.f[29].v,
+      innerbox_fee: row.f[30].v,
+      packingbox_fee: row.f[31].v,
+      free_shipping: row.f[32].v ? parseFloat(row.f[31].v) : 0,
+      conditional_shipping: row.f[33].v ? parseFloat(row.f[32].v) : 0
     })) || [];
     
     return NextResponse.json({ channels });

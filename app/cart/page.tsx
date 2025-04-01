@@ -122,12 +122,12 @@ interface Column {
 }
 
 interface Filters {
-  channel_name: string;
+  channel_name_2: string;
   delivery_type: string;
 }
 
 interface ChannelInfo {
-  channel_name: string;
+  channel_name_2: string;
   channel_category_2: string;
   channel_category_3: string;
   team: string;
@@ -309,7 +309,7 @@ export default function CartPage() {
   const [filteredChannels, setFilteredChannels] = useState<ChannelInfo[]>([]);
   const [isValidChannel, setIsValidChannel] = useState(true);
   const [filters, setFilters] = useState<Filters>({
-    channel_name: '',
+    channel_name_2: '',
     delivery_type: ''
   });
   const [discountRate, setDiscountRate] = useState<number>(0);
@@ -471,7 +471,7 @@ export default function CartPage() {
           return cleanProduct;
         }),
         title: title || '',
-        channel_name: filters.channel_name || '',
+        channel_name_2: filters.channel_name_2 || '',
         delivery_type: filters.delivery_type || '',
         start_date: startDate || '',
         end_date: endDate || '',
@@ -520,9 +520,9 @@ export default function CartPage() {
           }
           // 저장된 정보 로드
           if (data.title) setTitle(data.title);
-          if (data.channel_name) {
-            setChannelSearchTerm(data.channel_name);
-            setFilters(prev => ({ ...prev, channel_name: data.channel_name }));
+          if (data.channel_name_2) {
+            setChannelSearchTerm(data.channel_name_2);
+            setFilters(prev => ({ ...prev, channel_name_2: data.channel_name_2 }));
           }
           if (data.delivery_type) {
             setDeliveryType(data.delivery_type);
@@ -573,10 +573,10 @@ export default function CartPage() {
         if (data.channels && isMounted) {
           // 채널 정보를 한 번만 처리
           const uniqueChannels = data.channels.reduce((acc: ChannelInfo[], curr: ChannelInfo) => {
-            const existingChannel = acc.find(c => c.channel_name === curr.channel_name);
+            const existingChannel = acc.find(c => c.channel_name_2 === curr.channel_name_2);
             if (!existingChannel || (curr.use_yn === '운영중' && existingChannel.use_yn !== '운영중')) {
               if (existingChannel) {
-                const index = acc.findIndex(c => c.channel_name === curr.channel_name);
+                const index = acc.findIndex(c => c.channel_name_2 === curr.channel_name_2);
                 acc[index] = curr;
               } else {
                 acc.push(curr);
@@ -603,7 +603,7 @@ export default function CartPage() {
     const timer = setTimeout(() => {
       if (channelSearchTerm.trim()) {
         const filtered = channels.filter(channel => 
-          channel.channel_name.toLowerCase().includes(channelSearchTerm.toLowerCase())
+          channel.channel_name_2.toLowerCase().includes(channelSearchTerm.toLowerCase())
         );
         setFilteredChannels(filtered);
         setShowChannelSuggestions(true);
@@ -622,7 +622,7 @@ export default function CartPage() {
     setChannelSearchTerm(value);
     
     // 입력된 값이 채널 목록에 있는지 확인
-    const foundChannel = channels.find(c => c.channel_name === value);
+    const foundChannel = channels.find(c => c.channel_name_2 === value);
     if (foundChannel) {
       setIsValidChannel(true);
       setSelectedChannelInfo(foundChannel);
@@ -644,12 +644,12 @@ export default function CartPage() {
     const exchangeRate = Number(channel.applied_exchange_rate?.replace(/,/g, '') || 0);
     
     // SG_아마존US & 무료배송
-    if (channel.channel_name === 'SG_아마존US' && deliveryType === 'free') {
+    if (channel.channel_name_2 === 'SG_아마존US' && deliveryType === 'free') {
       return (amazonShippingCost || 0) * 2;
     }
     
     // SG_아마존US & 조건부배송
-    if (channel.channel_name === 'SG_아마존US') {
+    if (channel.channel_name_2 === 'SG_아마존US') {
       return amazonShippingCost || 0;
     }
     
@@ -665,7 +665,7 @@ export default function CartPage() {
   // handleChannelSelect 함수 수정
   const handleChannelSelect = async (channel: ChannelInfo) => {
     console.log('선택된 채널 정보:', {
-      channel_name: channel.channel_name,
+      channel_name_2: channel.channel_name_2,
       type: channel.type,
       markup_ratio: channel.markup_ratio,
       applied_exchange_rate: channel.applied_exchange_rate,
@@ -674,12 +674,12 @@ export default function CartPage() {
       amazon_shipping_cost: channel.amazon_shipping_cost
     });
 
-    setChannelSearchTerm(channel.channel_name);
+    setChannelSearchTerm(channel.channel_name_2);
     setShowChannelSuggestions(false);
     setIsValidChannel(true);
     setFilters(prev => ({
       ...prev,
-      channel_name: channel.channel_name
+      channel_name_2: channel.channel_name_2
     }));
     setSelectedChannelInfo(channel);
     
@@ -713,7 +713,7 @@ export default function CartPage() {
           const multiplier = Math.pow(10, Number(channel.rounddown));
           pricingPrice = Math.floor(basePrice * multiplier) / multiplier;
           pricingPrice += Number(channel.digit_adjustment || 0);
-          if (channel.channel_name === 'SG_아마존US') {
+          if (channel.channel_name_2 === 'SG_아마존US') {
             pricingPrice += Number(channel.amazon_shipping_cost || 0);
           }
         }
@@ -730,9 +730,9 @@ export default function CartPage() {
         pricingPrice += Number(channel.digit_adjustment || 0);
 
         // ZALORA 특별 케이스
-        if (channel.channel_name === 'SG_ZALORA_SG') {
+        if (channel.channel_name_2 === 'SG_ZALORA_SG') {
           pricingPrice *= 1.09;
-        } else if (channel.channel_name === 'SG_ZALORA_MY') {
+        } else if (channel.channel_name_2 === 'SG_ZALORA_MY') {
           pricingPrice *= 1.1;
         }
       }
@@ -944,7 +944,7 @@ export default function CartPage() {
       return;
     }
 
-    if (!filters.channel_name) {
+    if (!filters.channel_name_2) {
       alert('채널을 선택해주세요.');
       return;
     }
@@ -1277,7 +1277,7 @@ export default function CartPage() {
         await setDoc(docRef, {
           products: [],
           title: '',
-          channel_name: '',
+          channel_name_2: '',
           delivery_type: '',
           start_date: '',
           end_date: '',
@@ -1299,7 +1299,7 @@ export default function CartPage() {
         setEndDate('');
         setMemo('');
         setFilters({
-          channel_name: '',
+          channel_name_2: '',
           delivery_type: ''
         });
         setSelectedProducts([]);
@@ -1493,11 +1493,11 @@ export default function CartPage() {
                   <div className="absolute z-10 w-full mt-1 bg-background border border-input rounded-md shadow-lg max-h-60 overflow-auto">
                     {filteredChannels.map((channel) => (
                       <div
-                        key={channel.channel_name}
+                        key={channel.channel_name_2}
                         className="px-3 py-2 hover:bg-muted cursor-pointer text-sm"
                         onClick={() => handleChannelSelect(channel as ChannelInfo)}
                       >
-                        {channel.channel_name}
+                        {channel.channel_name_2}
                       </div>
                     ))}
                   </div>
