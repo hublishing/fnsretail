@@ -45,7 +45,8 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import React from 'react';
-import { DiscountModal } from "@/app/components/discount-modal"
+import { DiscountModal } from "@/app/components/coupon-discount-modal"
+import { ImmediateDiscountModal } from "@/app/components/immediate-discount-modal"
 import {
   Dialog,
   DialogContent,
@@ -73,7 +74,7 @@ import {
   ExcelSettings,
   DividerRule
 } from '@/app/types/cart';
-import { TabState } from "@/app/components/discount-modal"
+import { TabState } from "@/app/components/coupon-discount-modal"
 
 
 // 정렬 가능한 행 컴포넌트
@@ -253,6 +254,8 @@ export default function CartPage() {
     { id: uuidv4(), range: [0, 0] as [number, number], color: '#FFE4E1', text: '' },
     { id: uuidv4(), range: [0, 0] as [number, number], color: '#FFE4E1', text: '' }
   ]);
+  const [showImmediateDiscountModal, setShowImmediateDiscountModal] = useState(false);
+  const [showCouponDiscountModal, setShowCouponDiscountModal] = useState(false);
 
   // 각 탭별 상태 변수들
   const [tabStates, setTabStates] = useState<{
@@ -1340,6 +1343,17 @@ export default function CartPage() {
     }
   };
 
+  const handleApplyDiscount = async (updatedProducts: Product[]) => {
+    setProducts(updatedProducts);
+    if (user) {
+      const docRef = doc(db, 'userCarts', user.uid);
+      setDoc(docRef, {
+        products: updatedProducts,
+        updatedAt: new Date().toISOString()
+      });
+    }
+  };
+
   return (
     <div className="container mx-auto py-8">
       <div className="flex justify-between items-center mb-6">
@@ -1511,10 +1525,18 @@ export default function CartPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setShowDiscountModal(true)}
+              onClick={() => setShowImmediateDiscountModal(true)}
               className="border-0 hover:bg-transparent hover:text-primary"
             >
-              할인
+              기간할인
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowCouponDiscountModal(true)}
+              className="border-0 hover:bg-transparent hover:text-primary"
+            >
+              쿠폰할인
             </Button>
             <Button
               variant="outline"
@@ -1891,30 +1913,34 @@ export default function CartPage() {
         onResetDividerRules={handleResetDividerRules}
       />
        
-      {showDiscountModal && (
+      {showCouponDiscountModal && (
         <DiscountModal
+          showDiscountModal={showCouponDiscountModal}
+          setShowDiscountModal={setShowCouponDiscountModal}
+          onApplyDiscount={handleApplyDiscount}
           products={products}
-          currentProducts={products} 
           selectedProducts={selectedProducts}
-          showDiscountModal={showDiscountModal}
-          setShowDiscountModal={setShowDiscountModal}
-          onClose={() => setShowDiscountModal(false)}
-          onApplyDiscount={(updatedProducts) => {
-            setProducts(updatedProducts);
-            if (user) {
-              const docRef = doc(db, 'userCarts', user.uid);
-              setDoc(docRef, {
-                products: updatedProducts,
-                updatedAt: new Date().toISOString()
-              });
-            }
-          }}
+          onClose={() => setShowCouponDiscountModal(false)}
           calculateExpectedSettlementAmount={calculateExpectedSettlementAmount}
           calculateExpectedNetProfit={calculateExpectedNetProfit}
           calculateExpectedCommissionFee={calculateExpectedCommissionFee}
           selectedChannelInfo={selectedChannelInfo}
+          currentProducts={products}
         />
       )}
+      <ImmediateDiscountModal
+        showDiscountModal={showImmediateDiscountModal}
+        setShowDiscountModal={setShowImmediateDiscountModal}
+        onApplyDiscount={handleApplyDiscount}
+        products={products}
+        selectedProducts={selectedProducts}
+        onClose={() => setShowImmediateDiscountModal(false)}
+        calculateExpectedSettlementAmount={calculateExpectedSettlementAmount}
+        calculateExpectedNetProfit={calculateExpectedNetProfit}
+        calculateExpectedCommissionFee={calculateExpectedCommissionFee}
+        selectedChannelInfo={selectedChannelInfo}
+        currentProducts={products}
+      />
  
     </div>
   )
