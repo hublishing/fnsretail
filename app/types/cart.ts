@@ -124,7 +124,7 @@ export interface ExcelSettings {
 
 export interface DividerRule {
   id: string;
-  range: number[];
+  range: [number, number];
   color: string;
   text: string;
 }

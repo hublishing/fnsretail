@@ -249,9 +249,9 @@ export default function CartPage() {
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
   const [showDividerModal, setShowDividerModal] = useState(false);
   const [dividerRules, setDividerRules] = useState<DividerRule[]>([
-    { id: uuidv4(), range: [0, 0], color: '#FFE4E1', text: '' },
-    { id: uuidv4(), range: [0, 0], color: '#FFE4E1', text: '' },
-    { id: uuidv4(), range: [0, 0], color: '#FFE4E1', text: '' }
+    { id: uuidv4(), range: [0, 0] as [number, number], color: '#FFE4E1', text: '' },
+    { id: uuidv4(), range: [0, 0] as [number, number], color: '#FFE4E1', text: '' },
+    { id: uuidv4(), range: [0, 0] as [number, number], color: '#FFE4E1', text: '' }
   ]);
 
   // 각 탭별 상태 변수들
@@ -436,9 +436,9 @@ export default function CartPage() {
           } else {
             // 구분자 규칙이 없는 경우 기본값 설정
             setDividerRules([
-              { id: uuidv4(), range: [0, 0], color: '#FFE4E1', text: '' },
-              { id: uuidv4(), range: [0, 0], color: '#FFE4E1', text: '' },
-              { id: uuidv4(), range: [0, 0], color: '#FFE4E1', text: '' }
+              { id: uuidv4(), range: [0, 0] as [number, number], color: '#FFE4E1', text: '' },
+              { id: uuidv4(), range: [0, 0] as [number, number], color: '#FFE4E1', text: '' },
+              { id: uuidv4(), range: [0, 0] as [number, number], color: '#FFE4E1', text: '' }
             ]);
           }
         }
@@ -1050,9 +1050,9 @@ export default function CartPage() {
           end_date: '',
           memo: '',
           divider_rules: [
-            { id: uuidv4(), range: [0, 0], color: '#FFE4E1', text: '' },
-            { id: uuidv4(), range: [0, 0], color: '#FFE4E1', text: '' },
-            { id: uuidv4(), range: [0, 0], color: '#FFE4E1', text: '' }
+            { id: uuidv4(), range: [0, 0] as [number, number], color: '#FFE4E1', text: '' },
+            { id: uuidv4(), range: [0, 0] as [number, number], color: '#FFE4E1', text: '' },
+            { id: uuidv4(), range: [0, 0] as [number, number], color: '#FFE4E1', text: '' }
           ],
           updatedAt: new Date().toISOString()
         });
@@ -1074,9 +1074,9 @@ export default function CartPage() {
         setIsValidChannel(true);
         setIsValidDeliveryType(true);
         setDividerRules([
-          { id: uuidv4(), range: [0, 0], color: '#FFE4E1', text: '' },
-          { id: uuidv4(), range: [0, 0], color: '#FFE4E1', text: '' },
-          { id: uuidv4(), range: [0, 0], color: '#FFE4E1', text: '' }
+          { id: uuidv4(), range: [0, 0] as [number, number], color: '#FFE4E1', text: '' },
+          { id: uuidv4(), range: [0, 0] as [number, number], color: '#FFE4E1', text: '' },
+          { id: uuidv4(), range: [0, 0] as [number, number], color: '#FFE4E1', text: '' }
         ]);
 
         alert('리스트가 초기화되었습니다.');
@@ -1290,12 +1290,22 @@ export default function CartPage() {
 
   // 구분자 초기화 핸들러
   const handleResetDividerRules = async () => {
+    // 1. 구분자 규칙 초기화
     const defaultRules = [
-      { id: uuidv4(), range: [0, 0], color: '#FFE4E1', text: '' },
-      { id: uuidv4(), range: [0, 0], color: '#FFE4E1', text: '' },
-      { id: uuidv4(), range: [0, 0], color: '#FFE4E1', text: '' }
+      { id: uuidv4(), range: [0, 0] as [number, number], color: '#FFE4E1', text: '' },
+      { id: uuidv4(), range: [0, 0] as [number, number], color: '#FFE4E1', text: '' },
+      { id: uuidv4(), range: [0, 0] as [number, number], color: '#FFE4E1', text: '' }
     ];
     setDividerRules(defaultRules);
+
+    // 2. 상품들의 배경색과 텍스트 초기화
+    const updatedProducts = products.map(product => ({
+      ...product,
+      rowColor: undefined,
+      dividerText: undefined
+    }));
+    
+    setProducts(updatedProducts);
     await saveCartInfo();
   };
 
@@ -1845,9 +1855,10 @@ export default function CartPage() {
         showDividerModal={showDividerModal}
         setShowDividerModal={setShowDividerModal}
         products={products}
-        onApplyDivider={(rules) => {
-          // 구분자 규칙을 적용하는 로직
-        }}
+        dividerRules={dividerRules}
+        onUpdateDividerRule={handleUpdateDividerRule}
+        onApplyDivider={handleApplyDivider}
+        onResetDividerRules={handleResetDividerRules}
       />
        
       {showDiscountModal && (
