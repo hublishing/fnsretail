@@ -153,8 +153,8 @@ export async function GET() {
       declaration_fee: row.f[29].v,
       innerbox_fee: row.f[30].v,
       packingbox_fee: row.f[31].v,
-      free_shipping: row.f[32].v ? parseFloat(row.f[31].v) : 0,
-      conditional_shipping: row.f[33].v ? parseFloat(row.f[32].v) : 0
+      free_shipping: row.f[32].v ? parseFloat(row.f[32].v) : 0,
+      conditional_shipping: row.f[33].v ? parseFloat(row.f[33].v) : 0
     })) || [];
     
     return NextResponse.json({ channels });
