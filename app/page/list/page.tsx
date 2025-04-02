@@ -1756,10 +1756,10 @@ export default function CartPage() {
            items={products.map(p => p.product_id)}
            strategy={verticalListSortingStrategy}
          >
-           <div className="relative">
+           <div className="relative w-full" style={{overflow: 'visible', minWidth: '1800px'}}>
              <div className="overflow-y-auto max-h-[calc(100vh-200px)]">
-               <Table style={{width: '100%', minWidth: '1800px', whiteSpace: 'nowrap'}}>
-                 <TableHeader className="bg-muted sticky top-0">
+               <Table style={{width: '100%',overflowX: 'auto',overflowY: 'auto', whiteSpace: 'nowrap'}}>
+                 <TableHeader className="bg-muted sticky top-0" style={{zIndex: 10}}>
                    <TableRow className="hover:bg-muted">
                      <TableHead className="w-[30px] text-center">
                        <Checkbox
