@@ -119,10 +119,19 @@ export function DiscountModal({
     // 기본 할인 계산
     let result = price * (1 - rate / 100);
     
+    console.log('=== 할인 계산 디버그 ===');
+    console.log('원가:', price);
+    console.log('할인율:', rate);
+    console.log('초기 계산 결과:', result);
+    console.log('선택된 소수점:', decimalPoint);
+    console.log('선택된 반올림:', roundType);
+    
     // 소수점 처리
     if (decimalPoint !== 'none') {
       const multiplier = decimalPoint === '0.01' ? 100 : decimalPoint === '0.1' ? 10 : 1;
       result = result * multiplier;
+      
+      console.log('소수점 처리 전:', result);
       
       // 반올림 처리
       switch (roundType) {
@@ -137,10 +146,14 @@ export function DiscountModal({
           break;
       }
       
+      console.log('반올림 처리 후:', result);
+      
       // 원래 자리수로 되돌리기
       result = result / multiplier;
+      console.log('최종 결과:', result);
     }
     
+    console.log('=====================');
     return result;
   };
 
@@ -370,19 +383,21 @@ export function DiscountModal({
                               <SelectItem value="1">1</SelectItem>
                             </SelectContent>
                           </Select> 
-                          <Select
-                            value={getCurrentTabState().roundType}
-                            onValueChange={(value: 'floor' | 'ceil' | 'round') => handleTabStateChange('tab1', 'roundType', value)}
-                          >
-                            <SelectTrigger className="w-[100px] h-10">
-                              <SelectValue placeholder="반올림" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="ceil">올림</SelectItem>
-                              <SelectItem value="floor">내림</SelectItem>
-                              <SelectItem value="round">반올림</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          {getCurrentTabState().decimalPoint !== 'none' && (
+                            <Select
+                              value={getCurrentTabState().roundType}
+                              onValueChange={(value: 'floor' | 'ceil' | 'round') => handleTabStateChange('tab1', 'roundType', value)}
+                            >
+                              <SelectTrigger className="w-[100px] h-10">
+                                <SelectValue placeholder="반올림" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="ceil">올림</SelectItem>
+                                <SelectItem value="floor">내림</SelectItem>
+                                <SelectItem value="round">반올림</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          )}
                         </>
                       )}
                     </div>
@@ -530,13 +545,13 @@ export function DiscountModal({
                               <SelectItem value="0.1">0.1</SelectItem>
                               <SelectItem value="1">1</SelectItem>
                             </SelectContent>
-                          </Select>
-                          <Label className="w-[80px] ml-4">반올림</Label>
+                          </Select> 
                           <Select
                             value={getCurrentTabState().roundType}
                             onValueChange={(value: 'floor' | 'ceil' | 'round') => handleTabStateChange('tab2', 'roundType', value)}
                           >
                             <SelectTrigger className="w-[100px] h-10"> 
+                              <SelectValue placeholder="반올림" />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="ceil">올림</SelectItem>
