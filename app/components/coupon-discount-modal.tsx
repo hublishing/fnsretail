@@ -28,8 +28,9 @@ export interface TabState {
   discountType: DiscountType
   discountValue: number
   selfRatio: number
-  roundType: 'floor' | 'ceil'
+  roundType: 'floor' | 'ceil' | 'round'
   discountCap: number
+  decimalPoint: '0.01' | '0.1' | '1' | 'none'
 }
 
 interface DiscountModalProps {
@@ -69,7 +70,8 @@ export function DiscountModal({
       discountValue: 0,
       selfRatio: 0,
       roundType: 'ceil',
-      discountCap: 0
+      discountCap: 0,
+      decimalPoint: 'none'
     },
     tab2: {
       hurdleTarget: 'coupon_price_1',
@@ -79,7 +81,8 @@ export function DiscountModal({
       discountValue: 0,
       selfRatio: 0,
       roundType: 'ceil',
-      discountCap: 0
+      discountCap: 0,
+      decimalPoint: 'none'
     },
     tab3: {
       hurdleTarget: 'coupon_price_2',
@@ -89,7 +92,8 @@ export function DiscountModal({
       discountValue: 0,
       selfRatio: 0,
       roundType: 'ceil',
-      discountCap: 0
+      discountCap: 0,
+      decimalPoint: 'none'
     }
   })
 
@@ -111,33 +115,33 @@ export function DiscountModal({
     }))
   }
 
-  const calculateDiscount = (price: number, rate: number, roundType: 'floor' | 'ceil' = 'ceil') => {
-    // 채널 타입이 국내인 경우에만 특별한 계산 방식 적용
-    if (selectedChannelInfo?.type === '국내' || selectedChannelInfo?.type === '일본') {
-      // 1. 할인금액 계산 (소수점 1자리 반올림)
-      const discountAmount = Math.round(price * (rate / 100) * 10) / 10;
+  const calculateDiscount = (price: number, rate: number, roundType: 'floor' | 'ceil' | 'round' = 'round', decimalPoint: '0.01' | '0.1' | '1' | 'none' = 'none') => {
+    // 기본 할인 계산
+    let result = price * (1 - rate / 100);
+    
+    // 소수점 처리
+    if (decimalPoint !== 'none') {
+      const multiplier = decimalPoint === '0.01' ? 100 : decimalPoint === '0.1' ? 10 : 1;
+      result = result * multiplier;
       
-      // 2. 실제 할인된 금액 계산
-      const discountedPrice = price - discountAmount;
-      
-      // 3. 할인된 금액의 1의자리 올림/내림 처리
-      let finalPrice;
+      // 반올림 처리
       switch (roundType) {
         case 'floor':
-          finalPrice = Math.floor(discountedPrice / 10) * 10;
+          result = Math.floor(result);
           break;
         case 'ceil':
-          finalPrice = Math.ceil(discountedPrice / 10) * 10;
+          result = Math.ceil(result);
           break;
-        default:
-          finalPrice = discountedPrice;
+        case 'round':
+          result = Math.round(result);
+          break;
       }
       
-      return finalPrice;
-    } else {
-      // 국내가 아닌 경우 일반적인 할인 계산
-      return price * (1 - rate / 100);
+      // 원래 자리수로 되돌리기
+      result = result / multiplier;
     }
+    
+    return result;
   };
 
   const handleApplyDiscount = async (type: 'coupon1' | 'coupon2' | 'coupon3', state: TabState) => {
@@ -153,7 +157,7 @@ export function DiscountModal({
           let newPrice;
           
           if (state.discountType === 'rate') {
-            newPrice = calculateDiscount(basePrice, state.discountValue, state.roundType);
+            newPrice = calculateDiscount(basePrice, state.discountValue, state.roundType, state.decimalPoint);
           } else {
             newPrice = basePrice - state.discountValue;
             if (state.roundType === 'floor') {
@@ -350,19 +354,35 @@ export function DiscountModal({
                         placeholder="할인율 입력"
                       />
                       <span className="text-sm text-muted-foreground">%</span>
-                      {selectedChannelInfo?.type === '국내' && (
+                      {getCurrentTabState().discountType === 'rate' && (
                         <>
-                          <Label className="w-[80px]">1의자리</Label>
+                          <Label className="w-[80px]">소수점</Label>
                           <Select
-                            value={getCurrentTabState().roundType}
-                            onValueChange={(value: 'floor' | 'ceil') => handleTabStateChange('tab1', 'roundType', value)}
+                            value={getCurrentTabState().decimalPoint}
+                            onValueChange={(value: '0.01' | '0.1' | '1' | 'none') => handleTabStateChange('tab1', 'decimalPoint', value)}
                           >
                             <SelectTrigger className="w-[100px] h-10">
-                              <SelectValue placeholder="내림" />
+                              <SelectValue placeholder="미사용" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="0.01">0.01</SelectItem>
+                              <SelectItem value="0.1">0.1</SelectItem>
+                              <SelectItem value="1">1</SelectItem>
+                              <SelectItem value="none">미사용</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Label className="w-[80px] ml-4">반올림</Label>
+                          <Select
+                            value={getCurrentTabState().roundType}
+                            onValueChange={(value: 'floor' | 'ceil' | 'round') => handleTabStateChange('tab1', 'roundType', value)}
+                          >
+                            <SelectTrigger className="w-[100px] h-10">
+                              <SelectValue placeholder="반올림" />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="floor">내림</SelectItem>
                               <SelectItem value="ceil">올림</SelectItem>
+                              <SelectItem value="round">반올림</SelectItem>
                             </SelectContent>
                           </Select>
                         </>
@@ -497,19 +517,35 @@ export function DiscountModal({
                         placeholder="할인율 입력"
                       />
                       <span className="text-sm text-muted-foreground">%</span>
-                      {selectedChannelInfo?.type === '국내' && (
+                      {getCurrentTabState().discountType === 'rate' && (
                         <>
-                          <Label className="w-[80px]">1의자리</Label>
+                          <Label className="w-[80px]">소수점</Label>
                           <Select
-                            value={getCurrentTabState().roundType}
-                            onValueChange={(value: 'floor' | 'ceil') => handleTabStateChange('tab2', 'roundType', value)}
+                            value={getCurrentTabState().decimalPoint}
+                            onValueChange={(value: '0.01' | '0.1' | '1' | 'none') => handleTabStateChange('tab2', 'decimalPoint', value)}
                           >
                             <SelectTrigger className="w-[100px] h-10">
-                              <SelectValue placeholder="내림" />
+                              <SelectValue placeholder="미사용" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="0.01">0.01</SelectItem>
+                              <SelectItem value="0.1">0.1</SelectItem>
+                              <SelectItem value="1">1</SelectItem>
+                              <SelectItem value="none">미사용</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Label className="w-[80px] ml-4">반올림</Label>
+                          <Select
+                            value={getCurrentTabState().roundType}
+                            onValueChange={(value: 'floor' | 'ceil' | 'round') => handleTabStateChange('tab2', 'roundType', value)}
+                          >
+                            <SelectTrigger className="w-[100px] h-10">
+                              <SelectValue placeholder="반올림" />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="floor">내림</SelectItem>
                               <SelectItem value="ceil">올림</SelectItem>
+                              <SelectItem value="round">반올림</SelectItem>
                             </SelectContent>
                           </Select>
                         </>
@@ -644,19 +680,35 @@ export function DiscountModal({
                         placeholder="할인율 입력"
                       />
                       <span className="text-sm text-muted-foreground">%</span>
-                      {selectedChannelInfo?.type === '국내' && (
+                      {getCurrentTabState().discountType === 'rate' && (
                         <>
-                          <Label className="w-[80px]">1의자리</Label>
+                          <Label className="w-[80px]">소수점</Label>
                           <Select
-                            value={getCurrentTabState().roundType}
-                            onValueChange={(value: 'floor' | 'ceil') => handleTabStateChange('tab3', 'roundType', value)}
+                            value={getCurrentTabState().decimalPoint}
+                            onValueChange={(value: '0.01' | '0.1' | '1' | 'none') => handleTabStateChange('tab3', 'decimalPoint', value)}
                           >
                             <SelectTrigger className="w-[100px] h-10">
-                              <SelectValue placeholder="내림" />
+                              <SelectValue placeholder="미사용" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="0.01">0.01</SelectItem>
+                              <SelectItem value="0.1">0.1</SelectItem>
+                              <SelectItem value="1">1</SelectItem>
+                              <SelectItem value="none">미사용</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Label className="w-[80px] ml-4">반올림</Label>
+                          <Select
+                            value={getCurrentTabState().roundType}
+                            onValueChange={(value: 'floor' | 'ceil' | 'round') => handleTabStateChange('tab3', 'roundType', value)}
+                          >
+                            <SelectTrigger className="w-[100px] h-10">
+                              <SelectValue placeholder="반올림" />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="floor">내림</SelectItem>
                               <SelectItem value="ceil">올림</SelectItem>
+                              <SelectItem value="round">반올림</SelectItem>
                             </SelectContent>
                           </Select>
                         </>
