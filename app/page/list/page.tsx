@@ -696,11 +696,7 @@ export default function CartPage() {
   const calculateExpectedSettlementAmount = (product: Product) => {
     const pricingPrice = product.pricing_price || 0;
     // 최종할인 컬럼과 동일한 로직 적용
-    const finalDiscountPrice = product.coupon_price_3 || 
-                             product.coupon_price_2 || 
-                             product.coupon_price_1 || 
-                             product.discount_price || 
-                             null;
+    const finalDiscountPrice = product.discount_price || null;
     const expectedCommissionFee = product.expected_commission_fee || 0;
     const discountBurdenAmount = product.discount_burden_amount || 0;
   
@@ -1605,12 +1601,12 @@ export default function CartPage() {
                   placeholder="평균수수료"
                   className="w-[160px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-muted text-sm text-muted-foreground"
                 />
+                <Label className="text-sm text-muted-foreground">할인 수수료</Label>
                 <Switch
                   checked={isAdjustFeeEnabled}
                   onCheckedChange={handleAdjustFeeChange}
                   className="ml-2"
                 />
-                <Label className="text-sm text-muted-foreground">할인율 반영</Label>
               </div>
               <div className="flex gap-2">
                 {dividerRules.map((rule, index) => (
