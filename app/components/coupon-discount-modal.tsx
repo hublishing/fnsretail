@@ -355,23 +355,21 @@ export function DiscountModal({
                       />
                       <span className="text-sm text-muted-foreground">%</span>
                       {getCurrentTabState().discountType === 'rate' && (
-                        <>
-                          <Label className="w-[80px]">소수점</Label>
+                        <> 
                           <Select
                             value={getCurrentTabState().decimalPoint}
                             onValueChange={(value: '0.01' | '0.1' | '1' | 'none') => handleTabStateChange('tab1', 'decimalPoint', value)}
                           >
                             <SelectTrigger className="w-[100px] h-10">
-                              <SelectValue placeholder="미사용" />
+                              <SelectValue placeholder="소수점" />
                             </SelectTrigger>
                             <SelectContent>
+                              <SelectItem value="none">소수점</SelectItem>
                               <SelectItem value="0.01">0.01</SelectItem>
                               <SelectItem value="0.1">0.1</SelectItem>
                               <SelectItem value="1">1</SelectItem>
-                              <SelectItem value="none">미사용</SelectItem>
                             </SelectContent>
-                          </Select>
-                          <Label className="w-[80px] ml-4">반올림</Label>
+                          </Select> 
                           <Select
                             value={getCurrentTabState().roundType}
                             onValueChange={(value: 'floor' | 'ceil' | 'round') => handleTabStateChange('tab1', 'roundType', value)}
@@ -380,8 +378,8 @@ export function DiscountModal({
                               <SelectValue placeholder="반올림" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="floor">내림</SelectItem>
                               <SelectItem value="ceil">올림</SelectItem>
+                              <SelectItem value="floor">내림</SelectItem>
                               <SelectItem value="round">반올림</SelectItem>
                             </SelectContent>
                           </Select>
@@ -518,20 +516,19 @@ export function DiscountModal({
                       />
                       <span className="text-sm text-muted-foreground">%</span>
                       {getCurrentTabState().discountType === 'rate' && (
-                        <>
-                          <Label className="w-[80px]">소수점</Label>
+                        <> 
                           <Select
                             value={getCurrentTabState().decimalPoint}
                             onValueChange={(value: '0.01' | '0.1' | '1' | 'none') => handleTabStateChange('tab2', 'decimalPoint', value)}
                           >
                             <SelectTrigger className="w-[100px] h-10">
-                              <SelectValue placeholder="미사용" />
+                              <SelectValue placeholder="소수점" />
                             </SelectTrigger>
                             <SelectContent>
+                              <SelectItem value="none">소수점</SelectItem>
                               <SelectItem value="0.01">0.01</SelectItem>
                               <SelectItem value="0.1">0.1</SelectItem>
                               <SelectItem value="1">1</SelectItem>
-                              <SelectItem value="none">미사용</SelectItem>
                             </SelectContent>
                           </Select>
                           <Label className="w-[80px] ml-4">반올림</Label>
@@ -539,12 +536,11 @@ export function DiscountModal({
                             value={getCurrentTabState().roundType}
                             onValueChange={(value: 'floor' | 'ceil' | 'round') => handleTabStateChange('tab2', 'roundType', value)}
                           >
-                            <SelectTrigger className="w-[100px] h-10">
-                              <SelectValue placeholder="반올림" />
+                            <SelectTrigger className="w-[100px] h-10"> 
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="floor">내림</SelectItem>
                               <SelectItem value="ceil">올림</SelectItem>
+                              <SelectItem value="floor">내림</SelectItem>
                               <SelectItem value="round">반올림</SelectItem>
                             </SelectContent>
                           </Select>
@@ -681,23 +677,21 @@ export function DiscountModal({
                       />
                       <span className="text-sm text-muted-foreground">%</span>
                       {getCurrentTabState().discountType === 'rate' && (
-                        <>
-                          <Label className="w-[80px]">소수점</Label>
+                        <> 
                           <Select
                             value={getCurrentTabState().decimalPoint}
                             onValueChange={(value: '0.01' | '0.1' | '1' | 'none') => handleTabStateChange('tab3', 'decimalPoint', value)}
                           >
                             <SelectTrigger className="w-[100px] h-10">
-                              <SelectValue placeholder="미사용" />
+                              <SelectValue placeholder="소수점" />
                             </SelectTrigger>
                             <SelectContent>
+                              <SelectItem value="none">소수점</SelectItem>
                               <SelectItem value="0.01">0.01</SelectItem>
                               <SelectItem value="0.1">0.1</SelectItem>
                               <SelectItem value="1">1</SelectItem>
-                              <SelectItem value="none">미사용</SelectItem>
                             </SelectContent>
-                          </Select>
-                          <Label className="w-[80px] ml-4">반올림</Label>
+                          </Select> 
                           <Select
                             value={getCurrentTabState().roundType}
                             onValueChange={(value: 'floor' | 'ceil' | 'round') => handleTabStateChange('tab3', 'roundType', value)}
@@ -706,8 +700,8 @@ export function DiscountModal({
                               <SelectValue placeholder="반올림" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="floor">내림</SelectItem>
                               <SelectItem value="ceil">올림</SelectItem>
+                              <SelectItem value="floor">내림</SelectItem>
                               <SelectItem value="round">반올림</SelectItem>
                             </SelectContent>
                           </Select>
