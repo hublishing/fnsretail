@@ -75,6 +75,7 @@ import {
   DividerRule
 } from '@/app/types/cart';
 import { TabState } from "@/app/components/coupon-discount-modal"
+import { Switch } from "@/app/components/ui/switch"
 
 
 // 정렬 가능한 행 컴포넌트
@@ -259,6 +260,7 @@ export default function CartPage() {
   const [memo1, setMemo1] = useState<string>('');
   const [memo2, setMemo2] = useState<string>('');
   const [memo3, setMemo3] = useState<string>('');
+  const [isAdjustFeeEnabled, setIsAdjustFeeEnabled] = useState(false);
 
   // 각 탭별 상태 변수들
   const [tabStates, setTabStates] = useState<{
@@ -631,51 +633,32 @@ export default function CartPage() {
     return result;
   };
 
-  // 예상수수료 계산 함수 추가
+  // 예상수수료 계산 함수 수정
   const calculateExpectedCommissionFee = (
     product: Product, 
-    adjustByDiscount: boolean = true,
+    adjustByDiscount: boolean = isAdjustFeeEnabled,
     channelInfo: ChannelInfo | null = selectedChannelInfo
   ) => {
-    
     const pricingPrice = Number(product.pricing_price) || 0;
-    // 최종 할인가 계산 (쿠폰3 -> 쿠폰2 -> 쿠폰1 -> 즉시할인 순으로 체크)
-    const discountPrice = Number(
-      product.coupon_price_3 || 
-      product.coupon_price_2 || 
-      product.coupon_price_1 || 
-      product.discount_price
-    ) || 0;
+    const discountPrice = Number(product.discount_price) || 0;
     
-    // 수정: average_fee_rate가 문자열일 수 있으므로 명시적으로 숫자로 변환
     const averageFeeRate = channelInfo?.average_fee_rate ? parseFloat(String(channelInfo.average_fee_rate)) : 0;
 
-    // 할인율 계산 (0~1 사이 값)
-    const discountRatio = pricingPrice > 0 && discountPrice > 0 ? (pricingPrice - discountPrice) / pricingPrice : 0;
+    // 최종 가격 결정 (즉시할인가가 있으면 즉시할인가, 없으면 판매가)
+    const finalPrice = discountPrice > 0 ? discountPrice : pricingPrice;
 
-    // 수수료율 조정
+    // 할인율 계산 (0~1 사이 값)
+    const discountRatio = pricingPrice > 0 ? (pricingPrice - finalPrice) / pricingPrice : 0;
+
+    // 수수료율 조정 - 스위치가 켜져있을 때만 할인율에 따른 차감 적용
     let adjustedFeeRate = averageFeeRate;
     if (adjustByDiscount && discountRatio > 0) {
-      // 할인율에 따른 수수료 조정 (10% 단위로 1%씩 차감)
       const feeRateReduction = Math.floor(discountRatio * 100 / 10);
       adjustedFeeRate = Math.max(averageFeeRate - feeRateReduction, 0);
-      console.log('수수료율 조정:', {
-        원래수수료율: averageFeeRate,
-        차감: feeRateReduction,
-        조정된수수료율: adjustedFeeRate,
-        할인율: discountRatio
-      });
     }
 
     // 최종 수수료 계산
-    const finalPrice = discountPrice > 0 ? discountPrice : pricingPrice;
     const commissionFee = finalPrice * (adjustedFeeRate / 100);
-    console.log('수수료율 최종 계산:', {
-      최종가격: finalPrice,
-      적용수수료율: adjustedFeeRate,
-      예상수수료: Math.round(commissionFee)
-    });
-
     return Math.round(commissionFee);
   };
 
@@ -1484,6 +1467,19 @@ export default function CartPage() {
     return averageFeeRate;
   };
 
+  // 스위치 상태 변경 핸들러
+  const handleAdjustFeeChange = async (checked: boolean) => {
+    setIsAdjustFeeEnabled(checked);
+    if (selectedChannelInfo) {
+      const updatedProducts = products.map(product => ({
+        ...product,
+        expected_commission_fee: calculateExpectedCommissionFee(product, checked)
+      }));
+      setProducts(updatedProducts);
+      await saveCartInfo();
+    }
+  };
+
   return (
     <div className="container mx-auto py-8">
       <div className="flex justify-between items-center mb-6">
@@ -1602,13 +1598,19 @@ export default function CartPage() {
                 className="w-[80px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-muted text-sm text-muted-foreground"
               />
               <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={selectedChannelInfo?.average_fee_rate ? `평균수수료 : ${selectedChannelInfo.average_fee_rate}` : ''}
-                readOnly
-                placeholder="평균수수료"
-                className="w-[160px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-muted text-sm text-muted-foreground"
-                /> 
+                <input
+                  type="text"
+                  value={selectedChannelInfo?.average_fee_rate ? `평균수수료 : ${selectedChannelInfo.average_fee_rate}` : ''}
+                  readOnly
+                  placeholder="평균수수료"
+                  className="w-[160px] h-10 px-3 border-[1px] rounded-md shadow-sm bg-muted text-sm text-muted-foreground"
+                />
+                <Switch
+                  checked={isAdjustFeeEnabled}
+                  onCheckedChange={handleAdjustFeeChange}
+                  className="ml-2"
+                />
+                <Label className="text-sm text-muted-foreground">할인율 반영</Label>
               </div>
               <div className="flex gap-2">
                 {dividerRules.map((rule, index) => (
@@ -1947,16 +1949,18 @@ export default function CartPage() {
                          <div className="text-sm text-muted-foreground">
                            {(() => {
                              const pricingPrice = Number(product.pricing_price) || 0;
-                             const discountPrice = Number(
-                               product.coupon_price_3 || 
-                               product.coupon_price_2 || 
-                               product.coupon_price_1 || 
-                               product.discount_price
-                             ) || 0;
-                             const discountRatio = pricingPrice > 0 && discountPrice > 0 ? (pricingPrice - discountPrice) / pricingPrice : 0;
+                             const discountPrice = Number(product.discount_price) || 0;
+                             const finalPrice = discountPrice > 0 ? discountPrice : pricingPrice;
+                             const discountRatio = pricingPrice > 0 ? (pricingPrice - finalPrice) / pricingPrice : 0;
                              const averageFeeRate = selectedChannelInfo?.average_fee_rate ? parseFloat(String(selectedChannelInfo.average_fee_rate)) : 0;
-                             const feeRateReduction = Math.floor(discountRatio * 100 / 10);
-                             const adjustedFeeRate = Math.max(averageFeeRate - feeRateReduction, 0);
+                             
+                             // 스위치 상태에 따라 수수료율 조정
+                             let adjustedFeeRate = averageFeeRate;
+                             if (isAdjustFeeEnabled && discountRatio > 0) {
+                               const feeRateReduction = Math.floor(discountRatio * 100 / 10);
+                               adjustedFeeRate = Math.max(averageFeeRate - feeRateReduction, 0);
+                             }
+                             
                              return `${adjustedFeeRate.toFixed(1)}%`;
                            })()}
                          </div>
