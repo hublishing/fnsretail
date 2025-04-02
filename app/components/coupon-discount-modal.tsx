@@ -113,7 +113,7 @@ export function DiscountModal({
 
   const calculateDiscount = (price: number, rate: number, roundType: 'floor' | 'ceil' = 'ceil') => {
     // 채널 타입이 국내인 경우에만 특별한 계산 방식 적용
-    if (selectedChannelInfo?.type === '국내') {
+    if (selectedChannelInfo?.type === '국내' || selectedChannelInfo?.type === '일본') {
       // 1. 할인금액 계산 (소수점 1자리 반올림)
       const discountAmount = Math.round(price * (rate / 100) * 10) / 10;
       

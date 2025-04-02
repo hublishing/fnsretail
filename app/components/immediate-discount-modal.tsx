@@ -77,15 +77,15 @@ export function ImmediateDiscountModal({
 
   const calculateDiscount = (price: number, rate: number) => {
     // 채널 타입이 국내인 경우에만 특별한 계산 방식 적용
-    if (selectedChannelInfo?.type === '국내') {
+    if (selectedChannelInfo?.type === '국내' || selectedChannelInfo?.type === '일본') {
       // 1. 할인금액 계산 (소수점 1자리 반올림)
       const discountAmount = Math.round(price * (rate / 100) * 10) / 10;
       
       // 2. 실제 할인된 금액 계산
       const discountedPrice = price - discountAmount;
       
-      // 3. 할인된 금액의 1의자리 올림 처리
-      const finalPrice = Math.ceil(discountedPrice / 10) * 10;
+      // 3. 할인된 금액의 1의자리 올림 처리(없이 그대로 유지) 
+      const finalPrice = discountedPrice / 10 * 10;
       
       return finalPrice;
     } else {
