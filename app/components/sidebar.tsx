@@ -27,7 +27,7 @@ const menuItems = [
   },
   {
     title: "리스트",
-    href: "/page/list",
+    href: "/page/list/create",
     icon: List,
   },
   {
@@ -130,7 +130,7 @@ export function Sidebar() {
                     onClick={() => setOpen(false)}
                     className={cn(
                       "group flex items-center rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-                      pathname === item.href ? "bg-accent" : "transparent"
+                      (item.title === "리스트" && pathname.startsWith('/page/list/')) || pathname === item.href ? "bg-accent" : "transparent"
                     )}
                   >
                     {item.icon && <item.icon className="mr-2 h-4 w-4" />}
@@ -186,7 +186,7 @@ export function Sidebar() {
                   href={item.href}
                   className={cn(
                     'flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors',
-                    pathname === item.href
+                    (item.title === "리스트" && pathname.startsWith('/page/list/')) || pathname === item.href
                       ? 'bg-gray-900 text-white'
                       : 'text-[hsl(var(--primary)/.9)] hover:text-white hover:bg-gray-700'
                   )}

@@ -10,9 +10,9 @@ export function ListTopbar() {
     <div className="container mx-auto pb-5">
         <div className=" py-5 px-5 flex bg-card rounded-lg shadow-sm">
             <div
-                onClick={() => router.push('/page/list')}
+                onClick={() => router.push('/page/list/create')}
             className={`pr-8 cursor-pointer text-s ${
-                pathname === '/page/list' 
+                pathname === '/page/list/create' 
                     ? 'text-blue-500 font-bold' 
                     : 'text-gray-500 font-bold'
             }`}
@@ -20,9 +20,9 @@ export function ListTopbar() {
             리스트 작성
         </div>
         <div
-            onClick={() => router.push('/page/list-view')}
+            onClick={() => router.push('/page/list/view')}
             className={`pr-8 cursor-pointer text-s ${
-                pathname === '/page/list-view' 
+                pathname === '/page/list/view' 
                     ? 'text-blue-500 font-bold' 
                     : 'text-gray-500 font-bold'
             }`}
@@ -30,9 +30,9 @@ export function ListTopbar() {
             리스트 조회
         </div>
         <div
-            onClick={() => router.push('/page/list-edit')}
+            onClick={() => router.push('/page/list/edit')}
             className={`pr-8 cursor-pointer text-s ${
-                pathname === '/page/list-edit' 
+                pathname === '/page/list/edit' 
                     ? 'text-blue-500 font-bold' 
                     : 'text-gray-500 font-bold'
             }`}
