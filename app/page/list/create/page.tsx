@@ -721,7 +721,6 @@ export default function CartPage() {
   const handleChannelSelect = async (channel: ChannelInfo) => {
     console.log('handleChannelSelect 시작');
     try {
-
       // 상태 업데이트를 한 번에 처리
       console.log('상태 업데이트 시작');
       setChannelSearchTerm(channel.channel_name_2);
@@ -731,13 +730,12 @@ export default function CartPage() {
         channel_name_2: channel.channel_name_2
       }));
       setSelectedChannelInfo(channel);
-      // 제안 목록 숨김을 마지막에 처리
       setShowChannelSuggestions(false);
       console.log('상태 업데이트 완료');
       
       console.log('상품 업데이트 시작');
       // 판매가와 물류비 계산
-      const updatedProducts = products.map(product => {
+      const updatedProducts = await Promise.all(products.map(async product => {
         let pricingPrice: number | null = null;
         let adjustedCost: number | null = null;
 
@@ -797,6 +795,7 @@ export default function CartPage() {
         // 물류비 계산
         const logisticsCost = calculateLogisticsCost(channel, deliveryType, Number(channel.amazon_shipping_cost));
 
+        // 1. 채널판매가 설정
         const newProduct = {
           ...product,
           pricing_price: pricingPrice,
@@ -804,18 +803,18 @@ export default function CartPage() {
           adjusted_cost: adjustedCost
         };
 
-        // 예상수수료 계산
+        // 2. 예상수수료 계산
         newProduct.expected_commission_fee = calculateExpectedCommissionFee(newProduct);
 
-        // 정산예정금액 계산
+        // 3. 정산예정금액 계산
         newProduct.expected_settlement_amount = calculateExpectedSettlementAmount(newProduct);
 
-        // 예상순이익 및 예상순이익률 계산
+        // 4. 예상순이익 및 예상순이익률 계산
         newProduct.expected_net_profit = calculateExpectedNetProfit(newProduct);
         newProduct.expected_net_profit_margin = calculateExpectedNetProfitMargin(newProduct);
 
         return newProduct;
-      });
+      }));
 
       console.log('상품 업데이트 완료, 상태 업데이트 시작');
       setProducts(updatedProducts);
@@ -1997,16 +1996,25 @@ export default function CartPage() {
                               <div>{product.expected_settlement_amount?.toLocaleString() || '-'}</div>
                             </DraggableCell>
                             <DraggableCell className="text-center">
-                              <div>
+                              <div className="text-sm text-muted-foreground">
                                 {(() => {
-                                  const basePrice = product.adjusted_cost || product.org_price;
-                                  const finalPrice = product.discount_price || product.pricing_price;
-                                  const burden = product.discount_burden_amount || 0;
+                                  if (!product.org_price || !selectedChannelInfo) return '-';
                                   
-                                  if (!basePrice || !finalPrice) return '-';
+                                  const org = product.adjusted_cost 
+                                  ? (product.adjusted_cost || 0)
+                                  : (product.org_price || 0);
+
+                                  const exchangeRate = Number(selectedChannelInfo.applied_exchange_rate?.replace(/,/g, '') || 0);
+                                  const cost = org / exchangeRate * 
+                                    (selectedChannelInfo.type === '국내' ? 1.1 : 1);
                                   
-                                  const costRatio = (basePrice / (finalPrice - burden)) * 100;
-                                  return `${Math.round(costRatio)}%`;
+                                  const finalPrice = product.discount_price 
+                                    ? product.discount_price - (product.discount_burden_amount || 0)
+                                    : (product.pricing_price || 0) - (product.discount_burden_amount || 0);
+
+                                  const costRatio = cost / finalPrice; 
+                                  
+                                  return (Math.round(costRatio * 10000) / 100).toLocaleString() + '%';
                                 })()}
                               </div>
                             </DraggableCell>
