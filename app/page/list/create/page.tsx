@@ -1184,6 +1184,7 @@ const calculateExpectedNetProfitMargin = (product: Product) => {
     try {
       const updatedProducts = products.map(product => {
         const newProduct = { ...product };
+        // 할인 관련 필드 초기화
         delete newProduct.discount_price;
         delete newProduct.discount;
         delete newProduct.discount_rate;
@@ -1193,11 +1194,29 @@ const calculateExpectedNetProfitMargin = (product: Product) => {
         delete newProduct.coupon_price_3;
         delete newProduct.self_ratio;
         delete newProduct.discount_burden_amount;
+        
+        // 수수료 및 정산 관련 필드 초기화
         delete newProduct.expected_commission_fee;
+        delete newProduct.expected_net_profit;
+        delete newProduct.expected_net_profit_margin;
+        delete newProduct.expected_settlement_amount;
+        
+        // 원가 관련 필드 초기화
+        delete newProduct.adjusted_cost;
+        delete newProduct.logistics_cost;
+        
         return newProduct;
       });
 
       setProducts(updatedProducts);
+      
+      // 채널 상태 초기화
+      setChannelSearchTerm('');
+      setSelectedChannelInfo(null);
+      setFilters(prev => ({
+        ...prev,
+        channel_name_2: ''
+      }));
       
       // 할인 모달 상태 초기화
       setTabStates({
