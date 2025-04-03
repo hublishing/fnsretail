@@ -846,17 +846,6 @@ const calculateExpectedNetProfitMargin = (product: Product) => {
     console.log('handleChannelSearchFocus 종료');
   };
 
-  // 채널 검색창 블러 핸들러 수정
-  const handleChannelSearchBlur = () => {
-    console.log('handleChannelSearchBlur 시작');
-    // 지연 시간을 500ms로 늘림 
-      if (!selectedChannelInfo) {
-        console.log('제안 목록 숨김');
-        setShowChannelSuggestions(false);
-      } 
-    console.log('handleChannelSearchBlur 종료');
-  };
-
   // 드래그 종료 핸들러
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
@@ -1584,7 +1573,6 @@ const calculateExpectedNetProfitMargin = (product: Product) => {
                     value={channelSearchTerm}
                     onChange={handleChannelSearch}
                     onFocus={handleChannelSearchFocus}
-                    onBlur={handleChannelSearchBlur}
                     placeholder="채널명을 입력해주세요"
                     className={`w-[160px] h-8 px-3 border-[0px] border-b-[1px] focus:border-b-[0px] focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
                       channelSearchTerm && !isValidChannel 
