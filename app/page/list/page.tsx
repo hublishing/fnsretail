@@ -1504,11 +1504,11 @@ export default function CartPage() {
                     rule.range[0] > 0 && rule.range[1] > 0 && (
                       <span 
                         key={rule.id} 
-                        className="items-center gap-2 px-3 rounded-md shadow-sm bg-muted text-sm"
+                        className="items-center gap-2 px-3 rounded-md shadow-sm bg-muted text-sm mr-4"
                         style={{ backgroundColor: rule.color || '#FFE4E1' }}
                       >
-                        <span className="mr-4">{rule.range[0]}~{rule.range[1]}</span>
-                        {rule.text && <span className="text-muted-foreground pr-4">{rule.text}</span>}
+                        <span className="mr-2">{rule.range[0]}~{rule.range[1]}</span>
+                        {rule.text && <span className="text-muted-foreground">{rule.text}</span>}
                       </span>
                     )
                   ))}</span>
