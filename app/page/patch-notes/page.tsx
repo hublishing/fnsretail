@@ -9,6 +9,7 @@ import remarkGfm from 'remark-gfm'
 import { Button } from '@/app/components/ui/button'
 import { getSession } from '@/app/actions/auth'
 import { Trash2 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
 interface PatchNote {
   commit_date: string
@@ -24,6 +25,7 @@ export default function PatchNotesPage() {
   const [error, setError] = useState<string | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
   const [newDate, setNewDate] = useState('')
+  const router = useRouter()
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -122,8 +124,8 @@ export default function PatchNotesPage() {
   }
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">패치노트</h1>
+    <div className="container mx-auto py-10">
+      <h1 className="text-2xl font-bold mb-6">패치노트</h1>
       <div className="grid grid-cols-12 gap-4">
         {/* 왼쪽: 날짜 목록 */}
         <div className="col-span-3">
@@ -146,6 +148,21 @@ export default function PatchNotesPage() {
               </div>
             </CardContent>
           </Card>
+          {/* 작성 버튼 */}
+          <div className="mt-4">
+            <Button 
+              onClick={async () => {
+                const session = await getSession();
+                if (session?.user_id === 'a8mwwycqhaZLIb9iOcshPbpAVrj2') {
+                  router.push('/page/patch-info');
+                } else {
+                  alert('권한이 없습니다.');
+                }
+              }}
+            >
+              작성하기
+            </Button>
+          </div>
         </div>
 
         {/* 오른쪽: 선택된 날짜의 패치노트 */}
@@ -202,6 +219,7 @@ export default function PatchNotesPage() {
             </CardContent>
           </Card>
         </div>
+ 
       </div>
     </div>
   )

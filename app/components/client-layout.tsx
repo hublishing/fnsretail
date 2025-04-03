@@ -29,7 +29,7 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
     <div className="h-screen flex">
       {!isLoginPage && <Sidebar />}
       <main className={cn(
-        "flex-1 overflow-y-auto",
+        "flex-1 overflow-y-auto bg-muted/50 py-5",
         isLoginPage ? "w-full" : isCollapsed ? "pl-16" : ""
       )}>
         {children}

@@ -767,7 +767,7 @@ export default function DynamicTable() {
   };
 
   return (
-    <div className="container mx-auto py-10">
+    <div className="container mx-auto py-10 bg-white rounded-lg shadow-sm">
       <h1 className="text-2xl font-bold mb-6">상품 검색</h1>
       
       <div className="flex flex-col gap-4 mb-4">

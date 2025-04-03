@@ -70,8 +70,8 @@ export default function PatchInfoPage() {
   }
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">패치정보 입력</h1>
+    <div className="container mx-auto py-10">
+      <h1 className="text-2xl font-bold mb-6">패치정보 입력</h1>
       <Card>
         <CardContent className="p-4">
           <form onSubmit={handleSubmit} className="space-y-4">

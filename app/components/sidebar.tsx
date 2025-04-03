@@ -26,7 +26,7 @@ const menuItems = [
     icon: Search,
   },
   {
-    title: "리스트작성",
+    title: "리스트",
     href: "/page/list",
     icon: List,
   },
@@ -34,11 +34,6 @@ const menuItems = [
     title: "패치노트",
     href: "/page/patch-notes",
     icon: History,
-  },
-  {
-    title: "패치정보",
-    href: "/page/patch-info",
-    icon: PlusCircle,
   },
 ]
 

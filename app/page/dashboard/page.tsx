@@ -333,7 +333,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="container p-6 mx-auto">
+    <div className="container mx-auto py-10 bg-white rounded-lg shadow-sm">
       <h1 className="text-2xl font-bold mb-6">대시보드</h1>
       
       {/* 날짜 필터 */}
