@@ -849,13 +849,11 @@ const calculateExpectedNetProfitMargin = (product: Product) => {
   // 채널 검색창 블러 핸들러 수정
   const handleChannelSearchBlur = () => {
     console.log('handleChannelSearchBlur 시작');
-    // 지연 시간을 500ms로 늘림
-    setTimeout(() => {
+    // 지연 시간을 500ms로 늘림 
       if (!selectedChannelInfo) {
         console.log('제안 목록 숨김');
         setShowChannelSuggestions(false);
-      }
-    }, 500);
+      } 
     console.log('handleChannelSearchBlur 종료');
   };
 
