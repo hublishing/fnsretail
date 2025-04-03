@@ -557,22 +557,34 @@ export default function CartPage() {
     return () => clearTimeout(timer);
   }, [channelSearchTerm, channels]);
 
-  // 채널 검색 입력 핸들러
+  // 채널 검색 입력 핸들러 수정
   const handleChannelSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('handleChannelSearch 시작');
     const value = e.target.value;
     setChannelSearchTerm(value);
     
     // 입력된 값이 채널 목록에 있는지 확인
     const foundChannel = channels.find(c => c.channel_name_2 === value);
+    console.log('채널 검색 결과:', { value, foundChannel: foundChannel ? foundChannel.channel_name_2 : '없음' });
+    
     if (foundChannel) {
+      console.log('유효한 채널 발견');
       setIsValidChannel(true);
       setSelectedChannelInfo(foundChannel);
       // 채널이 선택되면 판매가 다시 계산
       handleChannelSelect(foundChannel);
     } else {
+      console.log('유효하지 않은 채널');
       setIsValidChannel(false);
       setSelectedChannelInfo(null);
+      // 유효하지 않은 채널일 때는 제안 목록을 표시
+      if (value.trim()) {
+        setShowChannelSuggestions(true);
+      } else {
+        setShowChannelSuggestions(false);
+      }
     }
+    console.log('handleChannelSearch 종료');
   };
 
   // 물류비 계산 함수 수정
@@ -707,26 +719,23 @@ export default function CartPage() {
   };
   // handleChannelSelect 함수 수정
   const handleChannelSelect = async (channel: ChannelInfo) => {
+    console.log('handleChannelSelect 시작');
     try {
-      console.log('선택된 채널 정보:', {
-        channel_name_2: channel.channel_name_2,
-        type: channel.type,
-        markup_ratio: channel.markup_ratio,
-        applied_exchange_rate: channel.applied_exchange_rate,
-        rounddown: channel.rounddown,
-        digit_adjustment: channel.digit_adjustment,
-        amazon_shipping_cost: channel.amazon_shipping_cost
-      });
 
+      // 상태 업데이트를 한 번에 처리
+      console.log('상태 업데이트 시작');
       setChannelSearchTerm(channel.channel_name_2);
-      setShowChannelSuggestions(false);
       setIsValidChannel(true);
       setFilters(prev => ({
         ...prev,
         channel_name_2: channel.channel_name_2
       }));
       setSelectedChannelInfo(channel);
+      // 제안 목록 숨김을 마지막에 처리
+      setShowChannelSuggestions(false);
+      console.log('상태 업데이트 완료');
       
+      console.log('상품 업데이트 시작');
       // 판매가와 물류비 계산
       const updatedProducts = products.map(product => {
         let pricingPrice: number | null = null;
@@ -808,26 +817,36 @@ export default function CartPage() {
         return newProduct;
       });
 
+      console.log('상품 업데이트 완료, 상태 업데이트 시작');
       setProducts(updatedProducts);
       await saveCartInfo();
+      console.log('handleChannelSelect 종료');
     } catch (error) {
       console.error('채널 선택 중 오류 발생:', error);
     }
   };
 
-  // 채널 검색창 포커스 핸들러
+  // 채널 검색창 포커스 핸들러 수정
   const handleChannelSearchFocus = () => {
-    if (channelSearchTerm.trim()) {
+    console.log('handleChannelSearchFocus 시작');
+    if (channelSearchTerm.trim() && !selectedChannelInfo) {
+      console.log('채널 검색어가 있고 선택된 채널이 없음, 제안 목록 표시');
       setShowChannelSuggestions(true);
     }
+    console.log('handleChannelSearchFocus 종료');
   };
 
-  // 채널 검색창 블러 핸들러
+  // 채널 검색창 블러 핸들러 수정
   const handleChannelSearchBlur = () => {
-    // 약간의 지연을 주어 선택 이벤트가 먼저 발생하도록 함
+    console.log('handleChannelSearchBlur 시작');
+    // 지연 시간을 500ms로 늘림
     setTimeout(() => {
-      setShowChannelSuggestions(false);
-    }, 200);
+      if (!selectedChannelInfo) {
+        console.log('제안 목록 숨김');
+        setShowChannelSuggestions(false);
+      }
+    }, 500);
+    console.log('handleChannelSearchBlur 종료');
   };
 
   // 드래그 종료 핸들러
