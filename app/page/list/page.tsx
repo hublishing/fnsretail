@@ -1494,15 +1494,38 @@ export default function CartPage() {
           <div className="flex flex-col gap-6">
 
             <div className="text-sm text-gray-500">
-            <span className="mr-4">UUID : {listUuid}</span>
+              <span className="mr-4">UUID : {listUuid}</span>
               <span className="mr-4">작성자 : {user?.uid === 'a8mwwycqhaZLIb9iOcshPbpAVrj2' ? '한재훈' :
                user?.uid === 'MhMI2KxbxkPHIAJP0o4sPSZG35e2' ? '이세명' :
                user?.uid === '6DnflkbFSifLCNVQGWGv7aqJ2w72' ? '박연수' : ''}</span>
+              {/*
               {selectedChannelInfo?.channel_category_2 && (<span className="mr-4 rounded-md shadow-sm bg-muted px-2 py-1">{selectedChannelInfo.channel_category_2}</span>)}
               {selectedChannelInfo?.channel_category_3 && (<span className="mr-4 rounded-md shadow-sm bg-muted px-2 py-1">{selectedChannelInfo.channel_category_3}</span>)}
               {selectedChannelInfo?.team && (<span className="mr-4 rounded-md shadow-sm bg-muted px-2 py-1">{selectedChannelInfo.team}</span>)}
               {selectedChannelInfo?.manager && (<span className="mr-4 rounded-md shadow-sm bg-muted px-2 py-1">{selectedChannelInfo.manager}</span>)}
+              */}
               {selectedChannelInfo?.average_fee_rate && (<span className="mr-4 rounded-md shadow-sm bg-muted px-2 py-1">평균수수료 : {selectedChannelInfo.average_fee_rate}</span>)}
+              {products.length > 0 && (
+                <>
+                  <span className="mr-4 rounded-md shadow-sm bg-muted px-2 py-1">
+                    평균할인율 : {Math.round(products.reduce((acc, product) => {
+                      const discountRate = product.discount_price && product.pricing_price 
+                        ? ((product.pricing_price - product.discount_price) / product.pricing_price) * 100
+                        : 0;
+                      return acc + discountRate;
+                    }, 0) / products.length)}%
+                  </span>
+                  <span className="mr-4 rounded-md shadow-sm bg-muted px-2 py-1">
+                    평균원가율 : {Math.round(products.reduce((acc, product) => acc + (product.cost_ratio || 0), 0) / products.length)}%
+                  </span>
+                  <span className="mr-4 rounded-md shadow-sm bg-muted px-2 py-1">
+                    평균순이익률 : {Math.round(products.reduce((acc, product) => {
+                      const netProfitMargin = calculateExpectedNetProfitMargin(product);
+                      return acc + (netProfitMargin * 100);
+                    }, 0) / products.length)}%
+                  </span>
+                </>
+              )}
               <span>{dividerRules.map((rule, index) => (
                     rule.range[0] > 0 && rule.range[1] > 0 && (
                       <span 
@@ -1535,7 +1558,7 @@ export default function CartPage() {
                     onChange={handleChannelSearch}
                     onFocus={handleChannelSearchFocus}
                     onBlur={handleChannelSearchBlur}
-                    placeholder="채널명을 입력하세요"
+                    placeholder="채널명을 입력해주세요"
                     className={`w-[160px] h-8 px-3 border-[0px] border-b-[1px] focus:border-b-[0px] focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
                       channelSearchTerm && !isValidChannel 
                         ? 'border-red-500 focus:ring-[1px] focus:ring-red-500 focus:border-red-500 bg-destructive/10' 
@@ -1559,7 +1582,7 @@ export default function CartPage() {
                   )}
                 </div>
                 <div className="flex items-center">
-                <Label className="text-sm text-muted-foreground">할인 수수료</Label>
+                <Label className="text-sm text-muted-foreground">수수료 할인</Label>
                   <Switch
                     checked={isAdjustFeeEnabled}
                     onCheckedChange={handleAdjustFeeChange}
@@ -1583,6 +1606,7 @@ export default function CartPage() {
                 </Select>
 
                 <div className="flex items-center gap-2">
+                  <div className="text-sm text-muted-foreground">기간</div>
                   <input
                     type="date"
                     value={startDate}
@@ -1759,7 +1783,7 @@ export default function CartPage() {
                           <TableHead className="text-center w-[80px]">쿠폰2</TableHead>
                           <TableHead className="text-center w-[80px]">쿠폰3</TableHead>
                           <TableHead className="text-center w-[80px]">최종할인</TableHead>
-                          <TableHead className="text-center w-[80px]">할인부담액</TableHead>
+                          <TableHead className="text-center w-[90px]">할인부담액</TableHead>
                           <TableHead className="text-center w-[80px]">조정원가</TableHead>
                           <TableHead className="text-center w-[80px]">예상수수료</TableHead>
                           <TableHead className="text-center w-[80px]">물류비</TableHead>
@@ -2024,7 +2048,7 @@ export default function CartPage() {
             <DialogHeader>
               <DialogTitle>색상 선택</DialogTitle>
               <DialogDescription>
-                선택한 범위의 행에 적용할 색상을 선택하세요.
+                선택한 범위의 행에 적용할 색상을 선택해주세요.
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">

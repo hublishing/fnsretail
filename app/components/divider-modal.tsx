@@ -176,7 +176,7 @@ export function DividerModal({
                 </div>
                 <div className="flex flex-col gap-2"> 
                   <Select
-                    value={rule.color || '#fef9c3'}
+                    value={rule.color || (index === 0 ? '#fef9c3' : index === 1 ? '#d1fae5' : '#dbeafe')}
                     onValueChange={(value) => handleColorChange(rule.id, value, rule)}
                   >
                     <SelectTrigger className="w-[70px] h-10">
@@ -184,7 +184,7 @@ export function DividerModal({
                         <div className="flex items-center gap-2">
                           <div
                             className="w-4 h-4 rounded-full"
-                            style={{ backgroundColor: rule.color || '#fef9c3' }}
+                            style={{ backgroundColor: rule.color || (index === 0 ? '#fef9c3' : index === 1 ? '#d1fae5' : '#dbeafe') }}
                           />
                         </div>
                       </SelectValue>
