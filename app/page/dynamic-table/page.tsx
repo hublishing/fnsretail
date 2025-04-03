@@ -767,10 +767,10 @@ export default function DynamicTable() {
   };
 
   return (
-    <div className="container mx-auto py-10 bg-white rounded-lg shadow-sm">
+    <div className="container mx-auto py-5">
       <h1 className="text-2xl font-bold mb-6">상품 검색</h1>
       
-      <div className="flex flex-col gap-4 mb-4">
+      <div className="flex flex-col gap-4 mb-6 py-5 px-5 bg-card rounded-lg shadow-sm">
         <div className="flex items-center gap-4">
           <Select
             value={searchType}
@@ -1009,189 +1009,190 @@ export default function DynamicTable() {
         </div>
       )}
 
-      
-      <div className="flex justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              const tempSelected = new Set([...selectedProducts]);
-              handleAddSelectedToCart(tempSelected);
-            }}
-            disabled={selectedProducts.size === 0}
-            className="border-0 hover:bg-transparent text-[hsl(var(--foreground))] hover:text-[hsl(var(--foreground))]"
-          >
-            선택담기
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExcelDownload}
-            className="border-0 hover:bg-transparent text-[hsl(var(--foreground))] hover:text-[hsl(var(--foreground))]"
-          >
-            다운로드
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowExcelSettings(true)}
-            className="border-0 hover:bg-transparent text-[hsl(var(--foreground))] hover:text-[hsl(var(--foreground))]"
-          >
-            양식변경
-          </Button>
-        </div>
-        
-        <Select
-          value={filters.sort_by_qty}
-          onValueChange={handleSortChange}
-        >
-          <SelectTrigger className="w-[140px] border-none focus:ring-0 focus:ring-offset-0 shadow-none h-10">
-            <SelectValue placeholder="정렬 기준" />
-          </SelectTrigger>
-          <SelectContent className="min-w-[140px]">
-            <SelectItem value="desc">판매 많은 순</SelectItem>
-            <SelectItem value="asc">판매 적은 순</SelectItem>
-            <SelectItem value="stock_desc">재고 많은 순</SelectItem>
-            <SelectItem value="stock_asc">재고 적은 순</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="rounded-md border overflow-hidden">
-        <div className="w-[1334px]">
-          <div className="bg-muted sticky top-0 z-10">
-            <Table className="w-full">
-              <TableHeader>
-                <TableRow className="hover:bg-muted">
-                  {columns.map((column) => (
-                    <TableHead 
-                      key={column.key} 
-                      className="text-center border-b whitespace-nowrap"
-                      style={{ 
-                        width: column.key === 'checkbox' ? '44px' :
-                               column.key === 'actions' ? '44px' :
-                               column.key === 'img_desc1' ? '64px' :
-                               column.key === 'product_id' ? '84px' :
-                               column.key === 'name' ? '284px' :
-                               column.key === 'product_desc' ? '84px' :
-                               column.key === 'org_price' ? '64px' :
-                               column.key === 'shop_price' ? '64px' :
-                               column.key === 'category_3' ? '64px' :
-                               column.key === 'cost_ratio' ? '64px' :
-                               column.key === 'total_stock' ? '64px' :
-                               column.key === 'soldout_rate' ? '64px' :
-                               column.key === 'drop_yn' ? '64px' :
-                               column.key === 'supply_name' ? '104px' :
-                               column.key === 'exclusive2' ? '64px' :
-                               column.key === 'total_order_qty' ? '64px' :
-                               '64px'
-                      }}
-                    >
-                      {column.key === 'checkbox' ? (
-                        <Checkbox
-                          checked={data.length > 0 && selectedProducts.size === data.length}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setSelectedProducts(new Set(data.map(p => p.product_id)));
-                            } else {
-                              setSelectedProducts(new Set());
-                            }
-                          }}
-                        />
-                      ) : column.label}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-            </Table>
+      <div className="py-5 px-5 bg-card rounded-lg shadow-sm">
+        <div className="flex justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const tempSelected = new Set([...selectedProducts]);
+                handleAddSelectedToCart(tempSelected);
+              }}
+              disabled={selectedProducts.size === 0}
+              className="border-0 hover:bg-transparent text-[hsl(var(--foreground))] hover:text-[hsl(var(--foreground))]"
+            >
+              선택담기
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExcelDownload}
+              className="border-0 hover:bg-transparent text-[hsl(var(--foreground))] hover:text-[hsl(var(--foreground))]"
+            >
+              다운로드
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowExcelSettings(true)}
+              className="border-0 hover:bg-transparent text-[hsl(var(--foreground))] hover:text-[hsl(var(--foreground))]"
+            >
+              양식변경
+            </Button>
           </div>
-          <div className="overflow-y-auto max-h-[calc(100vh-400px)]">
-            <Table className="w-full">
-              <TableBody>
-                {loading ? (
-                  <TableRow>
-                    <TableCell colSpan={columns.length} className="text-center">
-                      데이터를 불러오는 중...
-                    </TableCell>
+          
+          <Select
+            value={filters.sort_by_qty}
+            onValueChange={handleSortChange}
+          >
+            <SelectTrigger className="w-[140px] border-none focus:ring-0 focus:ring-offset-0 shadow-none h-10">
+              <SelectValue placeholder="정렬 기준" />
+            </SelectTrigger>
+            <SelectContent className="min-w-[140px]">
+              <SelectItem value="desc">판매 많은 순</SelectItem>
+              <SelectItem value="asc">판매 적은 순</SelectItem>
+              <SelectItem value="stock_desc">재고 많은 순</SelectItem>
+              <SelectItem value="stock_asc">재고 적은 순</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="rounded-md border overflow-hidden">
+          <div className="w-full">
+            <div className="bg-muted sticky top-0 z-10">
+              <Table className="w-full">
+                <TableHeader>
+                  <TableRow className="hover:bg-muted">
+                    {columns.map((column) => (
+                      <TableHead 
+                        key={column.key} 
+                        className="text-center border-b whitespace-nowrap"
+                        style={{ 
+                          width: column.key === 'checkbox' ? '44px' :
+                                column.key === 'actions' ? '44px' :
+                                column.key === 'img_desc1' ? '64px' :
+                                column.key === 'product_id' ? '84px' :
+                                column.key === 'name' ? '284px' :
+                                column.key === 'product_desc' ? '84px' :
+                                column.key === 'org_price' ? '64px' :
+                                column.key === 'shop_price' ? '64px' :
+                                column.key === 'category_3' ? '64px' :
+                                column.key === 'cost_ratio' ? '64px' :
+                                column.key === 'total_stock' ? '64px' :
+                                column.key === 'soldout_rate' ? '64px' :
+                                column.key === 'drop_yn' ? '64px' :
+                                column.key === 'supply_name' ? '104px' :
+                                column.key === 'exclusive2' ? '64px' :
+                                column.key === 'total_order_qty' ? '64px' :
+                                '64px'
+                        }}
+                      >
+                        {column.key === 'checkbox' ? (
+                          <Checkbox
+                            checked={data.length > 0 && selectedProducts.size === data.length}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedProducts(new Set(data.map(p => p.product_id)));
+                              } else {
+                                setSelectedProducts(new Set());
+                              }
+                            }}
+                          />
+                        ) : column.label}
+                      </TableHead>
+                    ))}
                   </TableRow>
-                ) : data.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={columns.length} className="text-center">
-                      검색어를 입력하거나 필터를 선택하여 검색해주세요.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  data.map((item) => (
-                    <TableRow key={item.product_id}>
-                      {columns.map((column) => (
-                        <TableCell 
-                          key={column.key} 
-                          className="text-center whitespace-nowrap"
-                          style={{ 
-                            width: column.key === 'checkbox' ? '44px' :
-                                   column.key === 'actions' ? '44px' :
-                                   column.key === 'img_desc1' ? '64px' :
-                                   column.key === 'product_id' ? '84px' :
-                                   column.key === 'name' ? '284px' :
-                                   column.key === 'product_desc' ? '84px' :
-                                   column.key === 'org_price' ? '64px' :
-                                   column.key === 'shop_price' ? '64px' :
-                                   column.key === 'category_3' ? '64px' :
-                                   column.key === 'cost_ratio' ? '64px' :
-                                   column.key === 'total_stock' ? '64px' :
-                                   column.key === 'soldout_rate' ? '64px' :
-                                   column.key === 'drop_yn' ? '64px' :
-                                   column.key === 'supply_name' ? '104px' :
-                                   column.key === 'exclusive2' ? '64px' :
-                                   column.key === 'total_order_qty' ? '64px' :
-                                   '64px'
-                          }}
-                        >
-                          {column.key === 'checkbox' ? (
-                            <Checkbox
-                              checked={selectedProducts.has(item.product_id)}
-                              onCheckedChange={(checked) => {
-                                const newSelected = new Set(selectedProducts);
-                                if (checked) {
-                                  newSelected.add(item.product_id);
-                                } else {
-                                  newSelected.delete(item.product_id);
-                                }
-                                setSelectedProducts(newSelected);
-                              }}
-                            />
-                          ) : column.key === 'actions' ? (
-                            cartItems.has(item.product_id) ? (
-                              <button
-                                onClick={() => handleRemoveFromCart(item)}
-                                className="w-6 h-6 flex items-center justify-center bg-red-50 text-red-500 hover:bg-red-100 transition-colors rounded-full mx-auto text-sm leading-none"
-                              >
-                                -
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => {
-                                  const tempSelected = new Set([item.product_id]);
-                                  handleAddSelectedToCart(tempSelected);
-                                }}
-                                className="w-6 h-6 flex items-center justify-center bg-gray-50 text-gray-500 hover:bg-gray-100 transition-colors rounded-full mx-auto text-sm leading-none"
-                              >
-                                +
-                              </button>
-                            )
-                          ) : column.format ? (
-                            column.format(item[column.key as keyof Product], item)
-                          ) : (
-                            item[column.key as keyof Product]
-                          )}
-                        </TableCell>
-                      ))}
+                </TableHeader>
+              </Table>
+            </div>
+            <div className="overflow-y-auto max-h-[calc(100vh-400px)]">
+              <Table className="w-full">
+                <TableBody>
+                  {loading ? (
+                    <TableRow>
+                      <TableCell colSpan={columns.length} className="text-center">
+                        데이터를 불러오는 중...
+                      </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  ) : data.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={columns.length} className="text-center">
+                        검색어를 입력하거나 필터를 선택하여 검색해주세요.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    data.map((item) => (
+                      <TableRow key={item.product_id}>
+                        {columns.map((column) => (
+                          <TableCell 
+                            key={column.key} 
+                            className="text-center whitespace-nowrap"
+                            style={{ 
+                              width: column.key === 'checkbox' ? '44px' :
+                                    column.key === 'actions' ? '44px' :
+                                    column.key === 'img_desc1' ? '64px' :
+                                    column.key === 'product_id' ? '84px' :
+                                    column.key === 'name' ? '284px' :
+                                    column.key === 'product_desc' ? '84px' :
+                                    column.key === 'org_price' ? '64px' :
+                                    column.key === 'shop_price' ? '64px' :
+                                    column.key === 'category_3' ? '64px' :
+                                    column.key === 'cost_ratio' ? '64px' :
+                                    column.key === 'total_stock' ? '64px' :
+                                    column.key === 'soldout_rate' ? '64px' :
+                                    column.key === 'drop_yn' ? '64px' :
+                                    column.key === 'supply_name' ? '104px' :
+                                    column.key === 'exclusive2' ? '64px' :
+                                    column.key === 'total_order_qty' ? '64px' :
+                                    '64px'
+                            }}
+                          >
+                            {column.key === 'checkbox' ? (
+                              <Checkbox
+                                checked={selectedProducts.has(item.product_id)}
+                                onCheckedChange={(checked) => {
+                                  const newSelected = new Set(selectedProducts);
+                                  if (checked) {
+                                    newSelected.add(item.product_id);
+                                  } else {
+                                    newSelected.delete(item.product_id);
+                                  }
+                                  setSelectedProducts(newSelected);
+                                }}
+                              />
+                            ) : column.key === 'actions' ? (
+                              cartItems.has(item.product_id) ? (
+                                <button
+                                  onClick={() => handleRemoveFromCart(item)}
+                                  className="w-6 h-6 flex items-center justify-center bg-red-50 text-red-500 hover:bg-red-100 transition-colors rounded-full mx-auto text-sm leading-none"
+                                >
+                                  -
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => {
+                                    const tempSelected = new Set([item.product_id]);
+                                    handleAddSelectedToCart(tempSelected);
+                                  }}
+                                  className="w-6 h-6 flex items-center justify-center bg-gray-50 text-gray-500 hover:bg-gray-100 transition-colors rounded-full mx-auto text-sm leading-none"
+                                >
+                                  +
+                                </button>
+                              )
+                            ) : column.format ? (
+                              column.format(item[column.key as keyof Product], item)
+                            ) : (
+                              item[column.key as keyof Product]
+                            )}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         </div>
       </div>

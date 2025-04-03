@@ -105,6 +105,8 @@ export interface ChannelInfo {
   free_shipping: number;
   conditional_shipping: number;
   amazon_shipping_cost?: number;
+  writer?: string;
+  uuid?: string;
 }
 
 export interface CartItem {

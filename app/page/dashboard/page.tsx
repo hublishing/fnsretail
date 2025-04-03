@@ -333,11 +333,11 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="container mx-auto py-10 bg-white rounded-lg shadow-sm">
+    <div className="container mx-auto py-5">
       <h1 className="text-2xl font-bold mb-6">대시보드</h1>
       
       {/* 날짜 필터 */}
-      <div className="mb-6">
+      <div className="mb-6 py-5 px-5 bg-card rounded-lg shadow-sm">
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-2">
             <Input
@@ -457,7 +457,7 @@ export default function DashboardPage() {
       {/* 판매 데이터 표 */}
       <div className="grid grid-cols-2 gap-6">
         {/* 채널별 판매 데이터 */}
-        <Card className="border shadow-sm">
+        <Card className="">
           <CardHeader className="pb-2">
             <CardTitle className="text-lg font-semibold">
               채널별 판매 현황
@@ -494,7 +494,7 @@ export default function DashboardPage() {
                       </TableRow>
                     );
                   })}
-                  <TableRow className="bg-gray-50">
+                  <TableRow className="bg-muted">
                     <TableCell className="font-semibold">합계</TableCell>
                     <TableCell className="text-right font-semibold">
                       {channelData.reduce((sum, item) => sum + item.quantity, 0).toLocaleString()}
@@ -511,7 +511,7 @@ export default function DashboardPage() {
         </Card>
 
         {/* 카테고리별 판매 데이터 */}
-        <Card className="border shadow-sm">
+        <Card className="">
           <CardHeader className="pb-2">
             <CardTitle className="text-lg font-semibold">
               카테고리별 판매 현황
@@ -548,7 +548,7 @@ export default function DashboardPage() {
                       </TableRow>
                     );
                   })}
-                  <TableRow className="bg-gray-50">
+                  <TableRow className="bg-muted">
                     <TableCell className="font-semibold">합계</TableCell>
                     <TableCell className="text-right font-semibold">
                       {categoryData.reduce((sum, item) => sum + item.quantity, 0).toLocaleString()}

@@ -7,8 +7,8 @@ export function ListTopbar() {
   const pathname = usePathname()
 
   return (
-    <div className="pb-5">
-        <div className="container mx-auto py-5 flex bg-white rounded-lg shadow-sm">
+    <div className="container mx-auto pb-5">
+        <div className=" py-5 px-5 flex bg-card rounded-lg shadow-sm">
             <div
                 onClick={() => router.push('/page/list')}
             className={`pr-8 cursor-pointer text-s ${
