@@ -1490,38 +1490,41 @@ export default function CartPage() {
         {/* 편집 섹션 */}
         <Card className="mb-6 py-5 px-5 bg-card rounded-lg shadow-sm">
           <CardContent className="p-0">
-            <div className="text-sm text-gray-500 mb-4">
+            
+          <div className="flex flex-col gap-6">
+
+            <div className="text-sm text-gray-500">
             <span className="mr-4">UUID : {listUuid}</span>
               <span className="mr-4">작성자 : {user?.uid === 'a8mwwycqhaZLIb9iOcshPbpAVrj2' ? '한재훈' :
                user?.uid === 'MhMI2KxbxkPHIAJP0o4sPSZG35e2' ? '이세명' :
                user?.uid === '6DnflkbFSifLCNVQGWGv7aqJ2w72' ? '박연수' : ''}</span>
-              <span className="mr-4">{selectedChannelInfo?.channel_category_2 || ''}</span>
-              <span className="mr-4">{selectedChannelInfo?.channel_category_3 || ''}</span>
-              <span className="mr-4">{selectedChannelInfo?.team || ''}</span>
-              <span className="mr-4">{selectedChannelInfo?.manager || ''}</span>
-              <span className="mr-4">{selectedChannelInfo?.average_fee_rate ? `평균수수료 : ${selectedChannelInfo.average_fee_rate}` : ''}</span>
-              <span className="mr-4">{dividerRules.map((rule, index) => (
+              {selectedChannelInfo?.channel_category_2 && (<span className="mr-4 rounded-md shadow-sm bg-muted px-2 py-1">{selectedChannelInfo.channel_category_2}</span>)}
+              {selectedChannelInfo?.channel_category_3 && (<span className="mr-4 rounded-md shadow-sm bg-muted px-2 py-1">{selectedChannelInfo.channel_category_3}</span>)}
+              {selectedChannelInfo?.team && (<span className="mr-4 rounded-md shadow-sm bg-muted px-2 py-1">{selectedChannelInfo.team}</span>)}
+              {selectedChannelInfo?.manager && (<span className="mr-4 rounded-md shadow-sm bg-muted px-2 py-1">{selectedChannelInfo.manager}</span>)}
+              {selectedChannelInfo?.average_fee_rate && (<span className="mr-4 rounded-md shadow-sm bg-muted px-2 py-1">평균수수료 : {selectedChannelInfo.average_fee_rate}</span>)}
+              <span>{dividerRules.map((rule, index) => (
                     rule.range[0] > 0 && rule.range[1] > 0 && (
                       <span 
                         key={rule.id} 
-                        className="items-center gap-2 px-3 rounded-md shadow-sm bg-muted text-sm mr-4"
+                        className="items-center gap-2 px-2  py-1 rounded-md shadow-sm bg-muted text-sm mr-4"
                         style={{ backgroundColor: rule.color || '#FFE4E1' }}
                       >
                         <span className="mr-2">{rule.range[0]}~{rule.range[1]}</span>
                         {rule.text && <span className="text-muted-foreground">{rule.text}</span>}
                       </span>
                     )
-                  ))}</span>
-              
+                  ))}
+              </span>
             </div>
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center gap-4">
+
+              <div className="flex items-center gap-4 ">
                 <input
                   type="text"
                   value={title}
                   onChange={handleTitleChange}
                   placeholder="타이틀을 입력해주세요"
-                  className={`w-[300px] h-10 px-3 border-[1px] rounded-md shadow-sm focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
+                  className={`w-[300px] h-8 px-3 border-[0px] border-b-[1px] focus:border-b-[0px] focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
                     title ? 'border-blue-500 focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 bg-muted' : 'border-input bg-background'
                   }`}
                 />
@@ -1533,7 +1536,7 @@ export default function CartPage() {
                     onFocus={handleChannelSearchFocus}
                     onBlur={handleChannelSearchBlur}
                     placeholder="채널명을 입력하세요"
-                    className={`w-[160px] h-10 px-3 border-[1px] rounded-md shadow-sm focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
+                    className={`w-[160px] h-8 px-3 border-[0px] border-b-[1px] focus:border-b-[0px] focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
                       channelSearchTerm && !isValidChannel 
                         ? 'border-red-500 focus:ring-[1px] focus:ring-red-500 focus:border-red-500 bg-destructive/10' 
                         : channelSearchTerm && isValidChannel
@@ -1555,19 +1558,20 @@ export default function CartPage() {
                     </div>
                   )}
                 </div>
-                
+                <div className="flex items-center">
                 <Label className="text-sm text-muted-foreground">할인 수수료</Label>
                   <Switch
                     checked={isAdjustFeeEnabled}
                     onCheckedChange={handleAdjustFeeChange}
                     className="ml-2"
                   />
+                </div>
 
                 <Select 
                   value={deliveryType} 
                   onValueChange={handleDeliveryTypeChange}
                 >
-                  <SelectTrigger className={`w-[120px] h-10 ${
+                  <SelectTrigger className={`w-[120px] h-8 ${
                     deliveryType ? 'border-blue-500 focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 bg-blue-50' : ''
                   }`}>
                     <SelectValue placeholder="배송조건" />
@@ -1583,7 +1587,7 @@ export default function CartPage() {
                     type="date"
                     value={startDate}
                     onChange={(e) => handleDateChange(e, 'start')}
-                    className={`w-[150px] h-10 px-3 border-[1px] rounded-md shadow-sm focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
+                    className={`w-[150px] h-8 px-3 border-[1px] rounded-md shadow-sm focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
                       startDate ? 'border-blue-500 focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 bg-muted' : 'border-input bg-background'
                     }`}
                   />
@@ -1592,7 +1596,7 @@ export default function CartPage() {
                     type="date"
                     value={endDate}
                     onChange={(e) => handleDateChange(e, 'end')}
-                    className={`w-[150px] h-10 px-3 border-[1px] rounded-md shadow-sm focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
+                    className={`w-[150px] h-8 px-3 border-[1px] rounded-md shadow-sm focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
                       endDate ? 'border-blue-500 focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 bg-muted' : 'border-input bg-background'
                     }`}
                   />
@@ -1606,33 +1610,31 @@ export default function CartPage() {
                     value={memo1}
                     onChange={handleMemo1Change}
                     placeholder="메모 1"
-                    className="w-full h-10 px-3 py-2 border-[1px] rounded-md shadow-sm focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm border-input bg-background resize"
+                    className={`w-full h-8 px-3 border-[0px] border-b-[1px] focus:border-b-[0px] focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
+                      memo1 ? 'border-blue-500 focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 bg-muted' : 'border-input bg-background'
+                    }`}
                     style={{ resize: 'both' }}
                   />
                 </div>
                 <div className="relative w-full">
                   <textarea
-                    value={memo.split('\n')[1] || ''}
-                    onChange={(e) => {
-                      const lines = memo.split('\n');
-                      lines[1] = e.target.value;
-                      setMemo(lines.join('\n'));
-                    }}
+                    value={memo2}
+                    onChange={handleMemo2Change}
                     placeholder="메모 2"
-                    className="w-full h-10 px-3 py-2 border-[1px] rounded-md shadow-sm focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm border-input bg-background resize"
+                    className={`w-full h-8 px-3 border-[0px] border-b-[1px] focus:border-b-[0px] focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
+                      memo2 ? 'border-blue-500 focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 bg-muted' : 'border-input bg-background'
+                    }`}
                     style={{ resize: 'both' }}
                   />
                 </div>
                 <div className="relative w-full">
                   <textarea
-                    value={memo.split('\n')[2] || ''}
-                    onChange={(e) => {
-                      const lines = memo.split('\n');
-                      lines[2] = e.target.value;
-                      setMemo(lines.join('\n'));
-                    }}
+                    value={memo3}
+                    onChange={handleMemo3Change}
                     placeholder="메모 3"
-                    className="w-full h-10 px-3 py-2 border-[1px] rounded-md shadow-sm focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm border-input bg-background resize"
+                    className={`w-full h-8 px-3 border-[0px] border-b-[1px] focus:border-b-[0px] focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
+                      memo3 ? 'border-blue-500 focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 bg-muted' : 'border-input bg-background'
+                    }`}
                     style={{ resize: 'both' }}
                   />
                 </div>
