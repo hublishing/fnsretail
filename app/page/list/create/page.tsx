@@ -675,35 +675,46 @@ export default function CartPage() {
     return Math.round(commissionFee);
   };
 
-  // 예상순이익 계산 함수 추가
-  const calculateExpectedNetProfit = (product: Product) => {
-    // 예상정산금액
-    const expectedSettlementAmount = product.expected_settlement_amount || 0;
-    
-    // 원가 (조정원가가 있으면 조정원가, 없으면 기본 원가)
-    const cost = product.adjusted_cost || product.org_price || 0;
-    
-    // 물류비용
-    const logisticsCost = product.logistics_cost || 0;
+// 예상순이익 계산 함수 추가
+const calculateExpectedNetProfit = (product: Product) => {
+  if (!product.org_price || !selectedChannelInfo) return 0;  // 숫자 0을 반환
+  
+  // 예상정산금액
+  const expectedSettlementAmount = product.expected_settlement_amount || 0;
+  
+  // 원가 (조정원가가 있으면 조정원가, 없으면 기본 원가)
+  const exchangeRate = Number(selectedChannelInfo.applied_exchange_rate?.replace(/,/g, '') || 0);
+  const cost = product.adjusted_cost 
+    ? product.adjusted_cost 
+    : product.org_price / exchangeRate * (selectedChannelInfo.type === '국내' ? 1.1 : 1);
+  
+  // 물류비용
+  const logisticsCost = product.logistics_cost || 0;
 
-    // 예상순이익 = 예상정산금액 - 원가 - 물류비용
-    return expectedSettlementAmount - cost - logisticsCost;
-  };
+  // 예상순이익 = 예상정산금액 - 원가 - 물류비용
+  return expectedSettlementAmount - cost - logisticsCost;
+};
 
-  // 예상순이익률 계산 함수 수정
-  const calculateExpectedNetProfitMargin = (product: Product) => {
-    const pricingPrice = product.pricing_price || 0;
-    if (pricingPrice === 0) return 0;
+const calculateExpectedNetProfitMargin = (product: Product) => {
+  if (!product.org_price || !selectedChannelInfo) return 0;
+  
+  const pricingPrice = product.pricing_price || 0;
+  if (pricingPrice === 0) return 0;
 
-    // SQL의 SAFE_DIVIDE 로직과 동일하게 구현
-    // expected_net_profit_margin = (expected_settlement_amount - COALESCE(adjusted_cost, org_price) - logistics_cost) / pricing_price
-    const expectedSettlementAmount = product.expected_settlement_amount || 0;
-    const cost = product.adjusted_cost || product.org_price || 0;
-    const logisticsCost = product.logistics_cost || 0;
+  // 예상정산금액
+  const expectedSettlementAmount = product.expected_settlement_amount || 0;
+  
+  // 원가 계산
+  const exchangeRate = Number(selectedChannelInfo.applied_exchange_rate?.replace(/,/g, '') || 0);
+  const cost = product.adjusted_cost 
+    ? product.adjusted_cost 
+    : product.org_price / exchangeRate * (selectedChannelInfo.type === '국내' ? 1.1 : 1);
+  
+  const logisticsCost = product.logistics_cost || 0;
 
-    const expectedNetProfit = expectedSettlementAmount - cost - logisticsCost;
-    return expectedNetProfit / pricingPrice;
-  };
+  const expectedNetProfit = expectedSettlementAmount - cost - logisticsCost;
+  return expectedNetProfit / pricingPrice;
+};
 
   // 정산예정금액 계산 함수 추가
   const calculateExpectedSettlementAmount = (product: Product) => {
@@ -1985,10 +1996,10 @@ export default function CartPage() {
                               <div>{product.logistics_cost?.toLocaleString() || '-'}</div>
                             </DraggableCell>
                             <DraggableCell className="text-center">
-                              <div>{product.expected_net_profit?.toLocaleString() || '-'}</div>
+                              <div>{calculateExpectedNetProfit(product)?.toLocaleString() || '-'}</div>
                               <div>
-                                {product.expected_net_profit_margin 
-                                  ? `${(product.expected_net_profit_margin * 100).toFixed(1)}%` 
+                                {calculateExpectedNetProfitMargin(product) 
+                                  ? `${(calculateExpectedNetProfitMargin(product) * 100).toFixed(1)}%` 
                                   : '-'}
                               </div>
                             </DraggableCell>
