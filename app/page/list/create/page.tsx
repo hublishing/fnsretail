@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import {
   Table,
   TableBody,
@@ -10,7 +10,7 @@ import {
   TableRow,
 } from "@/app/components/ui/table"
 import { Button } from "@/app/components/ui/button"
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, getDocs, query, where, collection, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { getSession } from '@/app/actions/auth';
 import { ProductDetailModal } from "@/app/components/product-detail-modal"
@@ -24,7 +24,7 @@ import {
 import { Checkbox } from "@/app/components/ui/checkbox"
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card"
 import { v4 as uuidv4 } from 'uuid';
-import { Search, FileDown, Settings } from "lucide-react"
+import { Search, FileDown, Settings, Undo, History } from "lucide-react"
 import * as XLSX from 'xlsx';
 import { ExcelSettingsModal } from "@/app/components/excel-settings-modal"
 import {
@@ -35,6 +35,7 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
+  DragStartEvent,
 } from '@dnd-kit/core';
 import {
   arrayMove,
@@ -65,19 +66,36 @@ import {
 } from "@/app/components/ui/tabs"
 import { Slider } from "@/app/components/ui/slider"
 import { DividerModal } from '@/app/components/divider-modal';
-import {
-  Product,
-  Column,
-  Filters,
-  ChannelInfo,
-  CartItem,
-  ExcelSettings,
-  DividerRule
-} from '@/app/types/cart';
-import { TabState } from "@/app/components/coupon-discount-modal"
 import { Switch } from "@/app/components/ui/switch"
-import { ListTopbar } from "@/app/components/list-topbar"
-
+import { Textarea } from "@/app/components/ui/textarea"
+import { Product, ChannelInfo, Filters, ExcelSettings, CartItem, DividerRule, ImpactMap, HistoryState, Column } from '@/app/types/cart';
+import { UndoHistoryModal } from '@/app/components/undo-history/undo-history-modal';
+import { useUndoManager } from '@/app/hooks/use-undo-manager';
+import { EffectType } from '@/app/utils/effect-map';
+import { 
+  calculateLogisticsCost,
+  calculateCommissionFee,
+  calculateNetProfit,
+  calculateProfitMargin,
+  calculateSettlementAmount,
+  calculateCostRatio,
+  calculateExpectedFeeRate,
+  calculateAverageDiscountRate,
+  calculateAverageCostRatio,
+  calculateAverageProfitMargin,
+  calculateImmediateDiscountRate,
+  calculateCoupon1DiscountRate,
+  calculateCoupon2DiscountRate,
+  calculateCoupon3DiscountRate,
+  calculateFinalDiscountRate,
+  calculateDetailedCostRatio,
+  calculateBaseCost,
+  calculateFinalPrice,
+  calculateAdjustedFeeRate,
+  calculateChannelPrice
+} from '@/app/utils/calculations';
+import { ListTopbar } from '@/app/components/list/ListTopbar';
+import { parseChannelBasicInfo } from '@/app/utils/calculations/common';
 
 // 정렬 가능한 행 컴포넌트
 function SortableTableRow({ product, children, ...props }: { 
@@ -262,6 +280,45 @@ export default function CartPage() {
   const [memo2, setMemo2] = useState<string>('');
   const [memo3, setMemo3] = useState<string>('');
   const [isAdjustFeeEnabled, setIsAdjustFeeEnabled] = useState(false);
+  const [isChannelSearchFocused, setIsChannelSearchFocused] = useState(false);
+  const [activeId, setActiveId] = useState<string | number | null>(null);
+  const [channelSuggestions, setChannelSuggestions] = useState<ChannelInfo[]>([]);
+  const [showUndoHistoryModal, setShowUndoHistoryModal] = useState(false);
+  
+  // 되돌리기 기능 초기화
+  const {
+    recordChange,
+    undo,
+    redo,
+    jumpTo,
+    filterByType,
+    filterByProductId,
+    canUndo,
+    canRedo,
+    historyItems,
+    effects
+  } = useUndoManager(products);
+
+  // 상품 목록이 변경될 때마다 되돌리기 기능에 기록
+  useEffect(() => {
+    if (products.length > 0) {
+      console.log('상품 목록 변경 감지:', {
+        productsLength: products.length,
+        hasDiscountPrice: products.some(p => p.discount_price)
+      });
+      
+      recordChange(
+        products,
+        'PRODUCT_REORDER',
+        products.map(p => p.product_id),
+        '상품 목록 변경',
+        {
+          products: products,
+          timestamp: new Date().toISOString()
+        }
+      );
+    }
+  }, [products, recordChange]);
 
   // 각 탭별 상태 변수들
   const [tabStates, setTabStates] = useState<{
@@ -330,6 +387,163 @@ export default function CartPage() {
   const handleTabChange = (tab: string) => {
     setCurrentTab(tab);
   };
+
+  // 구분자 규칙 적용 함수
+  const applyDividerRules = (products: Product[], rules: DividerRule[]): Product[] => {
+    return products.map((product, index) => {
+      const rule = rules.find(r => index + 1 >= r.range[0] && index + 1 <= r.range[1]);
+      if (rule) {
+        return {
+          ...product,
+          rowColor: rule.color,
+          dividerText: rule.text
+        };
+      }
+      return product;
+    });
+  };
+  
+  // 이펙트맵 정의
+  const effectMap: Partial<Record<EffectType, string[]>> = {
+    DISCOUNT_CHANGE: ['pricing_price', 'total_price', 'logistics_cost'],
+    PRODUCT_REORDER: ['pricing_price', 'total_price', 'logistics_cost'],
+    CHANNEL_CHANGE: ['pricing_price', 'total_price', 'logistics_cost', 'channel_name', 'channel_category'],
+    PRICE_CHANGE: ['pricing_price', 'total_price', 'logistics_cost'],
+    COUPON_CHANGE: ['pricing_price', 'total_price', 'logistics_cost'],
+    LOGISTICS_CHANGE: ['pricing_price', 'total_price', 'logistics_cost'],
+    COST_CHANGE: ['pricing_price', 'total_price', 'logistics_cost'],
+    COMMISSION_CHANGE: ['pricing_price', 'total_price', 'logistics_cost']
+  };
+
+  // 상태 변경 기록 함수
+  const recordStateChange = useCallback((
+    effectType: EffectType,
+    productIds: string[],
+    description: string,
+    effectData: any = {}
+  ) => {
+    console.log('recordStateChange 호출됨:', {
+      effectType,
+      productIds,
+      description,
+      effectData
+    });
+
+    // 현재 products 상태의 깊은 복사본 생성
+    const currentProducts = JSON.parse(JSON.stringify(products));
+
+    // 이펙트맵에 따른 연관 데이터 업데이트
+    const affectedFields = effectMap[effectType] || [];
+    if (affectedFields.length > 0) {
+      affectedFields.forEach((field: string) => {
+        currentProducts.forEach((product: Product) => {
+          if (productIds.includes(product.product_id)) {
+            // 필드에 따른 데이터 업데이트
+            switch (field) {
+              case 'pricing_price':
+                if (selectedChannelInfo) {
+                  product.pricing_price = calculateChannelPrice(product, selectedChannelInfo);
+                }
+                break;
+              case 'total_price':
+                product.total_price = calculateFinalPrice(product);
+                break;
+              case 'logistics_cost':
+                if (selectedChannelInfo) {
+                  const logisticsCost = calculateLogisticsCost(selectedChannelInfo, deliveryType || 'conditional', Number(selectedChannelInfo.amazon_shipping_cost));
+                  product.logistics_cost = logisticsCost;
+                }
+                break;
+              case 'channel_name':
+                if (selectedChannelInfo) {
+                  product.channel_name = selectedChannelInfo.channel_name_2;
+                }
+                break;
+              case 'channel_category':
+                if (selectedChannelInfo) {
+                  product.channel_category = selectedChannelInfo.channel_category_2;
+                }
+                break;
+            }
+          }
+        });
+      });
+    }
+
+    // 상태 변경 기록
+    recordChange(
+      currentProducts,
+      effectType,
+      productIds,
+      description,
+      {
+        ...effectData,
+        products: currentProducts,
+        affectedFields,
+        effectType // effectType을 effectData에 포함
+      }
+    );
+
+    console.log('recordStateChange 완료:', {
+      updatedProducts: currentProducts,
+      affectedFields
+    });
+  }, [products, recordChange, selectedChannelInfo, deliveryType]);
+
+  /**
+   * 할인 적용 처리
+   * @param updatedProducts 할인 적용할 상품 목록
+   */
+  const handleApplyDiscount = useCallback((updatedProducts: Product[]) => {
+    console.log('handleApplyDiscount 호출됨:', {
+      productsCount: updatedProducts.length,
+      hasDiscountPrice: updatedProducts.some(p => p.discount_price)
+    });
+    
+    // 선택된 상품이 없으면 처리하지 않음
+    if (updatedProducts.length === 0) {
+      console.log('handleApplyDiscount: 선택된 상품이 없음');
+      return;
+    }
+    
+    // 먼저 products 상태 업데이트
+    setProducts(updatedProducts);
+    
+    // 할인 적용된 상품 ID 목록
+    const productIds = updatedProducts.map(product => product.product_id);
+    
+    // 상태 변경 기록
+    recordChange(updatedProducts, 'DISCOUNT_CHANGE', productIds, '할인 적용', {
+      products: updatedProducts,
+      discountInfo: updatedProducts.map(p => ({
+        id: p.id,
+        product_id: p.product_id,
+        discount_price: p.discount_price,
+        discount: p.discount,
+        discount_rate: p.discount_rate,
+        discount_unit: p.discount_unit,
+        coupon_price_1: p.coupon_price_1,
+        coupon_price_2: p.coupon_price_2,
+        coupon_price_3: p.coupon_price_3,
+        self_burden_1: p.self_burden_1,
+        self_burden_2: p.self_burden_2,
+        self_burden_3: p.self_burden_3,
+        discount_burden_amount: p.discount_burden_amount,
+        pricing_price: p.pricing_price,
+        shop_price: p.shop_price,
+        total_price: p.total_price
+      }))
+    });
+    
+    // 할인 적용 후 히스토리 상태 확인
+    console.log('할인 적용 후 히스토리 상태:', {
+      historyItems,
+      historyLength: historyItems.length,
+      currentState: products
+    });
+    
+    console.log('handleApplyDiscount 완료');
+  }, [recordChange, setProducts, historyItems, products, deliveryType]);
 
   // 탭별 상태 업데이트 핸들러
   const handleTabStateChange = (tab: string, field: string, value: any) => {
@@ -539,392 +753,157 @@ export default function CartPage() {
     };
   }, []);
 
-  // 채널 검색어 변경 시 필터링 - 디바운스 적용
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (channelSearchTerm.trim()) {
-        const filtered = channels.filter(channel => 
-          channel.channel_name_2.toLowerCase().includes(channelSearchTerm.toLowerCase())
-        );
-        setFilteredChannels(filtered);
-        setShowChannelSuggestions(true);
-      } else {
+  // 채널 검색 입력 핸들러 수정
+  const handleChannelSearch = async () => {
+    console.log('handleChannelSearch 시작');
+    try {
+      if (channelSearchTerm.trim() === '') {
+        setChannelSuggestions([]);
         setFilteredChannels([]);
         setShowChannelSuggestions(false);
+        setIsValidChannel(true);
+        return;
       }
-    }, 300); // 300ms 디바운스
 
-    return () => clearTimeout(timer);
-  }, [channelSearchTerm, channels]);
-
-  // 채널 검색 입력 핸들러 수정
-  const handleChannelSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    console.log('handleChannelSearch 시작');
-    const value = e.target.value;
-    setChannelSearchTerm(value);
-    
-    // 입력된 값이 채널 목록에 있는지 확인
-    const foundChannel = channels.find(c => c.channel_name_2 === value);
-    console.log('채널 검색 결과:', { value, foundChannel: foundChannel ? foundChannel.channel_name_2 : '없음' });
-    
-    if (foundChannel) {
-      console.log('유효한 채널 발견');
-      setIsValidChannel(true);
-      setSelectedChannelInfo(foundChannel);
-      // 채널이 선택되면 판매가 다시 계산
-      handleChannelSelect(foundChannel);
-    } else {
-      console.log('유효하지 않은 채널');
-      setIsValidChannel(false);
-      setSelectedChannelInfo(null);
-      // 유효하지 않은 채널일 때는 제안 목록을 표시
-      if (value.trim()) {
+      // 로컬 검색 수행
+      const filtered = channels.filter(channel => 
+        channel.channel_name_2.toLowerCase().includes(channelSearchTerm.toLowerCase())
+      );
+      
+      if (filtered.length > 0) {
+        setChannelSuggestions(filtered);
+        setFilteredChannels(filtered);
         setShowChannelSuggestions(true);
-      } else {
-        setShowChannelSuggestions(false);
+        setIsValidChannel(filtered.some(channel => 
+          channel.channel_name_2.toLowerCase() === channelSearchTerm.toLowerCase()
+        ));
+        return;
       }
+
+      // 로컬에서 결과를 찾지 못한 경우에만 Firebase 검색
+      const q = query(
+        collection(db, 'channels'),
+        where('channel_name_2', '>=', channelSearchTerm),
+        where('channel_name_2', '<=', channelSearchTerm + '\uf8ff'),
+        limit(5)
+      );
+
+      const querySnapshot = await getDocs(q);
+      const suggestions: ChannelInfo[] = [];
+      querySnapshot.forEach((doc) => {
+        suggestions.push(doc.data() as ChannelInfo);
+      });
+
+      setChannelSuggestions(suggestions);
+      setFilteredChannels(suggestions);
+      setShowChannelSuggestions(suggestions.length > 0);
+      setIsValidChannel(suggestions.some(channel => 
+        channel.channel_name_2.toLowerCase() === channelSearchTerm.toLowerCase()
+      ));
+    } catch (error) {
+      console.error('채널 검색 오류:', error);
+      setChannelSuggestions([]);
+      setFilteredChannels([]);
+      setShowChannelSuggestions(false);
+      setIsValidChannel(false);
     }
     console.log('handleChannelSearch 종료');
   };
 
-  // 물류비 계산 함수 수정
-  const calculateLogisticsCost = (
-    channel: ChannelInfo,
-    deliveryType: string,
-    amazonShippingCost?: number
-  ): number => {
-    // 환율 변환 (쉼표 제거 후 숫자로 변환)
-    const exchangeRate = Number(channel.applied_exchange_rate?.replace(/,/g, '') || 0);
-    
-    console.log('물류비 계산 시작:', {
-      channel_name: channel.channel_name_2,
-      delivery_type: deliveryType,
-      exchange_rate: exchangeRate,
-      free_shipping: channel.free_shipping,
-      conditional_shipping: channel.conditional_shipping,
-      amazon_shipping_cost: amazonShippingCost
-    });
-    
-    // SG_아마존US & 무료배송
-    if (channel.channel_name_2 === 'SG_아마존US' && deliveryType === 'free') {
-      const result = (amazonShippingCost || 0) * 2;
-      console.log('아마존 무료배송 결과:', result);
-      return result;
-    }
-    
-    // SG_아마존US & 조건부배송
-    if (channel.channel_name_2 === 'SG_아마존US') {
-      const result = amazonShippingCost || 0;
-      console.log('아마존 조건부배송 결과:', result);
-      return result;
-    }
-    
-    // 일반 무료배송
-    if (deliveryType === 'free') {
-      const freeShipping = channel.free_shipping
-        ? Number(String(channel.free_shipping).replace(/,/g, ''))
-        : 0;
-      const result = exchangeRate > 0 ? freeShipping / exchangeRate : 0;
-      console.log('일반 무료배송 계산:', {
-        free_shipping: freeShipping,
-        exchange_rate: exchangeRate,
-        result: result
-      });
-      return result;
-    }
-    
-    // 일반 조건부배송
-    const conditionalShipping = channel.conditional_shipping
-      ? Number(String(channel.conditional_shipping).replace(/,/g, ''))
-      : 0;
-    const result = exchangeRate > 0 ? conditionalShipping / exchangeRate : 0;
-    console.log('일반 조건부배송 계산:', {
-      conditional_shipping: conditionalShipping,
-      exchange_rate: exchangeRate,
-      result: result
-    });
-    return result;
+  // 채널 검색어 변경 시 디바운스 적용
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (channelSearchTerm.trim()) {
+        handleChannelSearch();
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [channelSearchTerm]);
+
+  // 검색 완료 처리
+  const handleChannelSearchComplete = () => {
+    console.log('handleChannelSearchComplete 시작');
+    setIsChannelSearchFocused(false);
+    setShowChannelSuggestions(false);
+    console.log('handleChannelSearchComplete 종료');
   };
-
-  // 예상수수료 계산 함수 수정
-  const calculateExpectedCommissionFee = (
-    product: Product, 
-    adjustByDiscount: boolean = isAdjustFeeEnabled,
-    channelInfo: ChannelInfo | null = selectedChannelInfo
-  ) => {
-    const pricingPrice = Number(product.pricing_price) || 0;
-    const discountPrice = Number(product.discount_price) || 0;
-    
-    const averageFeeRate = channelInfo?.average_fee_rate ? parseFloat(String(channelInfo.average_fee_rate)) : 0;
-
-    // 최종 가격 결정 (즉시할인가가 있으면 즉시할인가, 없으면 판매가)
-    const finalPrice = discountPrice > 0 ? discountPrice : pricingPrice;
-
-    // 할인율 계산 (0~1 사이 값)
-    const discountRatio = pricingPrice > 0 ? (pricingPrice - finalPrice) / pricingPrice : 0;
-
-    // 수수료율 조정 - 스위치가 켜져있을 때만 할인율에 따른 차감 적용
-    let adjustedFeeRate = averageFeeRate;
-    if (adjustByDiscount && discountRatio > 0) {
-      const feeRateReduction = Math.floor(discountRatio * 100 / 10);
-      adjustedFeeRate = Math.max(averageFeeRate - feeRateReduction, 0);
-    }
-
-    // 최종 수수료 계산
-    const commissionFee = finalPrice * (adjustedFeeRate / 100);
-    return Math.round(commissionFee);
-  };
-
-// 예상순이익 계산 함수 추가
-const calculateExpectedNetProfit = (product: Product) => {
-  if (!product.org_price || !selectedChannelInfo) return 0;  // 숫자 0을 반환
-  
-  // 예상정산금액
-  const expectedSettlementAmount = product.expected_settlement_amount || 0;
-  
-  // 원가 (조정원가가 있으면 조정원가, 없으면 기본 원가)
-  const exchangeRate = Number(selectedChannelInfo.applied_exchange_rate?.replace(/,/g, '') || 0);
-  const cost = product.adjusted_cost 
-    ? product.adjusted_cost 
-    : product.org_price / exchangeRate * (selectedChannelInfo.type === '국내' ? 1.1 : 1);
-  
-  // 물류비용
-  const logisticsCost = product.logistics_cost || 0;
-
-  // 예상순이익 = 예상정산금액 - 원가 - 물류비용
-  return expectedSettlementAmount - cost - logisticsCost;
-};
-
-const calculateExpectedNetProfitMargin = (product: Product) => {
-  if (!product.org_price || !selectedChannelInfo) return 0;
-  
-  const pricingPrice = product.pricing_price || 0;
-  if (pricingPrice === 0) return 0;
-
-  // 예상정산금액
-  const expectedSettlementAmount = product.expected_settlement_amount || 0;
-  
-  // 원가 계산
-  const exchangeRate = Number(selectedChannelInfo.applied_exchange_rate?.replace(/,/g, '') || 0);
-  const cost = product.adjusted_cost 
-    ? product.adjusted_cost 
-    : product.org_price / exchangeRate * (selectedChannelInfo.type === '국내' ? 1.1 : 1);
-  
-  const logisticsCost = product.logistics_cost || 0;
-
-  const expectedNetProfit = expectedSettlementAmount - cost - logisticsCost;
-  return expectedNetProfit / pricingPrice;
-};
-
-  // 정산예정금액 계산 함수 추가
-  const calculateExpectedSettlementAmount = (product: Product) => {
-    const pricingPrice = product.pricing_price || 0;
-    // 최종할인 컬럼과 동일한 로직 적용
-    const finalDiscountPrice = product.discount_price || null;
-    const expectedCommissionFee = product.expected_commission_fee || 0;
-    const discountBurdenAmount = product.discount_burden_amount || 0;
-  
-    return finalDiscountPrice === null
-      ? pricingPrice - expectedCommissionFee - discountBurdenAmount
-      : finalDiscountPrice - expectedCommissionFee - discountBurdenAmount;
-  };
+      
   // handleChannelSelect 함수 수정
-  const handleChannelSelect = async (channel: ChannelInfo) => {
-    console.log('handleChannelSelect 시작');
-    try {
-      // 상태 업데이트를 한 번에 처리
-      console.log('상태 업데이트 시작');
-      setChannelSearchTerm(channel.channel_name_2);
-      setIsValidChannel(true);
-      setFilters(prev => ({
-        ...prev,
-        channel_name_2: channel.channel_name_2
-      }));
-      setSelectedChannelInfo(channel);
-      setShowChannelSuggestions(false);
-      console.log('상태 업데이트 완료');
+  const handleChannelSelect = async (channelInfo: ChannelInfo | null) => {
+    console.log('[handleChannelSelect] START', JSON.stringify(channelInfo, null, 2));
+    if (!channelInfo) {
+      console.log('[handleChannelSelect] 채널 정보가 없습니다. 계산 중단');
+      return;
+    }
+
+    // 필요한 채널 정보 확인
+    const { exchangeRate, markupRatio, rounddown } = parseChannelBasicInfo(channelInfo);
+    if (!exchangeRate || !markupRatio || !rounddown) {
+      console.log('[handleChannelSelect] 필수 채널 정보 누락:', {
+        exchangeRate: exchangeRate || '누락',
+        markupRatio: markupRatio || '누락',
+        rounddown: rounddown || '누락'
+      });
+    }
+
+    // 제품 가격 계산 및 업데이트
+    const updatedProducts = products.map(product => {
+      console.log(`[상품 처리] ID: ${product.product_id}, 이름: ${product.name}`);
       
-      console.log('상품 업데이트 시작');
-      // 판매가와 물류비 계산
-      const updatedProducts = await Promise.all(products.map(async product => {
-        let pricingPrice: number | null = null;
-        let adjustedCost: number | null = null;
-
-        // 채널 정보의 모든 값이 있는지 확인
-        if (!channel.type || !channel.markup_ratio || !channel.applied_exchange_rate) {
-          console.log('채널 정보 누락:', {
-            type: channel.type,
-            markup_ratio: channel.markup_ratio,
-            applied_exchange_rate: channel.applied_exchange_rate
-          });
-          return {
-            ...product,
-            pricing_price: null,
-            logistics_cost: undefined,
-            adjusted_cost: null
-          };
+      // shop_price 및 global_price 체크
+      let updatedProduct = { ...product };
+      let priceError = false;
+      
+      if (channelInfo.type === '일본' || channelInfo.type === '자사몰') {
+        if (!product.shop_price) {
+          console.log(`[오류] 상품 ID: ${product.product_id}의 shop_price가 없습니다.`);
+          priceError = true;
         }
-
-        // 환율 변환
-        const exchangeRate = Number(channel.applied_exchange_rate.replace(/,/g, ''));
-
-        // markup_ratio에서 콤마 제거하고 숫자로 변환
-        const markupRatio = Number(channel.markup_ratio.replace(/,/g, ''));
-
-        // 타입칸에 표시되는 채널 타입에 따라 판매가 계산
-        if (channel.type === '일본' || channel.type === '자사몰') {
-          if (channel.rounddown !== null) {
-            // SQL의 ROUND 함수와 동일한 로직으로 수정
-            const basePrice = product.global_price / exchangeRate;
-            const multiplier = Math.pow(10, Number(channel.rounddown));
-            pricingPrice = Math.floor(basePrice * multiplier) / multiplier;
-            pricingPrice += Number(channel.digit_adjustment || 0);
-            if (channel.channel_name_2 === 'SG_아마존US') {
-              pricingPrice += Number(channel.amazon_shipping_cost || 0);
-            }
-          }
+      } else if (channelInfo.type === '국내' || channelInfo.type === '해외') {
+        if (!product.global_price) {
+          console.log(`[오류] 상품 ID: ${product.product_id}의 global_price가 없습니다.`);
+          priceError = true;
         }
-        // 국내
-        else if (channel.type === '국내') {
-          pricingPrice = product.shop_price + markupRatio;
-        }
-        // 해외
-        else if (channel.type === '해외' && channel.rounddown !== null) {
-          pricingPrice = Math.floor(
-            (product.shop_price * markupRatio) / exchangeRate
-          );
-          pricingPrice += Number(channel.digit_adjustment || 0);
-
-          // ZALORA 특별 케이스
-          if (channel.channel_name_2 === 'SG_ZALORA_SG') {
-            pricingPrice *= 1.09;
-          } else if (channel.channel_name_2 === 'SG_ZALORA_MY') {
-            pricingPrice *= 1.1;
-          }
-        }
-
-        // 물류비 계산
-        const logisticsCost = calculateLogisticsCost(channel, deliveryType, Number(channel.amazon_shipping_cost));
-
-        // 1. 채널판매가 설정
-        const newProduct = {
-          ...product,
-          pricing_price: pricingPrice,
-          logistics_cost: logisticsCost,
-          adjusted_cost: adjustedCost
-        };
-
-        // 2. 예상수수료 계산
-        newProduct.expected_commission_fee = calculateExpectedCommissionFee(newProduct);
-
-        // 3. 정산예정금액 계산
-        newProduct.expected_settlement_amount = calculateExpectedSettlementAmount(newProduct);
-
-        // 4. 예상순이익 및 예상순이익률 계산
-        newProduct.expected_net_profit = calculateExpectedNetProfit(newProduct);
-        newProduct.expected_net_profit_margin = calculateExpectedNetProfitMargin(newProduct);
-
-        return newProduct;
-      }));
-
-      console.log('상품 업데이트 완료, 상태 업데이트 시작');
-      setProducts(updatedProducts);
-      await saveCartInfo();
-      console.log('handleChannelSelect 종료');
-    } catch (error) {
-      console.error('채널 선택 중 오류 발생:', error);
-    }
-  };
-
-  // 채널 검색창 포커스 핸들러 수정
-  const handleChannelSearchFocus = () => {
-    console.log('handleChannelSearchFocus 시작');
-    if (channelSearchTerm.trim() && !selectedChannelInfo) {
-      console.log('채널 검색어가 있고 선택된 채널이 없음, 제안 목록 표시');
-      setShowChannelSuggestions(true);
-    }
-    console.log('handleChannelSearchFocus 종료');
-  };
-
-  // 드래그 종료 핸들러
-  const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
-    setIsDragging(false);
+      }
+      
+      // 가격 계산
+      const pricing_price = calculateChannelPrice(product, channelInfo);
+      console.log(`[가격 계산] 상품 ID: ${product.product_id}, 계산된 pricing_price: ${pricing_price}`);
+      
+      // 물류비 계산 - deliveryType 변수 사용
+      const logistics_cost = calculateLogisticsCost(channelInfo, deliveryType || 'conditional', Number(channelInfo.amazon_shipping_cost));
+      console.log(`[물류비 계산] 상품 ID: ${product.product_id}, 계산된 logistics_cost: ${logistics_cost}`);
+      
+      return {
+        ...updatedProduct,
+        pricing_price,
+        logistics_cost,
+        ...(priceError ? { priceError: true } : {})
+      };
+    });
     
-    if (over && active.id !== over.id) {
-      const oldIndex = products.findIndex((item) => item.product_id === active.id);
-      const newIndex = products.findIndex((item) => item.product_id === over.id);
-      
-      const newProducts = arrayMove(products, oldIndex, newIndex);
-      setProducts(newProducts);
-      await saveCartInfo();
+    // 업데이트된 상품 리스트 확인
+    const productsWithZeroPricing = updatedProducts.filter(p => p.pricing_price === 0 || p.pricing_price === null);
+    if (productsWithZeroPricing.length > 0) {
+      console.log(`[주의] ${productsWithZeroPricing.length}개 상품의 pricing_price가 0 또는 null입니다.`);
+      productsWithZeroPricing.forEach(p => {
+        console.log(`- 상품 ID: ${p.product_id}, 이름: ${p.name}`);
+      });
     }
-  };
-
-  // 드래그 시작 핸들러
-  const handleDragStart = () => {
-    setIsDragging(true);
-  };
-
-  // 드래그 앤 드롭 센서 설정
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-
-  // 상품 추가 시에도 순서 정보 저장
-  const handleAddToCart = async (product: Product) => {
-    try {
-      const newProducts = [...products, product];
-      setProducts(newProducts);
-      
-      if (user) {
-        console.log('파이어스토어 저장 시도:', {
-          userId: user.uid,
-          product: product
-        });
-        
-        const docRef = doc(db, 'userCarts', user.uid);
-        await setDoc(docRef, {
-          products: newProducts,
-          updatedAt: new Date().toISOString()
-        });
-        
-        console.log('파이어스토어 저장 성공');
-      } else {
-        console.log('사용자가 로그인되어 있지 않음');
-      }
-    } catch (error) {
-      console.error('상품 추가 중 오류 발생:', error);
-      setProducts(products);
-    }
-  };
-
-  // 상품 제거 시에도 순서 정보 저장
-  const handleRemoveFromCart = async (productId: string) => {
-    try {
-      const newProducts = products.filter(p => p.product_id !== productId);
-      setProducts(newProducts);
-      
-      if (user) {
-        const docRef = doc(db, 'userCarts', user.uid);
-        await setDoc(docRef, {
-          products: newProducts,
-          updatedAt: new Date().toISOString()
-        });
-      }
-    } catch (error) {
-      console.error('상품 제거 중 오류 발생:', error);
-      setProducts(products);
-    }
-  };
-
-  // 타이틀 변경 핸들러
-  const handleTitleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setTitle(value);
+    
+    // 상태 업데이트 추가
+    setChannelSearchTerm(channelInfo.channel_name_2);
+    setIsValidChannel(true);
+    setFilters(prev => ({
+      ...prev,
+      channel_name_2: channelInfo.channel_name_2
+    }));
+    setProducts(updatedProducts);
+    setSelectedChannelInfo(channelInfo);
+    setShowChannelSuggestions(false);
+    
+    // 장바구니 정보 저장
     await saveCartInfo();
   };
 
@@ -1009,9 +988,6 @@ const calculateExpectedNetProfitMargin = (product: Product) => {
     return Math.floor(value / unitValue) * unitValue;
   };
 
-  // 할인 적용 핸들러
-   
-
   // 엑셀 다운로드 함수
   const handleExcelDownload = () => {
     // 엑셀 데이터 준비
@@ -1088,32 +1064,25 @@ const calculateExpectedNetProfitMargin = (product: Product) => {
     XLSX.writeFile(wb, `상품리스트_${dateStr}.xlsx`);
   };
 
-  const handleRemoveSelectedProducts = async () => {
-    if (selectedProducts.length === 0) {
-      alert('삭제할 상품을 선택해주세요.');
-      return;
-    }
+  // 상품 삭제 핸들러
+  const handleRemoveProduct = (productId: string) => {
+    const updatedProducts = products.filter(p => p.product_id !== productId);
+    setProducts(updatedProducts);
+    
+    // 되돌리기 기능에 기록
+    recordStateChange('PRODUCT_REMOVE', [productId], '상품 삭제');
+  };
 
-    if (!confirm(`선택된 ${selectedProducts.length}개의 상품을 삭제하시겠습니까?`)) {
-      return;
-    }
-
-    try {
-      const newProducts = products.filter(p => !selectedProducts.includes(p.product_id));
-      setProducts(newProducts);
-      setSelectedProducts([]);
-      
-      if (user) {
-        const docRef = doc(db, 'userCarts', user.uid);
-        await setDoc(docRef, {
-          products: newProducts,
-          updatedAt: new Date().toISOString()
-        });
-      }
-    } catch (error) {
-      console.error('선택된 상품 삭제 중 오류 발생:', error);
-      alert('상품 삭제 중 오류가 발생했습니다.');
-    }
+  // 선택된 상품 삭제 핸들러
+  const handleRemoveSelectedProducts = () => {
+    if (selectedProducts.length === 0) return;
+    
+    const updatedProducts = products.filter(p => !selectedProducts.includes(p.product_id));
+    setProducts(updatedProducts);
+    setSelectedProducts([]);
+    
+    // 되돌리기 기능에 기록
+    recordStateChange('PRODUCT_REMOVE', selectedProducts, '선택된 상품 삭제');
   };
 
   // 초기화 핸들러 추가
@@ -1185,25 +1154,25 @@ const calculateExpectedNetProfitMargin = (product: Product) => {
       const updatedProducts = products.map(product => {
         const newProduct = { ...product };
         // 할인 관련 필드 초기화
-        delete newProduct.discount_price;
-        delete newProduct.discount;
-        delete newProduct.discount_rate;
-        delete newProduct.discount_unit;
-        delete newProduct.coupon_price_1;
-        delete newProduct.coupon_price_2;
-        delete newProduct.coupon_price_3;
-        delete newProduct.self_ratio;
-        delete newProduct.discount_burden_amount;
+        newProduct.discount_price = null as any;
+        newProduct.discount = null as any;
+        newProduct.discount_rate = null as any;
+        newProduct.discount_unit = null as any;
+        newProduct.coupon_price_1 = null as any;
+        newProduct.coupon_price_2 = null as any;
+        newProduct.coupon_price_3 = null as any;
+        newProduct.self_ratio = null as any;
+        newProduct.discount_burden_amount = null as any;
         
         // 수수료 및 정산 관련 필드 초기화
-        delete newProduct.expected_commission_fee;
-        delete newProduct.expected_net_profit;
-        delete newProduct.expected_net_profit_margin;
-        delete newProduct.expected_settlement_amount;
+        newProduct.expected_commission_fee = null as any;
+        newProduct.expected_net_profit = null as any;
+        newProduct.expected_net_profit_margin = null as any;
+        newProduct.expected_settlement_amount = null as any;
         
         // 원가 관련 필드 초기화
-        delete newProduct.adjusted_cost;
-        delete newProduct.logistics_cost;
+        newProduct.adjusted_cost = null as any;
+        newProduct.logistics_cost = null as any;
         
         return newProduct;
       });
@@ -1344,6 +1313,13 @@ const calculateExpectedNetProfitMargin = (product: Product) => {
 
     setProducts(updatedProducts);
     
+    // 되돌리기 기능에 기록
+    recordStateChange(
+      'COLOR_CHANGE',
+      updatedProducts.filter(p => p.rowColor === selectedColor).map(p => p.product_id),
+      '색상 적용'
+    );
+    
     // Firebase에 저장
     if (user) {
       const docRef = doc(db, 'userCarts', user.uid);
@@ -1395,23 +1371,16 @@ const calculateExpectedNetProfitMargin = (product: Product) => {
     }
   };
 
-  // 구분자 적용
-  const handleApplyDivider = async () => {
-    const updatedProducts = products.map((product, index) => {
-      const matchingRule = dividerRules.find(rule => 
-        index + 1 >= rule.range[0] && index + 1 <= rule.range[1]
-      );
-      
-      return {
-        ...product,
-        rowColor: matchingRule?.color || undefined,
-        dividerText: matchingRule?.text || undefined
-      };
-    });
-
+  // 구분자 적용 핸들러
+  const handleApplyDivider = (dividerRules: DividerRule[]) => {
+    const updatedProducts = applyDividerRules(products, dividerRules);
     setProducts(updatedProducts);
-    setShowDividerModal(false);
-    await saveCartInfo();
+    recordStateChange(
+      'DIVIDER_CHANGE',
+      updatedProducts.map(p => p.product_id),
+      '구분자 적용',
+      { dividerRules }
+    );
   };
 
   // 구분자 초기화 핸들러
@@ -1454,63 +1423,80 @@ const calculateExpectedNetProfitMargin = (product: Product) => {
     }
   };
 
-  const handleApplyDiscount = async (updatedProducts: Product[]) => {
-    setProducts(updatedProducts);
-    if (user) {
-      const docRef = doc(db, 'userCarts', user.uid);
-      setDoc(docRef, {
-        products: updatedProducts,
-        updatedAt: new Date().toISOString()
-      });
-    }
-  };
-
-  // 예상수수료율 계산 함수
-  const calculateExpectedFeeRate = (channel: ChannelInfo, price: number): number => {
-    if (!channel.average_fee_rate) return 0;
-    
-    // 문자열을 숫자로 변환
-    const averageFeeRate = Number(channel.average_fee_rate);
-    
-    console.log('예상수수료율 계산:', {
-      channel_name: channel.channel_name_2,
-      original_average_fee_rate: channel.average_fee_rate,
-      converted_average_fee_rate: averageFeeRate,
-      price: price
-    });
-    
-    // 평균 수수료율이 0.15(15%)인 경우
-    if (averageFeeRate === 0.15) {
-      // 가격이 10000원 미만이면 0.15(15%)
-      if (price < 10000) return 0.15;
-      // 가격이 10000원 이상이면 0.12(12%)
-      return 0.12;
-    }
-    
-    // 평균 수수료율이 0.12(12%)인 경우
-    if (averageFeeRate === 0.12) {
-      // 가격이 10000원 미만이면 0.12(12%)
-      if (price < 10000) return 0.12;
-      // 가격이 10000원 이상이면 0.08(8%)
-      return 0.08;
-    }
-    
-    // 그 외의 경우 평균 수수료율 그대로 사용
-    return averageFeeRate;
-  };
-
   // 스위치 상태 변경 핸들러
   const handleAdjustFeeChange = async (checked: boolean) => {
     setIsAdjustFeeEnabled(checked);
     if (selectedChannelInfo) {
       const updatedProducts = products.map(product => ({
         ...product,
-        expected_commission_fee: calculateExpectedCommissionFee(product, checked)
+        expected_commission_fee: calculateCommissionFee(product, selectedChannelInfo, checked)
       }));
       setProducts(updatedProducts);
       await saveCartInfo();
     }
   };
+
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setTitle(e.target.value);
+  };
+
+  const handleChannelSearchFocus = () => {
+    setIsChannelSearchFocused(true);
+  };
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragStart = (event: DragStartEvent) => {
+    const { active } = event;
+    setActiveId(active.id);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (over && active.id !== over.id) {
+      const oldIndex = products.findIndex(p => p.product_id === active.id);
+      const newIndex = products.findIndex(p => p.product_id === over.id);
+      
+      const updatedProducts = arrayMove(products, oldIndex, newIndex);
+      setProducts(updatedProducts);
+      
+      // 되돌리기 기능에 기록
+      recordStateChange('PRODUCT_REORDER', [active.id as string, over.id as string], '상품 순서 변경');
+    }
+  };
+
+  /**
+   * 되돌리기 처리
+   */
+  const handleUndo = useCallback(() => {
+    console.log('handleUndo 호출됨');
+    
+    // 되돌리기 전 상태 확인
+    console.log('되돌리기 전 상태:', {
+      productsLength: products.length,
+      hasDiscountPrice: products.some(p => p.discount_price),
+      historyItems,
+      currentState: products
+    });
+    
+    // 되돌리기 실행
+    undo();
+    
+    // 되돌리기 후 상태 확인
+    const lastHistoryItem = historyItems[historyItems.length - 1];
+    const lastEffectType = lastHistoryItem?.description as EffectType | undefined;
+    console.log('되돌리기 후 상태:', {
+      historyItems,
+      currentState: products,
+      lastEffectType
+    });
+  }, [products, historyItems, undo]);
 
   return (
     <>
@@ -1543,21 +1529,13 @@ const calculateExpectedNetProfitMargin = (product: Product) => {
               {products.length > 0 && (
                 <>
                   <span className="mr-4 rounded-md shadow-sm bg-muted px-2 py-1">
-                    평균할인율 : {Math.round(products.reduce((acc, product) => {
-                      const discountRate = product.discount_price && product.pricing_price 
-                        ? ((product.pricing_price - product.discount_price) / product.pricing_price) * 100
-                        : 0;
-                      return acc + discountRate;
-                    }, 0) / products.length)}%
+                    평균할인율 : {calculateAverageDiscountRate(products)}%
                   </span>
                   <span className="mr-4 rounded-md shadow-sm bg-muted px-2 py-1">
-                    평균원가율 : {Math.round(products.reduce((acc, product) => acc + (product.cost_ratio || 0), 0) / products.length)}%
+                    평균원가율 : {calculateAverageCostRatio(products)}%
                   </span>
                   <span className="mr-4 rounded-md shadow-sm bg-muted px-2 py-1">
-                    평균순이익률 : {Math.round(products.reduce((acc, product) => {
-                      const netProfitMargin = calculateExpectedNetProfitMargin(product);
-                      return acc + (netProfitMargin * 100);
-                    }, 0) / products.length)}%
+                    평균순이익률 : {selectedChannelInfo ? calculateAverageProfitMargin(products, selectedChannelInfo) : 0}%
                   </span>
                 </>
               )}
@@ -1590,7 +1568,21 @@ const calculateExpectedNetProfitMargin = (product: Product) => {
                   <input
                     type="text"
                     value={channelSearchTerm}
-                    onChange={handleChannelSearch}
+                    onChange={(e) => {
+                      setChannelSearchTerm(e.target.value);
+                      // 입력이 비어있으면 제안 목록 숨기기
+                      if (!e.target.value.trim()) {
+                        setFilteredChannels([]);
+                        setShowChannelSuggestions(false);
+                      } else {
+                        // 입력이 있으면 필터링하여 제안 목록 표시
+                        const filtered = channels.filter(channel => 
+                          channel.channel_name_2.toLowerCase().includes(e.target.value.toLowerCase())
+                        );
+                        setFilteredChannels(filtered);
+                        setShowChannelSuggestions(filtered.length > 0);
+                      }
+                    }}
                     onFocus={handleChannelSearchFocus}
                     placeholder="채널명을 입력해주세요"
                     className={`w-[160px] h-8 px-3 border-[0px] border-b-[1px] focus:border-b-[0px] focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
@@ -1754,7 +1746,16 @@ const calculateExpectedNetProfitMargin = (product: Product) => {
                 className="border-0 hover:bg-transparent hover:text-primary"
               >
                 양식변경
-              </Button> 
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowUndoHistoryModal(true)}
+                className="border-0 hover:bg-transparent hover:text-primary"
+              >
+                <History className="h-4 w-4 mr-1" />
+                작업 기록
+              </Button>
             </div>
             <div className="flex gap-2">
               <Button
@@ -1848,13 +1849,13 @@ const calculateExpectedNetProfitMargin = (product: Product) => {
                                 }
                               }}
                             />
-                            <DraggableCell className="text-center">
+                            <DraggableCell className="text-center">{/* 번호 */}
                               <div>{index + 1}</div>
                             </DraggableCell>
-                            <DraggableCell className="text-center">
+                            <DraggableCell className="text-center">{/* 이지어드민상품코드 */}
                               <div>{product.product_id}</div>
                             </DraggableCell>
-                            <DraggableCell className="text-center">
+                            <DraggableCell className="text-center">{/* 이미지 */}
                               <div className="flex justify-center" >
                                 {product.img_desc1 ? (
                                   <img
@@ -1883,7 +1884,7 @@ const calculateExpectedNetProfitMargin = (product: Product) => {
                                 )}
                               </div>
                             </DraggableCell>
-                            <TableCell className="text-left">
+                            <TableCell className="text-left">{/* 상품명 */}
                               <div className="flex flex-col">
                                 <div 
                                   className="truncate cursor-pointer hover:underline" 
@@ -1905,53 +1906,47 @@ const calculateExpectedNetProfitMargin = (product: Product) => {
                                 </div>
                               </div>
                             </TableCell>
-                            <DraggableCell className="text-center">
+                            <DraggableCell className="text-center">{/* 판매가 */}
                               <div>{product.pricing_price?.toLocaleString() || '-'}</div>
                               <div className="text-sm text-muted-foreground">
-                                {(() => {
-                                  if (!product.org_price || !selectedChannelInfo) return '-';
-                                  
-                                  const exchangeRate = Number(selectedChannelInfo.applied_exchange_rate?.replace(/,/g, '') || 0);
-                                  const cost = product.org_price / exchangeRate * 
-                                    (selectedChannelInfo.type === '국내' ? 1.1 : 1);
-                                  
-                                  return Math.round(cost).toLocaleString();
-                                })()}
+                                {selectedChannelInfo && product.org_price 
+                                  ? calculateBaseCost(product, selectedChannelInfo).toLocaleString()
+                                  : '-'}
                               </div>
                             </DraggableCell>
-                            <DraggableCell className="text-center">
+                            <DraggableCell className="text-center">{/* 즉시할인 */}
                               <div>{product.discount_price?.toLocaleString() || '-'}</div>
                               <div className="text-sm text-muted-foreground">
                                 {product.discount_price && product.pricing_price 
-                                  ? `${Math.round(((product.pricing_price - product.discount_price) / product.pricing_price) * 100)}%`
+                                  ? `${calculateImmediateDiscountRate(product)}%`
                                   : '-'}
                               </div>
                             </DraggableCell>
-                            <DraggableCell className="text-center">
+                            <DraggableCell className="text-center">{/* 쿠폰1 */}
                               <div>{product.coupon_price_1 ? product.coupon_price_1.toLocaleString() : "-"}</div>
                               <div className="text-sm text-muted-foreground">
                                 {product.coupon_price_1 && product.discount_price
-                                  ? `${Math.round(((product.discount_price - product.coupon_price_1) / product.discount_price) * 100)}%`
+                                  ? `${calculateCoupon1DiscountRate(product)}%`
                                   : '-'}
                               </div>
                             </DraggableCell>
-                            <DraggableCell className="text-center">
+                            <DraggableCell className="text-center">{/* 쿠폰2 */}
                               <div>{product.coupon_price_2 ? product.coupon_price_2.toLocaleString() : "-"}</div>
                               <div className="text-sm text-muted-foreground">
                                 {product.coupon_price_2 && product.coupon_price_1
-                                  ? `${Math.round(((product.coupon_price_1 - product.coupon_price_2) / product.coupon_price_1) * 100)}%`
+                                  ? `${calculateCoupon2DiscountRate(product)}%`
                                   : '-'}
                               </div>
                             </DraggableCell>
-                            <DraggableCell className="text-center">
+                            <DraggableCell className="text-center">{/* 쿠폰3 */}
                               <div>{product.coupon_price_3 ? product.coupon_price_3.toLocaleString() : "-"}</div>
                               <div className="text-sm text-muted-foreground">
                                 {product.coupon_price_3 && product.coupon_price_2
-                                  ? `${Math.round(((product.coupon_price_2 - product.coupon_price_3) / product.coupon_price_2) * 100)}%`
+                                  ? `${calculateCoupon3DiscountRate(product)}%`
                                   : '-'}
                               </div>
                             </DraggableCell>
-                            <DraggableCell className="text-center">
+                            <DraggableCell className="text-center">{/* 최종할인 */}
                               <div> 
                                 {product.coupon_price_3 ? product.coupon_price_3.toLocaleString() :
                                 product.coupon_price_2 ? product.coupon_price_2.toLocaleString() :
@@ -1959,94 +1954,71 @@ const calculateExpectedNetProfitMargin = (product: Product) => {
                                 product.discount_price?.toLocaleString() || '-'}
                               </div>
                               <div className="text-sm text-muted-foreground">
-                                {product.coupon_price_3 && product.pricing_price
-                                  ? `${Math.round(((product.pricing_price - product.coupon_price_3) / product.pricing_price) * 100)}%`
-                                  : product.coupon_price_2 && product.pricing_price
-                                  ? `${Math.round(((product.pricing_price - product.coupon_price_2) / product.pricing_price) * 100)}%`
-                                  : product.coupon_price_1 && product.pricing_price
-                                  ? `${Math.round(((product.pricing_price - product.coupon_price_1) / product.pricing_price) * 100)}%`
-                                  : product.discount_price && product.pricing_price
-                                  ? `${Math.round(((product.pricing_price - product.discount_price) / product.pricing_price) * 100)}%`
-                                  : '-'}
+                                {product.pricing_price ? `${calculateFinalDiscountRate(product)}%` : '-'}
                               </div>
                             </DraggableCell>
-                            <DraggableCell className="text-center">
+                            <DraggableCell className="text-center">{/* 할인부담액 */}
                               <div>{product.discount_burden_amount?.toLocaleString() || '-'}</div>
                             </DraggableCell>
-                            <DraggableCell className="text-center">
+                            <DraggableCell className="text-center">{/* 조정원가 */}
                               <div>{product.adjusted_cost?.toLocaleString() || '-'}</div>
                             </DraggableCell>
-                            <DraggableCell className="text-center">
-                              <div>{product.expected_commission_fee?.toLocaleString() || '-'}</div>
+                            <DraggableCell className="text-center">{/* 예상수수료 */}
+                              <div>{selectedChannelInfo 
+                                ? calculateCommissionFee(product, selectedChannelInfo, isAdjustFeeEnabled).toLocaleString() 
+                                : '-'}</div>
                               <div className="text-sm text-muted-foreground">
-                                {(() => {
-                                  const pricingPrice = Number(product.pricing_price) || 0;
-                                  const discountPrice = Number(product.discount_price) || 0;
-                                  const finalPrice = discountPrice > 0 ? discountPrice : pricingPrice;
-                                  const discountRatio = pricingPrice > 0 ? (pricingPrice - finalPrice) / pricingPrice : 0;
-                                  const averageFeeRate = selectedChannelInfo?.average_fee_rate ? parseFloat(String(selectedChannelInfo.average_fee_rate)) : 0;
-                                  
-                                  // 스위치 상태에 따라 수수료율 조정
-                                  let adjustedFeeRate = averageFeeRate;
-                                  if (isAdjustFeeEnabled && discountRatio > 0) {
-                                    const feeRateReduction = Math.floor(discountRatio * 100 / 10);
-                                    adjustedFeeRate = Math.max(averageFeeRate - feeRateReduction, 0);
-                                  }
-                                  
-                                  return `${adjustedFeeRate.toFixed(1)}%`;
-                                })()}
-                              </div>
-                            </DraggableCell>
-                            <DraggableCell className="text-center">
-                              <div>{product.logistics_cost?.toLocaleString() || '-'}</div>
-                            </DraggableCell>
-                            <DraggableCell className="text-center">
-                              <div>{calculateExpectedNetProfit(product)?.toLocaleString() || '-'}</div>
-                              <div>
-                                {calculateExpectedNetProfitMargin(product) 
-                                  ? `${(calculateExpectedNetProfitMargin(product) * 100).toFixed(1)}%` 
+                                {selectedChannelInfo 
+                                  ? `${calculateAdjustedFeeRate(product, selectedChannelInfo, isAdjustFeeEnabled).toFixed(1)}%` 
                                   : '-'}
                               </div>
                             </DraggableCell>
-                            <DraggableCell className="text-center">
-                              <div>{product.expected_settlement_amount?.toLocaleString() || '-'}</div>
-                            </DraggableCell>
-                            <DraggableCell className="text-center">
-                              <div className="text-sm text-muted-foreground">
-                                {(() => {
-                                  if (!product.org_price || !selectedChannelInfo) return '-';
-                                  
-                                  const org = product.adjusted_cost 
-                                  ? (product.adjusted_cost || 0)
-                                  : (product.org_price || 0);
-
-                                  const exchangeRate = Number(selectedChannelInfo.applied_exchange_rate?.replace(/,/g, '') || 0);
-                                  const cost = org / exchangeRate * 
-                                    (selectedChannelInfo.type === '국내' ? 1.1 : 1);
-                                  
-                                  const finalPrice = product.discount_price 
-                                    ? product.discount_price - (product.discount_burden_amount || 0)
-                                    : (product.pricing_price || 0) - (product.discount_burden_amount || 0);
-
-                                  const costRatio = cost / finalPrice; 
-                                  
-                                  return (Math.round(costRatio * 10000) / 100).toLocaleString() + '%';
-                                })()}
+                            <DraggableCell className="text-center">{/* 물류비 */}
+                              <div>
+                                {selectedChannelInfo 
+                                  ? calculateLogisticsCost(selectedChannelInfo, deliveryType, Number(selectedChannelInfo.amazon_shipping_cost)).toLocaleString() 
+                                  : '-'}
                               </div>
                             </DraggableCell>
-                            <DraggableCell className="text-center">
-                              <div>{(product.total_stock !== undefined 
-                                ? product.total_stock 
-                                : product.main_wh_available_stock_excl_production_stock)?.toLocaleString() || '-'}</div>
-                              <div className="text-sm text-gray-500 mt-1">{product.soldout_rate ? `${product.soldout_rate}%` : '-'}</div>
+                            <DraggableCell className="text-center">{/* 예상순이익 */}
+                              <div>
+                                {selectedChannelInfo 
+                                  ? `${calculateNetProfit(product, selectedChannelInfo).toLocaleString()}`
+                                  : '-'}
+                              </div>
+                              <div className="text-sm text-gray-500 mt-1">
+                                {selectedChannelInfo && product.pricing_price
+                                  ? `${(calculateProfitMargin(product, selectedChannelInfo) * 100).toFixed(2)}%`
+                                  : '-'}
+                              </div>
                             </DraggableCell>
-                            <DraggableCell className="text-center">
+                            <DraggableCell className="text-center">{/* 예상정산액 */}
+                              <div>{calculateSettlementAmount(product).toLocaleString() || '-'}</div>
+                            </DraggableCell>
+                            <DraggableCell className="text-center">{/* 원가율 */}
+                              <div>
+                                {selectedChannelInfo && product.org_price 
+                                  ? `${calculateCostRatio(product, selectedChannelInfo)}%`
+                                  : '-'}
+                              </div>
+                            </DraggableCell>
+                            <DraggableCell className="text-center">{/* 재고 */}
+                              <div>
+                                {product.total_stock !== undefined 
+                                  ? product.total_stock.toLocaleString() 
+                                  : product.main_wh_available_stock_excl_production_stock?.toLocaleString() || '-'}
+                              </div>
+                              <div className="text-sm text-gray-500 mt-1">
+                                {product.soldout_rate ? `${product.soldout_rate}%` : '-'}
+                              </div>
+                            </DraggableCell>
+                            <DraggableCell className="text-center">{/* 드랍여부 */}
                               <div>{product.drop_yn || '-'}</div>
                             </DraggableCell>
-                            <DraggableCell className="text-center">
+                            <DraggableCell className="text-center">{/* 공급처명 */}
                               <div>{product.supply_name || '-'}</div>
                             </DraggableCell>
-                            <DraggableCell className="text-center">
+                            <DraggableCell className="text-center">{/* 단독여부 */}  
                               <div>{product.exclusive2 || '-'}</div>
                             </DraggableCell>
                           </SortableTableRow>
@@ -2142,9 +2114,9 @@ const calculateExpectedNetProfitMargin = (product: Product) => {
             products={products}
             selectedProducts={selectedProducts}
             onClose={() => setShowCouponDiscountModal(false)}
-            calculateExpectedSettlementAmount={calculateExpectedSettlementAmount}
-            calculateExpectedNetProfit={calculateExpectedNetProfit}
-            calculateExpectedCommissionFee={calculateExpectedCommissionFee}
+            calculateExpectedSettlementAmount={calculateSettlementAmount}
+            calculateExpectedNetProfit={(product) => selectedChannelInfo ? calculateNetProfit(product, selectedChannelInfo) : 0}
+            calculateExpectedCommissionFee={(product, checked) => selectedChannelInfo ? calculateCommissionFee(product, selectedChannelInfo, !!checked) : 0}
             selectedChannelInfo={selectedChannelInfo}
             currentProducts={products}
           />
@@ -2156,11 +2128,26 @@ const calculateExpectedNetProfitMargin = (product: Product) => {
           products={products}
           selectedProducts={selectedProducts}
           onClose={() => setShowImmediateDiscountModal(false)}
-          calculateExpectedSettlementAmount={calculateExpectedSettlementAmount}
-          calculateExpectedNetProfit={calculateExpectedNetProfit}
-          calculateExpectedCommissionFee={calculateExpectedCommissionFee}
+          calculateExpectedSettlementAmount={calculateSettlementAmount}
+          calculateExpectedNetProfit={(product) => selectedChannelInfo ? calculateNetProfit(product, selectedChannelInfo) : 0}
+          calculateExpectedCommissionFee={(product, checked) => selectedChannelInfo ? calculateCommissionFee(product, selectedChannelInfo, !!checked) : 0}
           selectedChannelInfo={selectedChannelInfo}
           currentProducts={products}
+        />
+        
+        {/* 되돌리기 히스토리 모달 */}
+        <UndoHistoryModal
+          historyItems={historyItems}
+          effects={effects}
+          onUndo={undo}
+          onRedo={redo}
+          onJumpTo={jumpTo}
+          canUndo={canUndo}
+          canRedo={canRedo}
+          onFilterByType={filterByType}
+          onFilterByProductId={filterByProductId}
+          open={showUndoHistoryModal}
+          onOpenChange={setShowUndoHistoryModal}
         />
       </div>
     </>

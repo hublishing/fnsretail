@@ -1,6 +1,8 @@
 import { ReactNode } from 'react';
 
 export interface Product {
+  [key: string]: any;
+  id: string;
   product_id: string;
   name: string;
   org_price: number;
@@ -29,25 +31,25 @@ export interface Product {
   order_channels?: string[];
   order_categories?: string[];
   order_types?: string[];
-  discount_price?: number | null;
-  discount?: number;
-  discount_rate?: number;
-  discount_unit?: string;
-  coupon_price_1?: number;
-  coupon_price_2?: number;
-  coupon_price_3?: number;
+  discount_price: number;
+  discount: number;
+  discount_rate: number;
+  discount_unit: string;
+  coupon_price_1: number;
+  coupon_price_2: number;
+  coupon_price_3: number;
   isSelected?: boolean;
-  pricing_price: number | null;
+  pricing_price: number;
   self_ratio?: number;
   final_price: number | null;
   rowColor?: string;
   dividerText?: string;
-  adjusted_cost?: number | null;
-  discount_burden_amount?: number;
-  expected_commission_fee?: number;
-  expected_settlement_amount?: number;
+  adjusted_cost: number;
+  discount_burden_amount: number;
+  expected_commission_fee: number;
+  expected_settlement_amount: number;
   logistics_cost?: number;
-  expected_net_profit?: number;
+  expected_net_profit: number;
   expected_net_profit_margin?: number;
   domestic_delivery_fee?: number;
   shipping_fee?: number;
@@ -132,4 +134,32 @@ export interface DividerRule {
   range: [number, number];
   color: string;
   text: string;
+}
+
+export type ValueSource = 'db' | 'user_input' | 'channel_match' | 'calculation' | 'mixed';
+export type ValueType = 'fixed' | 'calculated' | 'mixed';
+
+export interface ImpactMap {
+  id: string;
+  timestamp: number;
+  type: 'logistics' | 'commission' | 'profit' | 'settlement' | 'discount' | 'price';
+  productId: string;
+  oldValue: any;
+  newValue: any;
+  description: string;
+  valueSource: ValueSource;
+  valueType: ValueType;
+  formula?: string;
+  dependencies?: {
+    type: string;
+    value: any;
+  }[];
+}
+
+export interface HistoryState {
+  impactMaps: ImpactMap[];
+  currentIndex: number;
+  formulaHistory?: {
+    [key: string]: string;
+  };
 }

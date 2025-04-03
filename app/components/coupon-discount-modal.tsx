@@ -18,6 +18,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/components/ui/tabs"
 import { useState } from "react"
 import { Product, ChannelInfo } from '@/app/types/cart'
+import { calculateDiscount } from '@/app/utils/calculations/common'
 
 type DiscountType = 'amount' | 'rate'
 
@@ -114,48 +115,6 @@ export function DiscountModal({
       }
     }))
   }
-
-  const calculateDiscount = (price: number, rate: number, roundType: 'floor' | 'ceil' | 'round' = 'round', decimalPoint: '0.01' | '0.1' | '1' | 'none' = 'none') => {
-    // 기본 할인 계산
-    let result = price * (1 - rate / 100);
-    
-    console.log('=== 할인 계산 디버그 ===');
-    console.log('원가:', price);
-    console.log('할인율:', rate);
-    console.log('초기 계산 결과:', result);
-    console.log('선택된 소수점:', decimalPoint);
-    console.log('선택된 반올림:', roundType);
-    
-    // 소수점 처리
-    if (decimalPoint !== 'none') {
-      const multiplier = decimalPoint === '0.01' ? 100 : decimalPoint === '0.1' ? 10 : 1;
-      result = result * multiplier;
-      
-      console.log('소수점 처리 전:', result);
-      
-      // 반올림 처리
-      switch (roundType) {
-        case 'floor':
-          result = Math.floor(result);
-          break;
-        case 'ceil':
-          result = Math.ceil(result);
-          break;
-        case 'round':
-          result = Math.round(result);
-          break;
-      }
-      
-      console.log('반올림 처리 후:', result);
-      
-      // 원래 자리수로 되돌리기
-      result = result / multiplier;
-      console.log('최종 결과:', result);
-    }
-    
-    console.log('=====================');
-    return result;
-  };
 
   const handleApplyDiscount = async (type: 'coupon1' | 'coupon2' | 'coupon3', state: TabState) => {
     try {

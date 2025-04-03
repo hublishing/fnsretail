@@ -17,6 +17,7 @@ import {
 } from "@/app/components/ui/select"
 import { useState } from "react"
 import { Product, ChannelInfo } from '@/app/types/cart'
+import { calculateDiscount } from '@/app/utils/calculations/common'
 
 type DiscountType = '즉시할인' | '최저손익'
 
@@ -75,13 +76,6 @@ export function ImmediateDiscountModal({
     })
   }
 
-  const calculateDiscount = (price: number, rate: number) => {
-    // 모든 채널에 대해 동일한 계산 방식 적용
-    const result = price * (1 - rate / 100);
-    // 소수점 2자리까지만 표시
-    return Number(result.toFixed(2));
-  };
-
   const handleApplyDiscount = async () => {
     try {
       if (!selectedProducts.length) {
@@ -95,10 +89,17 @@ export function ImmediateDiscountModal({
           let newPrice;
           
           if (discountState.discountType === '즉시할인') {
-            newPrice = calculateDiscount(basePrice, discountState.discountValue);
+            newPrice = calculateDiscount(basePrice, discountState.discountValue, 'round', '0.01');
           } else {
-            newPrice = basePrice - discountState.discountValue;
-            newPrice = Math.ceil(newPrice / 10) * 10;
+            // 최저손익 로직 - 단위에 따라 다르게 처리
+            if (discountState.unitType === '%') {
+              newPrice = calculateDiscount(basePrice, discountState.discountValue, 'round', '0.01');
+            } else {
+              // 원 단위면 직접 금액 차감
+              newPrice = basePrice - discountState.discountValue;
+              // 10원 단위로 내림
+              newPrice = Math.ceil(newPrice / 10) * 10;
+            }
           }
           
           const updatedProduct = { ...product };
