@@ -24,7 +24,7 @@ import {
 import { Checkbox } from "@/app/components/ui/checkbox"
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card"
 import { v4 as uuidv4 } from 'uuid';
-import { Search, FileDown, Settings, Undo, History } from "lucide-react"
+import { Search, FileDown, Settings, Save, Download, RotateCcw } from "lucide-react"
 import * as XLSX from 'xlsx';
 import { ExcelSettingsModal } from "@/app/components/excel-settings-modal"
 import {
@@ -68,10 +68,7 @@ import { Slider } from "@/app/components/ui/slider"
 import { DividerModal } from '@/app/components/divider-modal';
 import { Switch } from "@/app/components/ui/switch"
 import { Textarea } from "@/app/components/ui/textarea"
-import { Product, ChannelInfo, Filters, ExcelSettings, CartItem, DividerRule, ImpactMap, HistoryState, Column } from '@/app/types/cart';
-import { UndoHistoryModal } from '@/app/components/undo-history/undo-history-modal';
-import { useUndoManager } from '@/app/hooks/use-undo-manager';
-import { EffectType } from '@/app/utils/effect-map';
+import { Product, ChannelInfo, Filters, ExcelSettings, CartItem, DividerRule, ImpactMap, Column } from '@/app/types/cart';
 import { 
   calculateLogisticsCost,
   calculateCommissionFee,
@@ -94,8 +91,10 @@ import {
   calculateAdjustedFeeRate,
   calculateChannelPrice
 } from '@/app/utils/calculations';
-import { ListTopbar } from '@/app/components/list/ListTopbar';
+import { ListTopbar } from '@/app/components/list-topbar';
 import { parseChannelBasicInfo } from '@/app/utils/calculations/common';
+import { useToast } from "@/app/components/ui/use-toast"
+import { Toast } from "@/app/components/ui/toast"
 
 // 정렬 가능한 행 컴포넌트
 function SortableTableRow({ product, children, ...props }: { 
@@ -204,6 +203,7 @@ function DraggableCell({ children, ...props }: React.HTMLAttributes<HTMLTableCel
 }
 
 export default function CartPage() {
+  const { toast } = useToast();
   const [products, setProducts] = useState<Product[]>([])
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -283,43 +283,10 @@ export default function CartPage() {
   const [isChannelSearchFocused, setIsChannelSearchFocused] = useState(false);
   const [activeId, setActiveId] = useState<string | number | null>(null);
   const [channelSuggestions, setChannelSuggestions] = useState<ChannelInfo[]>([]);
-  const [showUndoHistoryModal, setShowUndoHistoryModal] = useState(false);
+  const [autoSavedCalculations, setAutoSavedCalculations] = useState<{
+    products: Product[];
+  } | null>(null);
   
-  // 되돌리기 기능 초기화
-  const {
-    recordChange,
-    undo,
-    redo,
-    jumpTo,
-    filterByType,
-    filterByProductId,
-    canUndo,
-    canRedo,
-    historyItems,
-    effects
-  } = useUndoManager(products);
-
-  // 상품 목록이 변경될 때마다 되돌리기 기능에 기록
-  useEffect(() => {
-    if (products.length > 0) {
-      console.log('상품 목록 변경 감지:', {
-        productsLength: products.length,
-        hasDiscountPrice: products.some(p => p.discount_price)
-      });
-      
-      recordChange(
-        products,
-        'PRODUCT_REORDER',
-        products.map(p => p.product_id),
-        '상품 목록 변경',
-        {
-          products: products,
-          timestamp: new Date().toISOString()
-        }
-      );
-    }
-  }, [products, recordChange]);
-
   // 각 탭별 상태 변수들
   const [tabStates, setTabStates] = useState<{
     [key: string]: {
@@ -403,21 +370,10 @@ export default function CartPage() {
     });
   };
   
-  // 이펙트맵 정의
-  const effectMap: Partial<Record<EffectType, string[]>> = {
-    DISCOUNT_CHANGE: ['pricing_price', 'total_price', 'logistics_cost'],
-    PRODUCT_REORDER: ['pricing_price', 'total_price', 'logistics_cost'],
-    CHANNEL_CHANGE: ['pricing_price', 'total_price', 'logistics_cost', 'channel_name', 'channel_category'],
-    PRICE_CHANGE: ['pricing_price', 'total_price', 'logistics_cost'],
-    COUPON_CHANGE: ['pricing_price', 'total_price', 'logistics_cost'],
-    LOGISTICS_CHANGE: ['pricing_price', 'total_price', 'logistics_cost'],
-    COST_CHANGE: ['pricing_price', 'total_price', 'logistics_cost'],
-    COMMISSION_CHANGE: ['pricing_price', 'total_price', 'logistics_cost']
-  };
 
   // 상태 변경 기록 함수
   const recordStateChange = useCallback((
-    effectType: EffectType,
+    effectType: string,
     productIds: string[],
     description: string,
     effectData: any = {}
@@ -433,7 +389,7 @@ export default function CartPage() {
     const currentProducts = JSON.parse(JSON.stringify(products));
 
     // 이펙트맵에 따른 연관 데이터 업데이트
-    const affectedFields = effectMap[effectType] || [];
+    const affectedFields = ['pricing_price', 'total_price', 'logistics_cost', 'channel_name', 'channel_category'];
     if (affectedFields.length > 0) {
       affectedFields.forEach((field: string) => {
         currentProducts.forEach((product: Product) => {
@@ -470,91 +426,37 @@ export default function CartPage() {
       });
     }
 
-    // 상태 변경 기록
-    recordChange(
-      currentProducts,
-      effectType,
-      productIds,
-      description,
-      {
-        ...effectData,
-        products: currentProducts,
-        affectedFields,
-        effectType // effectType을 effectData에 포함
-      }
-    );
-
     console.log('recordStateChange 완료:', {
       updatedProducts: currentProducts,
       affectedFields
     });
-  }, [products, recordChange, selectedChannelInfo, deliveryType]);
+  }, [products, selectedChannelInfo, deliveryType]);
 
   /**
    * 할인 적용 처리
    * @param updatedProducts 할인 적용할 상품 목록
    */
-  const handleApplyDiscount = useCallback((updatedProducts: Product[]) => {
+  const handleApplyDiscount = useCallback((products: Product[]) => {
     console.log('handleApplyDiscount 호출됨:', {
-      productsCount: updatedProducts.length,
-      hasDiscountPrice: updatedProducts.some(p => p.discount_price)
+      products
     });
-    
-    // 선택된 상품이 없으면 처리하지 않음
-    if (updatedProducts.length === 0) {
-      console.log('handleApplyDiscount: 선택된 상품이 없음');
-      return;
-    }
-    
-    // 먼저 products 상태 업데이트
-    setProducts(updatedProducts);
-    
-    // 할인 적용된 상품 ID 목록
-    const productIds = updatedProducts.map(product => product.product_id);
-    
-    // 상태 변경 기록
-    recordChange(updatedProducts, 'DISCOUNT_CHANGE', productIds, '할인 적용', {
-      products: updatedProducts,
-      discountInfo: updatedProducts.map(p => ({
-        id: p.id,
-        product_id: p.product_id,
-        discount_price: p.discount_price,
-        discount: p.discount,
-        discount_rate: p.discount_rate,
-        discount_unit: p.discount_unit,
-        coupon_price_1: p.coupon_price_1,
-        coupon_price_2: p.coupon_price_2,
-        coupon_price_3: p.coupon_price_3,
-        self_burden_1: p.self_burden_1,
-        self_burden_2: p.self_burden_2,
-        self_burden_3: p.self_burden_3,
-        discount_burden_amount: p.discount_burden_amount,
-        pricing_price: p.pricing_price,
-        shop_price: p.shop_price,
-        total_price: p.total_price
-      }))
-    });
-    
-    // 할인 적용 후 히스토리 상태 확인
-    console.log('할인 적용 후 히스토리 상태:', {
-      historyItems,
-      historyLength: historyItems.length,
-      currentState: products
-    });
-    
+
+    // 상품 목록 업데이트
+    setProducts(products);
+
     console.log('handleApplyDiscount 완료');
-  }, [recordChange, setProducts, historyItems, products, deliveryType]);
+  }, [setProducts]);
 
   // 탭별 상태 업데이트 핸들러
-  const handleTabStateChange = (tab: string, field: string, value: any) => {
+  const handleTabStateUpdate = useCallback((tab: string, updates: Partial<typeof tabStates.tab1>) => {
     setTabStates(prev => ({
       ...prev,
       [tab]: {
         ...prev[tab],
-        [field]: value
+        ...updates
       }
     }));
-  };
+  }, []);
 
   // 현재 탭의 상태 가져오기
   const getCurrentTabState = () => {
@@ -839,6 +741,8 @@ export default function CartPage() {
 
     // 필요한 채널 정보 확인
     const { exchangeRate, markupRatio, rounddown } = parseChannelBasicInfo(channelInfo);
+    console.log('[handleChannelSelect] 파싱된 채널 정보:', { exchangeRate, markupRatio, rounddown });
+    
     if (!exchangeRate || !markupRatio || !rounddown) {
       console.log('[handleChannelSelect] 필수 채널 정보 누락:', {
         exchangeRate: exchangeRate || '누락',
@@ -874,25 +778,53 @@ export default function CartPage() {
       // 물류비 계산 - deliveryType 변수 사용
       const logistics_cost = calculateLogisticsCost(channelInfo, deliveryType || 'conditional', Number(channelInfo.amazon_shipping_cost));
       console.log(`[물류비 계산] 상품 ID: ${product.product_id}, 계산된 logistics_cost: ${logistics_cost}`);
+
+      // 조정원가 계산
+      const adjusted_cost = calculateBaseCost(product, channelInfo);
+      console.log(`[조정원가 계산] 상품 ID: ${product.product_id}, 계산된 adjusted_cost: ${adjusted_cost}`);
+
+      // 수수료 계산
+      const expected_commission_fee = calculateCommissionFee(product, channelInfo, isAdjustFeeEnabled);
+      const expected_commission_fee_rate = calculateAdjustedFeeRate(product, channelInfo, isAdjustFeeEnabled);
+      
+      // 순이익 계산
+      const expected_net_profit = calculateNetProfit(product, channelInfo);
+      const expected_net_profit_margin = calculateProfitMargin(product, channelInfo);
+      
+      // 정산금액 계산
+      const expected_settlement_amount = calculateSettlementAmount(product);
+      
+      // 원가율 계산
+      const cost_ratio = calculateCostRatio(product, channelInfo);
+
+      console.log(`[상세 계산] 상품 ID: ${product.product_id}`, {
+        pricing_price,
+        adjusted_cost,
+        logistics_cost,
+        expected_commission_fee,
+        expected_commission_fee_rate: `${expected_commission_fee_rate}%`,
+        expected_net_profit,
+        expected_net_profit_margin: `${expected_net_profit_margin * 100}%`,
+        expected_settlement_amount,
+        cost_ratio: `${cost_ratio}%`
+      });
       
       return {
         ...updatedProduct,
         pricing_price,
+        adjusted_cost,
         logistics_cost,
+        expected_commission_fee,
+        expected_commission_fee_rate,
+        expected_net_profit,
+        expected_net_profit_margin,
+        expected_settlement_amount,
+        cost_ratio,
         ...(priceError ? { priceError: true } : {})
       };
     });
     
-    // 업데이트된 상품 리스트 확인
-    const productsWithZeroPricing = updatedProducts.filter(p => p.pricing_price === 0 || p.pricing_price === null);
-    if (productsWithZeroPricing.length > 0) {
-      console.log(`[주의] ${productsWithZeroPricing.length}개 상품의 pricing_price가 0 또는 null입니다.`);
-      productsWithZeroPricing.forEach(p => {
-        console.log(`- 상품 ID: ${p.product_id}, 이름: ${p.name}`);
-      });
-    }
-    
-    // 상태 업데이트 추가
+    console.log('[handleChannelSelect] 상태 업데이트 시작');
     setChannelSearchTerm(channelInfo.channel_name_2);
     setIsValidChannel(true);
     setFilters(prev => ({
@@ -902,8 +834,68 @@ export default function CartPage() {
     setProducts(updatedProducts);
     setSelectedChannelInfo(channelInfo);
     setShowChannelSuggestions(false);
+    console.log('[handleChannelSelect] 상태 업데이트 완료');
+
+    // 계산이 완료된 후 현재 상태 자동 저장
+    console.log('[handleChannelSelect] 계산 완료 후 상태 자동 저장 시작');
+    const savedState = {
+      products: updatedProducts.map(p => ({
+        ...p,
+        // 기본 정보
+        product_id: p.product_id,
+        name: p.name,
+        brand: p.brand,
+        category_1: p.category_1,
+        category_3: p.category_3,
+        extra_column2: p.extra_column2,
+        img_desc1: p.img_desc1,
+        product_desc: p.product_desc,
+        
+        // 가격 정보
+        org_price: p.org_price,
+        shop_price: p.shop_price,
+        global_price: p.global_price,
+        pricing_price: p.pricing_price,
+        
+        // 할인 정보
+        discount_price: p.discount_price,
+        discount_rate: p.discount_rate,
+        discount_unit: p.discount_unit,
+        coupon_price_1: p.coupon_price_1,
+        coupon_price_2: p.coupon_price_2,
+        coupon_price_3: p.coupon_price_3,
+        discount_burden_amount: p.discount_burden_amount,
+        discount: p.discount,
+        
+        // 원가 및 수수료 정보
+        adjusted_cost: p.adjusted_cost,
+        logistics_cost: p.logistics_cost,
+        expected_commission_fee: p.expected_commission_fee,
+        expected_commission_fee_rate: p.expected_commission_fee_rate,
+        
+        // 이익 정보
+        expected_net_profit: p.expected_net_profit,
+        expected_net_profit_margin: p.expected_net_profit_margin,
+        expected_settlement_amount: p.expected_settlement_amount,
+        cost_ratio: p.cost_ratio,
+        
+        // 재고 정보
+        total_stock: p.total_stock,
+        main_wh_available_stock_excl_production_stock: p.main_wh_available_stock_excl_production_stock,
+        soldout_rate: p.soldout_rate,
+        
+        // 기타 정보
+        drop_yn: p.drop_yn,
+        supply_name: p.supply_name,
+        exclusive2: p.exclusive2,
+        rowColor: p.rowColor,
+        dividerText: p.dividerText
+      }))
+    };
+    setAutoSavedCalculations(savedState);
+    console.log('[handleChannelSelect] 자동 저장된 상태:', JSON.stringify(savedState, null, 2));
     
-    // 장바구니 정보 저장
+    console.log('[handleChannelSelect] 장바구니 정보 저장 시작');
     await saveCartInfo();
   };
 
@@ -1471,685 +1463,765 @@ export default function CartPage() {
     }
   };
 
-  /**
-   * 되돌리기 처리
-   */
-  const handleUndo = useCallback(() => {
-    console.log('handleUndo 호출됨');
+  // 상품 목록이 변경될 때마다 실행
+  useEffect(() => {
+    if (products.length > 0) {
+      console.log('상품 목록 변경 감지:', {
+        productsLength: products.length,
+        hasDiscountPrice: products.some(p => p.discount_price)
+      });
+    }
+  }, [products]);
+
+  // handleRevertCalculations 함수 수정
+  const handleRevertCalculations = () => {
+    console.log('[handleRevertCalculations] START');
     
-    // 되돌리기 전 상태 확인
-    console.log('되돌리기 전 상태:', {
-      productsLength: products.length,
-      hasDiscountPrice: products.some(p => p.discount_price),
-      historyItems,
-      currentState: products
+    if (!autoSavedCalculations) {
+      console.log('[handleRevertCalculations] 저장된 계산 데이터가 없음');
+      toast({
+        description: "저장된 계산 데이터가 없습니다.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const checkedProducts = products.filter(p => selectedProducts.includes(p.product_id));
+    console.log(`[handleRevertCalculations] 체크된 상품 수: ${checkedProducts.length}`);
+    
+    if (checkedProducts.length === 0) {
+      console.log('[handleRevertCalculations] 선택된 상품이 없음');
+      toast({
+        description: "선택된 상품이 없습니다.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    console.log('[handleRevertCalculations] 되돌리기 시작');
+    
+    // 체크된 상품만 이전 계산 데이터로 되돌리기
+    const revertedProducts = products.map(product => {
+      if (!selectedProducts.includes(product.product_id)) return product;
+      
+      const savedProduct = autoSavedCalculations.products.find(
+        p => p.product_id === product.product_id
+      );
+      
+      if (savedProduct) {
+        console.log(`[handleRevertCalculations] 상품 되돌리기 - ID: ${product.product_id}`, {
+          이전_상태: {
+            pricing_price: product.pricing_price,
+            discount_price: product.discount_price,
+            discount_rate: product.discount_rate,
+            discount_unit: product.discount_unit,
+            coupon_price_1: product.coupon_price_1,
+            coupon_price_2: product.coupon_price_2,
+            coupon_price_3: product.coupon_price_3,
+            discount_burden_amount: product.discount_burden_amount,
+            adjusted_cost: product.adjusted_cost,
+            logistics_cost: product.logistics_cost,
+            expected_commission_fee: product.expected_commission_fee,
+            expected_commission_fee_rate: product.expected_commission_fee_rate,
+            expected_net_profit: product.expected_net_profit,
+            expected_net_profit_margin: product.expected_net_profit_margin,
+            expected_settlement_amount: product.expected_settlement_amount,
+            cost_ratio: product.cost_ratio,
+            discount: product.discount
+          },
+          새로운_상태: {
+            pricing_price: savedProduct.pricing_price,
+            discount_price: savedProduct.discount_price,
+            discount_rate: savedProduct.discount_rate,
+            discount_unit: savedProduct.discount_unit,
+            coupon_price_1: savedProduct.coupon_price_1,
+            coupon_price_2: savedProduct.coupon_price_2,
+            coupon_price_3: savedProduct.coupon_price_3,
+            discount_burden_amount: savedProduct.discount_burden_amount,
+            adjusted_cost: savedProduct.adjusted_cost,
+            logistics_cost: savedProduct.logistics_cost,
+            expected_commission_fee: savedProduct.expected_commission_fee,
+            expected_commission_fee_rate: savedProduct.expected_commission_fee_rate,
+            expected_net_profit: savedProduct.expected_net_profit,
+            expected_net_profit_margin: savedProduct.expected_net_profit_margin,
+            expected_settlement_amount: savedProduct.expected_settlement_amount,
+            cost_ratio: savedProduct.cost_ratio,
+            discount: savedProduct.discount
+          }
+        });
+        
+        // 저장된 상태로 완전히 복원
+        return {
+          ...product,
+          // 가격 정보
+          pricing_price: savedProduct.pricing_price,
+          
+          // 할인 정보
+          discount_price: savedProduct.discount_price,
+          discount_rate: savedProduct.discount_rate,
+          discount_unit: savedProduct.discount_unit,
+          coupon_price_1: savedProduct.coupon_price_1,
+          coupon_price_2: savedProduct.coupon_price_2,
+          coupon_price_3: savedProduct.coupon_price_3,
+          discount_burden_amount: savedProduct.discount_burden_amount,
+          discount: savedProduct.discount,
+          
+          // 원가 및 수수료 정보
+          adjusted_cost: savedProduct.adjusted_cost,
+          logistics_cost: savedProduct.logistics_cost,
+          expected_commission_fee: savedProduct.expected_commission_fee,
+          expected_commission_fee_rate: savedProduct.expected_commission_fee_rate,
+          
+          // 이익 정보
+          expected_net_profit: savedProduct.expected_net_profit,
+          expected_net_profit_margin: savedProduct.expected_net_profit_margin,
+          expected_settlement_amount: savedProduct.expected_settlement_amount,
+          cost_ratio: savedProduct.cost_ratio
+        };
+      }
+      
+      return product;
+    });
+
+    console.log('[handleRevertCalculations] 상태 업데이트');
+    setProducts(revertedProducts);
+    
+    console.log('[handleRevertCalculations] 토스트 메시지 표시');
+    toast({
+      description: `${checkedProducts.length}개 상품의 계산 데이터를 되돌렸습니다.`
     });
     
-    // 되돌리기 실행
-    undo();
-    
-    // 되돌리기 후 상태 확인
-    const lastHistoryItem = historyItems[historyItems.length - 1];
-    const lastEffectType = lastHistoryItem?.description as EffectType | undefined;
-    console.log('되돌리기 후 상태:', {
-      historyItems,
-      currentState: products,
-      lastEffectType
-    });
-  }, [products, historyItems, undo]);
+    console.log('[handleRevertCalculations] END');
+  };
 
   return (
     <>
-      <ListTopbar />
-      <div className="container mx-auto py-5">
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex flex-col">
-            <h1 className="text-2xl font-bold">리스트작성</h1>
-          </div>
-        </div>
-
+      <Toast />
+      <ListTopbar/>
+        <div className="container mx-auto py-5">
+            <div className="flex justify-between items-center mb-6">
+                <div className="flex flex-col">
+                    <h1 className="text-2xl font-bold">리스트 편집</h1>
+                </div>
+            </div>
+        
         {/* 편집 섹션 */}
         <Card className="mb-6 py-5 px-5 bg-card rounded-lg shadow-sm">
           <CardContent className="p-0">
-            
-          <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-6">
+              <div className="text-sm text-gray-500">
+                <span className="mr-4">UUID : {listUuid}</span>
+                <span className="mr-4">작성자 : {user?.uid === 'a8mwwycqhaZLIb9iOcshPbpAVrj2' ? '한재훈' :
+                 user?.uid === 'MhMI2KxbxkPHIAJP0o4sPSZG35e2' ? '이세명' :
+                 user?.uid === '6DnflkbFSifLCNVQGWGv7aqJ2w72' ? '박연수' : ''}</span>
+                {selectedChannelInfo?.average_fee_rate && (<span className="mr-4 rounded-md shadow-sm bg-muted px-2 py-1">평균수수료 : {selectedChannelInfo.average_fee_rate}</span>)}
+                {products.length > 0 && (
+                  <>
+                    <span className="mr-4 rounded-md shadow-sm bg-muted px-2 py-1">
+                      평균할인율 : {calculateAverageDiscountRate(products)}%
+                    </span>
+                    <span className="mr-4 rounded-md shadow-sm bg-muted px-2 py-1">
+                      평균원가율 : {calculateAverageCostRatio(products)}%
+                    </span>
+                    <span className="mr-4 rounded-md shadow-sm bg-muted px-2 py-1">
+                      평균순이익률 : {selectedChannelInfo ? calculateAverageProfitMargin(products, selectedChannelInfo) : 0}%
+                    </span>
+                  </>
+                )}
+                <span>{dividerRules.map((rule, index) => (
+                      rule.range[0] > 0 && rule.range[1] > 0 && (
+                        <span 
+                          key={rule.id} 
+                          className="items-center gap-2 px-2  py-1 rounded-md shadow-sm bg-muted text-sm mr-4"
+                          style={{ backgroundColor: rule.color || '#FFE4E1' }}
+                        >
+                          <span className="mr-2">{rule.range[0]}~{rule.range[1]}</span>
+                          {rule.text && <span className="text-muted-foreground">{rule.text}</span>}
+                        </span>
+                      )
+                    ))}
+                </span>
+              </div>
 
-            <div className="text-sm text-gray-500">
-              <span className="mr-4">UUID : {listUuid}</span>
-              <span className="mr-4">작성자 : {user?.uid === 'a8mwwycqhaZLIb9iOcshPbpAVrj2' ? '한재훈' :
-               user?.uid === 'MhMI2KxbxkPHIAJP0o4sPSZG35e2' ? '이세명' :
-               user?.uid === '6DnflkbFSifLCNVQGWGv7aqJ2w72' ? '박연수' : ''}</span>
-              {/*
-              {selectedChannelInfo?.channel_category_2 && (<span className="mr-4 rounded-md shadow-sm bg-muted px-2 py-1">{selectedChannelInfo.channel_category_2}</span>)}
-              {selectedChannelInfo?.channel_category_3 && (<span className="mr-4 rounded-md shadow-sm bg-muted px-2 py-1">{selectedChannelInfo.channel_category_3}</span>)}
-              {selectedChannelInfo?.team && (<span className="mr-4 rounded-md shadow-sm bg-muted px-2 py-1">{selectedChannelInfo.team}</span>)}
-              {selectedChannelInfo?.manager && (<span className="mr-4 rounded-md shadow-sm bg-muted px-2 py-1">{selectedChannelInfo.manager}</span>)}
-              */}
-              {selectedChannelInfo?.average_fee_rate && (<span className="mr-4 rounded-md shadow-sm bg-muted px-2 py-1">평균수수료 : {selectedChannelInfo.average_fee_rate}</span>)}
-              {products.length > 0 && (
-                <>
-                  <span className="mr-4 rounded-md shadow-sm bg-muted px-2 py-1">
-                    평균할인율 : {calculateAverageDiscountRate(products)}%
-                  </span>
-                  <span className="mr-4 rounded-md shadow-sm bg-muted px-2 py-1">
-                    평균원가율 : {calculateAverageCostRatio(products)}%
-                  </span>
-                  <span className="mr-4 rounded-md shadow-sm bg-muted px-2 py-1">
-                    평균순이익률 : {selectedChannelInfo ? calculateAverageProfitMargin(products, selectedChannelInfo) : 0}%
-                  </span>
-                </>
-              )}
-              <span>{dividerRules.map((rule, index) => (
-                    rule.range[0] > 0 && rule.range[1] > 0 && (
-                      <span 
-                        key={rule.id} 
-                        className="items-center gap-2 px-2  py-1 rounded-md shadow-sm bg-muted text-sm mr-4"
-                        style={{ backgroundColor: rule.color || '#FFE4E1' }}
-                      >
-                        <span className="mr-2">{rule.range[0]}~{rule.range[1]}</span>
-                        {rule.text && <span className="text-muted-foreground">{rule.text}</span>}
-                      </span>
-                    )
-                  ))}
-              </span>
-            </div>
-
-              <div className="flex items-center gap-4 ">
-                <input
-                  type="text"
-                  value={title}
-                  onChange={handleTitleChange}
-                  placeholder="타이틀을 입력해주세요"
-                  className={`w-[300px] h-8 px-3 border-[0px] border-b-[1px] focus:border-b-[0px] focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
-                    title ? 'border-blue-500 focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 bg-muted' : 'border-input bg-background'
-                  }`}
-                />
-                <div className="relative">
+                <div className="flex items-center gap-4 ">
                   <input
                     type="text"
-                    value={channelSearchTerm}
-                    onChange={(e) => {
-                      setChannelSearchTerm(e.target.value);
-                      // 입력이 비어있으면 제안 목록 숨기기
-                      if (!e.target.value.trim()) {
-                        setFilteredChannels([]);
-                        setShowChannelSuggestions(false);
-                      } else {
-                        // 입력이 있으면 필터링하여 제안 목록 표시
-                        const filtered = channels.filter(channel => 
-                          channel.channel_name_2.toLowerCase().includes(e.target.value.toLowerCase())
-                        );
-                        setFilteredChannels(filtered);
-                        setShowChannelSuggestions(filtered.length > 0);
-                      }
-                    }}
-                    onFocus={handleChannelSearchFocus}
-                    placeholder="채널명을 입력해주세요"
-                    className={`w-[160px] h-8 px-3 border-[0px] border-b-[1px] focus:border-b-[0px] focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
-                      channelSearchTerm && !isValidChannel 
-                        ? 'border-red-500 focus:ring-[1px] focus:ring-red-500 focus:border-red-500 bg-destructive/10' 
-                        : channelSearchTerm && isValidChannel
-                        ? 'border-blue-500 focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 bg-muted'
-                        : 'border-input bg-background'
+                    value={title}
+                    onChange={handleTitleChange}
+                    placeholder="타이틀을 입력해주세요"
+                    className={`w-[300px] h-8 px-3 border-[0px] border-b-[1px] focus:border-b-[0px] focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
+                      title ? 'border-blue-500 focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 bg-muted' : 'border-input bg-background'
                     }`}
                   />
-                  {showChannelSuggestions && filteredChannels.length > 0 && (
-                    <div className="absolute z-10 w-full mt-1 bg-background border border-input rounded-md shadow-lg max-h-60 overflow-auto">
-                      {filteredChannels.map((channel) => (
-                        <div
-                          key={channel.channel_name_2}
-                          className="px-3 py-2 hover:bg-muted cursor-pointer text-sm"
-                          onClick={() => handleChannelSelect(channel as ChannelInfo)}
-                        >
-                          {channel.channel_name_2}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center">
-                <Label className="text-sm text-muted-foreground">수수료 할인</Label>
-                  <Switch
-                    checked={isAdjustFeeEnabled}
-                    onCheckedChange={handleAdjustFeeChange}
-                    className="ml-2"
-                  />
-                </div>
-
-                <Select 
-                  value={deliveryType} 
-                  onValueChange={handleDeliveryTypeChange}
-                >
-                  <SelectTrigger className={`w-[120px] h-8 ${
-                    deliveryType ? 'border-blue-500 focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 bg-blue-50' : ''
-                  }`}>
-                    <SelectValue placeholder="배송조건" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="conditional">조건부배송</SelectItem>
-                    <SelectItem value="free">무료배송</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <div className="flex items-center gap-2">
-                  <div className="text-sm text-muted-foreground">기간</div>
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => handleDateChange(e, 'start')}
-                    className={`w-[150px] h-8 px-3 border-[1px] rounded-md shadow-sm focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
-                      startDate ? 'border-blue-500 focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 bg-muted' : 'border-input bg-background'
-                    }`}
-                  />
-                  <span className="text-muted-foreground">~</span>
-                  <input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => handleDateChange(e, 'end')}
-                    className={`w-[150px] h-8 px-3 border-[1px] rounded-md shadow-sm focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
-                      endDate ? 'border-blue-500 focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 bg-muted' : 'border-input bg-background'
-                    }`}
-                  />
-                </div>
-              </div>
-
-              {/* 메모 입력창 수정 */}
-              <div className="w-full flex gap-4">
-                <div className="relative w-full">
-                  <textarea
-                    value={memo1}
-                    onChange={handleMemo1Change}
-                    placeholder="메모 1"
-                    className={`w-full h-8 px-3 border-[0px] border-b-[1px] focus:border-b-[0px] focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
-                      memo1 ? 'border-blue-500 focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 bg-muted' : 'border-input bg-background'
-                    }`}
-                    style={{ resize: 'both' }}
-                  />
-                </div>
-                <div className="relative w-full">
-                  <textarea
-                    value={memo2}
-                    onChange={handleMemo2Change}
-                    placeholder="메모 2"
-                    className={`w-full h-8 px-3 border-[0px] border-b-[1px] focus:border-b-[0px] focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
-                      memo2 ? 'border-blue-500 focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 bg-muted' : 'border-input bg-background'
-                    }`}
-                    style={{ resize: 'both' }}
-                  />
-                </div>
-                <div className="relative w-full">
-                  <textarea
-                    value={memo3}
-                    onChange={handleMemo3Change}
-                    placeholder="메모 3"
-                    className={`w-full h-8 px-3 border-[0px] border-b-[1px] focus:border-b-[0px] focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
-                      memo3 ? 'border-blue-500 focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 bg-muted' : 'border-input bg-background'
-                    }`}
-                    style={{ resize: 'both' }}
-                  />
-                </div>
-                
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <div className="mb-6 py-5 px-5 bg-card rounded-lg shadow-sm">
-        {/* 할인 적용 섹션 */}
-        <div className="mb-2">
-          <div className="flex justify-between items-center">
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleRemoveSelectedProducts}
-                className="border-0 hover:bg-transparent hover:text-primary"
-              >
-                선택삭제
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowImmediateDiscountModal(true)}
-                className="border-0 hover:bg-transparent hover:text-primary"
-              >
-                기간할인
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowCouponDiscountModal(true)}
-                className="border-0 hover:bg-transparent hover:text-primary"
-              >
-                쿠폰할인
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowDividerModal(true)}
-                className="border-0 hover:bg-transparent hover:text-primary"
-              >
-                구분자
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExcelDownload}
-                className="border-0 hover:bg-transparent hover:text-primary"
-              >
-                다운로드
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowExcelSettings(true)}
-                className="border-0 hover:bg-transparent hover:text-primary"
-              >
-                양식변경
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowUndoHistoryModal(true)}
-                className="border-0 hover:bg-transparent hover:text-primary"
-              >
-                <History className="h-4 w-4 mr-1" />
-                작업 기록
-              </Button>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleResetDiscount}
-                className="border-0 hover:bg-transparent hover:text-primary"
-              >
-                할인 초기화
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleReset}
-                className="border-0 hover:bg-transparent hover:text-primary"
-              >
-                리스트 초기화
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* 상품 테이블 */}
-        <div className="rounded-md border overflow-hidden">
-          <div className="w-full">
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-              onDragStart={handleDragStart}
-            >
-              <SortableContext
-                items={products.map(p => p.product_id)}
-                strategy={verticalListSortingStrategy}
-              >
-                <div className="relative">
-                  <div className="overflow-y-auto max-h-[calc(100vh-200px)]">
-                    <Table style={{overflowX: 'visible', minWidth: '1800px'}}>
-                      <TableHeader className="bg-muted sticky top-0">
-                        <TableRow className="hover:bg-muted">
-                          <TableHead className="w-[30px] text-center">
-                            <Checkbox
-                              checked={products.length > 0 && selectedProducts.length === products.length}
-                              onCheckedChange={(checked) => {
-                                if (checked) {
-                                  setSelectedProducts(products.map(p => p.product_id));
-                                } else {
-                                  setSelectedProducts([]);
-                                }
-                              }}
-                            />
-                          </TableHead>
-                          <TableHead className="text-center w-[50px]">번호</TableHead>
-                          <TableHead className="text-center w-[80px]">이지어드민</TableHead>
-                          <TableHead className="text-center w-[70px]">이미지</TableHead>
-                          <TableHead className="text-left w-[200px]">상품명</TableHead>
-                          <TableHead className="text-center w-[80px]">판매가</TableHead> 
-                          <TableHead className="text-center w-[80px]">즉시할인</TableHead>
-                          <TableHead className="text-center w-[80px]">쿠폰1</TableHead>
-                          <TableHead className="text-center w-[80px]">쿠폰2</TableHead>
-                          <TableHead className="text-center w-[80px]">쿠폰3</TableHead>
-                          <TableHead className="text-center w-[80px]">최종할인</TableHead>
-                          <TableHead className="text-center w-[90px]">할인부담액</TableHead>
-                          <TableHead className="text-center w-[80px]">조정원가</TableHead>
-                          <TableHead className="text-center w-[80px]">예상수수료</TableHead>
-                          <TableHead className="text-center w-[80px]">물류비</TableHead>
-                          <TableHead className="text-center w-[100px]">예상순이익액</TableHead>
-                          <TableHead className="text-center w-[100px]">정산예정금액</TableHead>
-                          <TableHead className="text-center w-[80px]">원가율</TableHead>
-                          <TableHead className="text-center w-[80px]">재고</TableHead>
-                          <TableHead className="text-center w-[70px]">드랍</TableHead>
-                          <TableHead className="text-center w-[80px]">공급처</TableHead>
-                          <TableHead className="text-center w-[80px]">단독</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {products.map((product, index) => (
-                          <SortableTableRow
-                            key={product.product_id}
-                            product={product}
-                            className={selectedProducts.includes(product.product_id) ? 'bg-muted' : ''}
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={channelSearchTerm}
+                      onChange={(e) => {
+                        setChannelSearchTerm(e.target.value);
+                        // 입력이 비어있으면 제안 목록 숨기기
+                        if (!e.target.value.trim()) {
+                          setFilteredChannels([]);
+                          setShowChannelSuggestions(false);
+                        } else {
+                          // 입력이 있으면 필터링하여 제안 목록 표시
+                          const filtered = channels.filter(channel => 
+                            channel.channel_name_2.toLowerCase().includes(e.target.value.toLowerCase())
+                          );
+                          setFilteredChannels(filtered);
+                          setShowChannelSuggestions(filtered.length > 0);
+                        }
+                      }}
+                      onFocus={handleChannelSearchFocus}
+                      placeholder="채널명을 입력해주세요"
+                      className={`w-[160px] h-8 px-3 border-[0px] border-b-[1px] focus:border-b-[0px] focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
+                        channelSearchTerm && !isValidChannel 
+                          ? 'border-red-500 focus:ring-[1px] focus:ring-red-500 focus:border-red-500 bg-destructive/10' 
+                          : channelSearchTerm && isValidChannel
+                          ? 'border-blue-500 focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 bg-muted'
+                          : 'border-input bg-background'
+                      }`}
+                    />
+                    {showChannelSuggestions && filteredChannels.length > 0 && (
+                      <div className="absolute z-10 w-full mt-1 bg-background border border-input rounded-md shadow-lg max-h-60 overflow-auto">
+                        {filteredChannels.map((channel) => (
+                          <div
+                            key={channel.channel_name_2}
+                            className="px-3 py-2 hover:bg-muted cursor-pointer text-sm"
+                            onClick={() => handleChannelSelect(channel as ChannelInfo)}
                           >
-                            <CheckboxCell
-                              product={product}
-                              selectedProducts={selectedProducts}
-                              onSelect={(checked) => {
-                                if (checked) {
-                                  setSelectedProducts([...selectedProducts, product.product_id]);
-                                } else {
-                                  setSelectedProducts(selectedProducts.filter(id => id !== product.product_id));
-                                }
-                              }}
-                            />
-                            <DraggableCell className="text-center">{/* 번호 */}
-                              <div>{index + 1}</div>
-                            </DraggableCell>
-                            <DraggableCell className="text-center">{/* 이지어드민상품코드 */}
-                              <div>{product.product_id}</div>
-                            </DraggableCell>
-                            <DraggableCell className="text-center">{/* 이미지 */}
-                              <div className="flex justify-center" >
-                                {product.img_desc1 ? (
-                                  <img
-                                    src={product.img_desc1}
-                                    alt="상품 이미지" 
-                                    className="w-12 h-12 object-cover rounded-md"
-                                    style={{ borderRadius: '5px' }}
-                                    onError={(e) => {
-                                      const target = e.target as HTMLImageElement;
-                                      target.src = '/no-image.png';
-                                      target.alt = '이미지 없음';
-                                      target.style.objectFit = 'contain';
-                                      target.style.backgroundColor = 'transparent';
-                                      target.parentElement?.classList.add('flex', 'justify-center');
-                                    }}
-                                  />
-                                ) : (
-                                  <div className="w-12 h-12 flex items-center justify-center">
-                                    <img 
-                                      src="/no-image.png" 
-                                      alt="이미지 없음" 
-                                      className="w-12 h-12 object-contain rounded-md"
-                                      style={{ borderRadius: '5px' }}
-                                    />
-                                  </div>
-                                )}
-                              </div>
-                            </DraggableCell>
-                            <TableCell className="text-left">{/* 상품명 */}
-                              <div className="flex flex-col">
-                                <div 
-                                  className="truncate cursor-pointer hover:underline" 
-                                  title={product.name}
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    setSelectedProductId(product.product_id);
-                                  }}
-                                  style={{ pointerEvents: 'all', touchAction: 'none' }}
-                                >
-                                  {product.name.length > 20 ? `${product.name.substring(0, 20)}...` : product.name}
-                                </div>
-                                <div className="text-sm text-muted-foreground">
-                                  {product.brand && <span className="mr-1">{product.brand}</span>}
-                                  {product.category_1 && <span className="mr-1">{product.category_1}</span>}
-                                  {product.extra_column2 && <span className="mr-1">{product.extra_column2}</span>}
-                                  {product.category_3 && <span className="ml-auto">{product.category_3}</span>}
-                                </div>
-                              </div>
-                            </TableCell>
-                            <DraggableCell className="text-center">{/* 판매가 */}
-                              <div>{product.pricing_price?.toLocaleString() || '-'}</div>
-                              <div className="text-sm text-muted-foreground">
-                                {selectedChannelInfo && product.org_price 
-                                  ? calculateBaseCost(product, selectedChannelInfo).toLocaleString()
-                                  : '-'}
-                              </div>
-                            </DraggableCell>
-                            <DraggableCell className="text-center">{/* 즉시할인 */}
-                              <div>{product.discount_price?.toLocaleString() || '-'}</div>
-                              <div className="text-sm text-muted-foreground">
-                                {product.discount_price && product.pricing_price 
-                                  ? `${calculateImmediateDiscountRate(product)}%`
-                                  : '-'}
-                              </div>
-                            </DraggableCell>
-                            <DraggableCell className="text-center">{/* 쿠폰1 */}
-                              <div>{product.coupon_price_1 ? product.coupon_price_1.toLocaleString() : "-"}</div>
-                              <div className="text-sm text-muted-foreground">
-                                {product.coupon_price_1 && product.discount_price
-                                  ? `${calculateCoupon1DiscountRate(product)}%`
-                                  : '-'}
-                              </div>
-                            </DraggableCell>
-                            <DraggableCell className="text-center">{/* 쿠폰2 */}
-                              <div>{product.coupon_price_2 ? product.coupon_price_2.toLocaleString() : "-"}</div>
-                              <div className="text-sm text-muted-foreground">
-                                {product.coupon_price_2 && product.coupon_price_1
-                                  ? `${calculateCoupon2DiscountRate(product)}%`
-                                  : '-'}
-                              </div>
-                            </DraggableCell>
-                            <DraggableCell className="text-center">{/* 쿠폰3 */}
-                              <div>{product.coupon_price_3 ? product.coupon_price_3.toLocaleString() : "-"}</div>
-                              <div className="text-sm text-muted-foreground">
-                                {product.coupon_price_3 && product.coupon_price_2
-                                  ? `${calculateCoupon3DiscountRate(product)}%`
-                                  : '-'}
-                              </div>
-                            </DraggableCell>
-                            <DraggableCell className="text-center">{/* 최종할인 */}
-                              <div> 
-                                {product.coupon_price_3 ? product.coupon_price_3.toLocaleString() :
-                                product.coupon_price_2 ? product.coupon_price_2.toLocaleString() :
-                                product.coupon_price_1 ? product.coupon_price_1.toLocaleString() :
-                                product.discount_price?.toLocaleString() || '-'}
-                              </div>
-                              <div className="text-sm text-muted-foreground">
-                                {product.pricing_price ? `${calculateFinalDiscountRate(product)}%` : '-'}
-                              </div>
-                            </DraggableCell>
-                            <DraggableCell className="text-center">{/* 할인부담액 */}
-                              <div>{product.discount_burden_amount?.toLocaleString() || '-'}</div>
-                            </DraggableCell>
-                            <DraggableCell className="text-center">{/* 조정원가 */}
-                              <div>{product.adjusted_cost?.toLocaleString() || '-'}</div>
-                            </DraggableCell>
-                            <DraggableCell className="text-center">{/* 예상수수료 */}
-                              <div>{selectedChannelInfo 
-                                ? calculateCommissionFee(product, selectedChannelInfo, isAdjustFeeEnabled).toLocaleString() 
-                                : '-'}</div>
-                              <div className="text-sm text-muted-foreground">
-                                {selectedChannelInfo 
-                                  ? `${calculateAdjustedFeeRate(product, selectedChannelInfo, isAdjustFeeEnabled).toFixed(1)}%` 
-                                  : '-'}
-                              </div>
-                            </DraggableCell>
-                            <DraggableCell className="text-center">{/* 물류비 */}
-                              <div>
-                                {selectedChannelInfo 
-                                  ? calculateLogisticsCost(selectedChannelInfo, deliveryType, Number(selectedChannelInfo.amazon_shipping_cost)).toLocaleString() 
-                                  : '-'}
-                              </div>
-                            </DraggableCell>
-                            <DraggableCell className="text-center">{/* 예상순이익 */}
-                              <div>
-                                {selectedChannelInfo 
-                                  ? `${calculateNetProfit(product, selectedChannelInfo).toLocaleString()}`
-                                  : '-'}
-                              </div>
-                              <div className="text-sm text-gray-500 mt-1">
-                                {selectedChannelInfo && product.pricing_price
-                                  ? `${(calculateProfitMargin(product, selectedChannelInfo) * 100).toFixed(2)}%`
-                                  : '-'}
-                              </div>
-                            </DraggableCell>
-                            <DraggableCell className="text-center">{/* 예상정산액 */}
-                              <div>{calculateSettlementAmount(product).toLocaleString() || '-'}</div>
-                            </DraggableCell>
-                            <DraggableCell className="text-center">{/* 원가율 */}
-                              <div>
-                                {selectedChannelInfo && product.org_price 
-                                  ? `${calculateCostRatio(product, selectedChannelInfo)}%`
-                                  : '-'}
-                              </div>
-                            </DraggableCell>
-                            <DraggableCell className="text-center">{/* 재고 */}
-                              <div>
-                                {product.total_stock !== undefined 
-                                  ? product.total_stock.toLocaleString() 
-                                  : product.main_wh_available_stock_excl_production_stock?.toLocaleString() || '-'}
-                              </div>
-                              <div className="text-sm text-gray-500 mt-1">
-                                {product.soldout_rate ? `${product.soldout_rate}%` : '-'}
-                              </div>
-                            </DraggableCell>
-                            <DraggableCell className="text-center">{/* 드랍여부 */}
-                              <div>{product.drop_yn || '-'}</div>
-                            </DraggableCell>
-                            <DraggableCell className="text-center">{/* 공급처명 */}
-                              <div>{product.supply_name || '-'}</div>
-                            </DraggableCell>
-                            <DraggableCell className="text-center">{/* 단독여부 */}  
-                              <div>{product.exclusive2 || '-'}</div>
-                            </DraggableCell>
-                          </SortableTableRow>
+                            {channel.channel_name_2}
+                          </div>
                         ))}
-                      </TableBody>
-                    </Table>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center">
+                  <Label className="text-sm text-muted-foreground">수수료 할인</Label>
+                    <Switch
+                      checked={isAdjustFeeEnabled}
+                      onCheckedChange={handleAdjustFeeChange}
+                      className="ml-2"
+                    />
+                  </div>
+
+                  <Select 
+                    value={deliveryType} 
+                    onValueChange={handleDeliveryTypeChange}
+                  >
+                    <SelectTrigger className={`w-[120px] h-8 ${
+                      deliveryType ? 'border-blue-500 focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 bg-blue-50' : ''
+                    }`}>
+                      <SelectValue placeholder="배송조건" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="conditional">조건부배송</SelectItem>
+                      <SelectItem value="free">무료배송</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <div className="flex items-center gap-2">
+                    <div className="text-sm text-muted-foreground">기간</div>
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => handleDateChange(e, 'start')}
+                      className={`w-[150px] h-8 px-3 border-[1px] rounded-md shadow-sm focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
+                        startDate ? 'border-blue-500 focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 bg-muted' : 'border-input bg-background'
+                      }`}
+                    />
+                    <span className="text-muted-foreground">~</span>
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => handleDateChange(e, 'end')}
+                      className={`w-[150px] h-8 px-3 border-[1px] rounded-md shadow-sm focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
+                        endDate ? 'border-blue-500 focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 bg-muted' : 'border-input bg-background'
+                      }`}
+                    />
                   </div>
                 </div>
-              </SortableContext>
-            </DndContext>
-          </div>
-        </div>
-      </div>
 
-        {/* 리스트저장 버튼 */}
-        <div className="flex justify-end mt-4">    
-          <Button className="bg-blue-500 text-white hover:bg-blue-600">
-            리스트저장
-          </Button>
-        </div>
-
-        {selectedProductId && (
-          <ProductDetailModal
-            productId={selectedProductId}
-            onClose={() => setSelectedProductId(null)}
-          />
-        )}
-
-
-        {showExcelSettings && (
-          <ExcelSettingsModal
-            isOpen={showExcelSettings}
-            onClose={() => setShowExcelSettings(false)}
-            settings={excelSettings}
-            onSettingsChange={setExcelSettings}
-          />
-        )}
-
-        {/* 색상 선택 모달 */}
-        <Dialog open={colorPickerOpen} onOpenChange={setColorPickerOpen}>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>색상 선택</DialogTitle>
-              <DialogDescription>
-                선택한 범위의 행에 적용할 색상을 선택해주세요.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="flex flex-wrap gap-2">
-                {[
-                  { name: '연한 빨강', color: '#FFE4E1' },
-                  { name: '연한 보라', color: '#E6E6FA' },
-                  { name: '연한 초록', color: '#F0FFF0' },
-                  { name: '연한 분홍', color: '#FFF0F5' },
-                  { name: '연한 하늘', color: '#F0FFFF' },
-                  { name: '연한 주황', color: '#FFE4B5' },
-                  { name: '연한 청록', color: '#E0FFFF' },
-                  { name: '연한 베이지', color: '#F5F5DC' }
-                ].map((colorOption) => (
-                  <div
-                    key={colorOption.color}
-                    className={`w-8 h-8 rounded-full cursor-pointer border-2 ${
-                      selectedColor === colorOption.color ? 'border-blue-500' : 'border-transparent'
-                    }`}
-                    style={{ backgroundColor: colorOption.color }}
-                    onClick={() => setSelectedColor(colorOption.color)}
-                    title={colorOption.name}
-                  />
-                ))}
+                {/* 메모 입력창 수정 */}
+                <div className="w-full flex gap-4">
+                  <div className="relative w-full">
+                    <textarea
+                      value={memo1}
+                      onChange={handleMemo1Change}
+                      placeholder="메모 1"
+                      className={`w-full h-8 px-3 border-[0px] border-b-[1px] focus:border-b-[0px] focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
+                        memo1 ? 'border-blue-500 focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 bg-muted' : 'border-input bg-background'
+                      }`}
+                      style={{ resize: 'both' }}
+                    />
+                  </div>
+                  <div className="relative w-full">
+                    <textarea
+                      value={memo2}
+                      onChange={handleMemo2Change}
+                      placeholder="메모 2"
+                      className={`w-full h-8 px-3 border-[0px] border-b-[1px] focus:border-b-[0px] focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
+                        memo2 ? 'border-blue-500 focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 bg-muted' : 'border-input bg-background'
+                      }`}
+                      style={{ resize: 'both' }}
+                    />
+                  </div>
+                  <div className="relative w-full">
+                    <textarea
+                      value={memo3}
+                      onChange={handleMemo3Change}
+                      placeholder="메모 3"
+                      className={`w-full h-8 px-3 border-[0px] border-b-[1px] focus:border-b-[0px] focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
+                        memo3 ? 'border-blue-500 focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 bg-muted' : 'border-input bg-background'
+                      }`}
+                      style={{ resize: 'both' }}
+                    />
+                  </div>
+                  
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <div className="mb-6 py-5 px-5 bg-card rounded-lg shadow-sm">
+            {/* 할인 적용 섹션 */}
+            <div className="flex justify-between items-center mb-2">
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRemoveSelectedProducts}
+                  className="border-0 hover:bg-transparent hover:text-primary"
+                >
+                  선택삭제
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowImmediateDiscountModal(true)}
+                  className="border-0 hover:bg-transparent hover:text-primary"
+                >
+                  기간할인
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowCouponDiscountModal(true)}
+                  className="border-0 hover:bg-transparent hover:text-primary"
+                >
+                  쿠폰할인
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowDividerModal(true)}
+                  className="border-0 hover:bg-transparent hover:text-primary"
+                >
+                  구분자
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExcelDownload}
+                  className="border-0 hover:bg-transparent hover:text-primary"
+                >
+                  다운로드
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowExcelSettings(true)}
+                  className="border-0 hover:bg-transparent hover:text-primary"
+                >
+                  양식변경
+                </Button> 
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRevertCalculations}
+                  disabled={!autoSavedCalculations || !products.some(p => selectedProducts.includes(p.product_id))}
+                  className="border-0 hover:bg-transparent hover:text-primary flex items-center gap-2"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  선택 초기화
+                </Button>
+                {/*<Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleResetDiscount}
+                  className="border-0 hover:bg-transparent hover:text-primary"
+                >
+                  할인 초기화
+                </Button>*/}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleReset}
+                  className="border-0 hover:bg-transparent hover:text-primary"
+                >
+                  리스트 초기화
+                </Button>
               </div>
             </div>
-            <DialogFooter>
-              <Button onClick={handleApplyColor}>적용</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
 
-        <DividerModal
-          showDividerModal={showDividerModal}
-          setShowDividerModal={setShowDividerModal}
-          products={products}
-          dividerRules={dividerRules}
-          onUpdateDividerRule={handleUpdateDividerRule}
-          onApplyDivider={handleApplyDivider}
-          onResetDividerRules={handleResetDividerRules}
-        />
-         
-        {showCouponDiscountModal && (
-          <DiscountModal
-            showDiscountModal={showCouponDiscountModal}
-            setShowDiscountModal={setShowCouponDiscountModal}
+          {/* 상품 테이블 */}
+            <div className="rounded-md border overflow-hidden">
+              <div className="w-full">
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                  onDragStart={handleDragStart}
+                >
+                  <SortableContext
+                    items={products.map(p => p.product_id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className="relative">
+                      <div className="overflow-y-auto max-h-[calc(100vh-200px)]">
+                        <Table style={{overflowX: 'visible', minWidth: '1800px'}}>
+                          <TableHeader className="bg-muted sticky top-0">
+                            <TableRow className="hover:bg-muted">
+                              <TableHead className="w-[30px] text-center">
+                                <Checkbox
+                                  checked={products.length > 0 && selectedProducts.length === products.length}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      setSelectedProducts(products.map(p => p.product_id));
+                                    } else {
+                                      setSelectedProducts([]);
+                                    }
+                                  }}
+                                />
+                              </TableHead>
+                              <TableHead className="text-center w-[50px]">번호</TableHead>
+                              <TableHead className="text-center w-[80px]">이지어드민</TableHead>
+                              <TableHead className="text-center w-[70px]">이미지</TableHead>
+                              <TableHead className="text-left w-[200px]">상품명</TableHead>
+                              <TableHead className="text-center w-[80px]">판매가</TableHead> 
+                              <TableHead className="text-center w-[80px]">즉시할인</TableHead>
+                              <TableHead className="text-center w-[80px]">쿠폰1</TableHead>
+                              <TableHead className="text-center w-[80px]">쿠폰2</TableHead>
+                              <TableHead className="text-center w-[80px]">쿠폰3</TableHead>
+                              <TableHead className="text-center w-[80px]">최종할인</TableHead>
+                              <TableHead className="text-center w-[90px]">할인부담액</TableHead>
+                              <TableHead className="text-center w-[80px]">조정원가</TableHead>
+                              <TableHead className="text-center w-[80px]">예상수수료</TableHead>
+                              <TableHead className="text-center w-[80px]">물류비</TableHead>
+                              <TableHead className="text-center w-[100px]">예상순이익액</TableHead>
+                              <TableHead className="text-center w-[100px]">정산예정금액</TableHead>
+                              <TableHead className="text-center w-[80px]">원가율</TableHead>
+                              <TableHead className="text-center w-[80px]">재고</TableHead>
+                              <TableHead className="text-center w-[70px]">드랍</TableHead>
+                              <TableHead className="text-center w-[80px]">공급처</TableHead>
+                              <TableHead className="text-center w-[80px]">단독</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {products.map((product, index) => (
+                              <SortableTableRow
+                                key={product.product_id}
+                                product={product}
+                                className={selectedProducts.includes(product.product_id) ? 'bg-muted' : ''}
+                              >
+                                <CheckboxCell
+                                  product={product}
+                                  selectedProducts={selectedProducts}
+                                  onSelect={(checked) => {
+                                    if (checked) {
+                                      setSelectedProducts([...selectedProducts, product.product_id]);
+                                    } else {
+                                      setSelectedProducts(selectedProducts.filter(id => id !== product.product_id));
+                                    }
+                                  }}
+                                />
+                                <DraggableCell className="text-center">{/* 번호 */}
+                                  <div>{index + 1}</div>
+                                </DraggableCell>
+                                <DraggableCell className="text-center">{/* 이지어드민상품코드 */}
+                                  <div>{product.product_id}</div>
+                                </DraggableCell>
+                                <DraggableCell className="text-center">{/* 이미지 */}
+                                  <div className="flex justify-center" >
+                                    {product.img_desc1 ? (
+                                      <img
+                                        src={product.img_desc1}
+                                        alt="상품 이미지" 
+                                        className="w-12 h-12 object-cover rounded-md"
+                                        style={{ borderRadius: '5px' }}
+                                        onError={(e) => {
+                                          const target = e.target as HTMLImageElement;
+                                          target.src = '/no-image.png';
+                                          target.alt = '이미지 없음';
+                                          target.style.objectFit = 'contain';
+                                          target.style.backgroundColor = 'transparent';
+                                          target.parentElement?.classList.add('flex', 'justify-center');
+                                        }}
+                                      />
+                                    ) : (
+                                      <div className="w-12 h-12 flex items-center justify-center">
+                                        <img 
+                                          src="/no-image.png" 
+                                          alt="이미지 없음" 
+                                          className="w-12 h-12 object-contain rounded-md"
+                                          style={{ borderRadius: '5px' }}
+                                        />
+                                      </div>
+                                    )}
+                                  </div>
+                                </DraggableCell>
+                                <TableCell className="text-left">{/* 상품명 */}
+                                  <div className="flex flex-col">
+                                    <div 
+                                      className="truncate cursor-pointer hover:underline" 
+                                      title={product.name}
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setSelectedProductId(product.product_id);
+                                      }}
+                                      style={{ pointerEvents: 'all', touchAction: 'none' }}
+                                    >
+                                      {product.name.length > 20 ? `${product.name.substring(0, 20)}...` : product.name}
+                                    </div>
+                                    <div className="text-sm text-muted-foreground">
+                                      {product.brand && <span className="mr-1">{product.brand}</span>}
+                                      {product.category_1 && <span className="mr-1">{product.category_1}</span>}
+                                      {product.extra_column2 && <span className="mr-1">{product.extra_column2}</span>}
+                                      {product.category_3 && <span className="ml-auto">{product.category_3}</span>}
+                                    </div>
+                                  </div>
+                                </TableCell>
+                                <DraggableCell className="text-center">{/* 판매가 */}
+                                  <div>{product.pricing_price?.toLocaleString() || '-'}</div>
+                                  <div className="text-sm text-muted-foreground">
+                                    {selectedChannelInfo && product.org_price 
+                                      ? calculateBaseCost(product, selectedChannelInfo).toLocaleString()
+                                      : '-'}
+                                  </div>
+                                </DraggableCell>
+                                <DraggableCell className="text-center">{/* 즉시할인 */}
+                                  <div>{product.discount_price?.toLocaleString() || '-'}</div>
+                                  <div className="text-sm text-muted-foreground">
+                                    {product.discount_price && product.pricing_price 
+                                      ? `${calculateImmediateDiscountRate(product)}%`
+                                      : '-'}
+                                  </div>
+                                </DraggableCell>
+                                <DraggableCell className="text-center">{/* 쿠폰1 */}
+                                  <div>{product.coupon_price_1 ? product.coupon_price_1.toLocaleString() : "-"}</div>
+                                  <div className="text-sm text-muted-foreground">
+                                    {product.coupon_price_1 && product.discount_price
+                                      ? `${calculateCoupon1DiscountRate(product)}%`
+                                      : '-'}
+                                  </div>
+                                </DraggableCell>
+                                <DraggableCell className="text-center">{/* 쿠폰2 */}
+                                  <div>{product.coupon_price_2 ? product.coupon_price_2.toLocaleString() : "-"}</div>
+                                  <div className="text-sm text-muted-foreground">
+                                    {product.coupon_price_2 && product.coupon_price_1
+                                      ? `${calculateCoupon2DiscountRate(product)}%`
+                                      : '-'}
+                                  </div>
+                                </DraggableCell>
+                                <DraggableCell className="text-center">{/* 쿠폰3 */}
+                                  <div>{product.coupon_price_3 ? product.coupon_price_3.toLocaleString() : "-"}</div>
+                                  <div className="text-sm text-muted-foreground">
+                                    {product.coupon_price_3 && product.coupon_price_2
+                                      ? `${calculateCoupon3DiscountRate(product)}%`
+                                      : '-'}
+                                  </div>
+                                </DraggableCell>
+                                <DraggableCell className="text-center">{/* 최종할인 */}
+                                  <div> 
+                                    {product.coupon_price_3 ? product.coupon_price_3.toLocaleString() :
+                                    product.coupon_price_2 ? product.coupon_price_2.toLocaleString() :
+                                    product.coupon_price_1 ? product.coupon_price_1.toLocaleString() :
+                                    product.discount_price?.toLocaleString() || '-'}
+                                  </div>
+                                  <div className="text-sm text-muted-foreground">
+                                    {product.pricing_price ? `${calculateFinalDiscountRate(product)}%` : '-'}
+                                  </div>
+                                </DraggableCell>
+                                <DraggableCell className="text-center">{/* 할인부담액 */}
+                                  <div>{product.discount_burden_amount?.toLocaleString() || '-'}</div>
+                                </DraggableCell>
+                                <DraggableCell className="text-center">{/* 조정원가 */}
+                                  <div>{product.adjusted_cost?.toLocaleString() || '-'}</div>
+                                </DraggableCell>
+                                <DraggableCell className="text-center">{/* 예상수수료 */}
+                                  <div>{selectedChannelInfo 
+                                    ? calculateCommissionFee(product, selectedChannelInfo, isAdjustFeeEnabled).toLocaleString() 
+                                    : '-'}</div>
+                                  <div className="text-sm text-muted-foreground">
+                                    {selectedChannelInfo 
+                                      ? `${calculateAdjustedFeeRate(product, selectedChannelInfo, isAdjustFeeEnabled).toFixed(1)}%` 
+                                      : '-'}
+                                  </div>
+                                </DraggableCell>
+                                <DraggableCell className="text-center">{/* 물류비 */}
+                                  <div>
+                                    {selectedChannelInfo 
+                                      ? calculateLogisticsCost(selectedChannelInfo, deliveryType, Number(selectedChannelInfo.amazon_shipping_cost)).toLocaleString() 
+                                      : '-'}
+                                  </div>
+                                </DraggableCell>
+                                <DraggableCell className="text-center">{/* 예상순이익 */}
+                                  <div>
+                                    {selectedChannelInfo 
+                                      ? `${calculateNetProfit(product, selectedChannelInfo).toLocaleString()}`
+                                      : '-'}
+                                  </div>
+                                  <div className="text-sm text-gray-500 mt-1">
+                                    {selectedChannelInfo && product.pricing_price
+                                      ? `${(calculateProfitMargin(product, selectedChannelInfo) * 100).toFixed(2)}%`
+                                      : '-'}
+                                  </div>
+                                </DraggableCell>
+                                <DraggableCell className="text-center">{/* 예상정산액 */}
+                                  <div>{calculateSettlementAmount(product).toLocaleString() || '-'}</div>
+                                </DraggableCell>
+                                <DraggableCell className="text-center">{/* 원가율 */}
+                                  <div>
+                                    {selectedChannelInfo && product.org_price 
+                                      ? `${calculateCostRatio(product, selectedChannelInfo)}%`
+                                      : '-'}
+                                  </div>
+                                </DraggableCell>
+                                <DraggableCell className="text-center">{/* 재고 */}
+                                  <div>
+                                    {product.total_stock !== undefined 
+                                      ? product.total_stock.toLocaleString() 
+                                      : product.main_wh_available_stock_excl_production_stock?.toLocaleString() || '-'}
+                                  </div>
+                                  <div className="text-sm text-gray-500 mt-1">
+                                    {product.soldout_rate ? `${product.soldout_rate}%` : '-'}
+                                  </div>
+                                </DraggableCell>
+                                <DraggableCell className="text-center">{/* 드랍여부 */}
+                                  <div>{product.drop_yn || '-'}</div>
+                                </DraggableCell>
+                                <DraggableCell className="text-center">{/* 공급처명 */}
+                                  <div>{product.supply_name || '-'}</div>
+                                </DraggableCell>
+                                <DraggableCell className="text-center">{/* 단독여부 */}  
+                                  <div>{product.exclusive2 || '-'}</div>
+                                </DraggableCell>
+                              </SortableTableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                  </SortableContext>
+                </DndContext>
+              </div>
+            </div>
+          </div>
+
+          {/* 리스트저장 버튼 */}
+          <div className="flex justify-end mt-4">    
+            <Button className="bg-blue-500 text-white hover:bg-blue-600">
+              리스트저장
+            </Button>
+          </div>
+
+          {selectedProductId && (
+            <ProductDetailModal
+              productId={selectedProductId}
+              onClose={() => setSelectedProductId(null)}
+            />
+          )}
+
+          {showExcelSettings && (
+            <ExcelSettingsModal
+              isOpen={showExcelSettings}
+              onClose={() => setShowExcelSettings(false)}
+              settings={excelSettings}
+              onSettingsChange={setExcelSettings}
+            />
+          )}
+
+          {/* 색상 선택 모달 */}
+          <Dialog open={colorPickerOpen} onOpenChange={setColorPickerOpen}>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>색상 선택</DialogTitle>
+                <DialogDescription>
+                  선택한 범위의 행에 적용할 색상을 선택해주세요.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { name: '연한 빨강', color: '#FFE4E1' },
+                    { name: '연한 보라', color: '#E6E6FA' },
+                    { name: '연한 초록', color: '#F0FFF0' },
+                    { name: '연한 분홍', color: '#FFF0F5' },
+                    { name: '연한 하늘', color: '#F0FFFF' },
+                    { name: '연한 주황', color: '#FFE4B5' },
+                    { name: '연한 청록', color: '#E0FFFF' },
+                    { name: '연한 베이지', color: '#F5F5DC' }
+                  ].map((colorOption) => (
+                    <div
+                      key={colorOption.color}
+                      className={`w-8 h-8 rounded-full cursor-pointer border-2 ${
+                        selectedColor === colorOption.color ? 'border-blue-500' : 'border-transparent'
+                      }`}
+                      style={{ backgroundColor: colorOption.color }}
+                      onClick={() => setSelectedColor(colorOption.color)}
+                      title={colorOption.name}
+                    />
+                  ))}
+                </div>
+              </div>
+              <DialogFooter>
+                <Button onClick={handleApplyColor}>적용</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <DividerModal
+            showDividerModal={showDividerModal}
+            setShowDividerModal={setShowDividerModal}
+            products={products}
+            dividerRules={dividerRules}
+            onUpdateDividerRule={handleUpdateDividerRule}
+            onApplyDivider={handleApplyDivider}
+            onResetDividerRules={handleResetDividerRules}
+          />
+           
+          {showCouponDiscountModal && (
+            <DiscountModal
+              showDiscountModal={showCouponDiscountModal}
+              setShowDiscountModal={setShowCouponDiscountModal}
+              onApplyDiscount={handleApplyDiscount}
+              products={products}
+              selectedProducts={selectedProducts}
+              onClose={() => setShowCouponDiscountModal(false)}
+              calculateExpectedSettlementAmount={calculateSettlementAmount}
+              calculateExpectedNetProfit={(product) => selectedChannelInfo ? calculateNetProfit(product, selectedChannelInfo) : 0}
+              calculateExpectedCommissionFee={(product, checked) => selectedChannelInfo ? calculateCommissionFee(product, selectedChannelInfo, !!checked) : 0}
+              selectedChannelInfo={selectedChannelInfo}
+              currentProducts={products}
+            />
+          )}
+          <ImmediateDiscountModal
+            showDiscountModal={showImmediateDiscountModal}
+            setShowDiscountModal={setShowImmediateDiscountModal}
             onApplyDiscount={handleApplyDiscount}
             products={products}
             selectedProducts={selectedProducts}
-            onClose={() => setShowCouponDiscountModal(false)}
+            onClose={() => setShowImmediateDiscountModal(false)}
             calculateExpectedSettlementAmount={calculateSettlementAmount}
             calculateExpectedNetProfit={(product) => selectedChannelInfo ? calculateNetProfit(product, selectedChannelInfo) : 0}
             calculateExpectedCommissionFee={(product, checked) => selectedChannelInfo ? calculateCommissionFee(product, selectedChannelInfo, !!checked) : 0}
             selectedChannelInfo={selectedChannelInfo}
             currentProducts={products}
           />
-        )}
-        <ImmediateDiscountModal
-          showDiscountModal={showImmediateDiscountModal}
-          setShowDiscountModal={setShowImmediateDiscountModal}
-          onApplyDiscount={handleApplyDiscount}
-          products={products}
-          selectedProducts={selectedProducts}
-          onClose={() => setShowImmediateDiscountModal(false)}
-          calculateExpectedSettlementAmount={calculateSettlementAmount}
-          calculateExpectedNetProfit={(product) => selectedChannelInfo ? calculateNetProfit(product, selectedChannelInfo) : 0}
-          calculateExpectedCommissionFee={(product, checked) => selectedChannelInfo ? calculateCommissionFee(product, selectedChannelInfo, !!checked) : 0}
-          selectedChannelInfo={selectedChannelInfo}
-          currentProducts={products}
-        />
-        
-        {/* 되돌리기 히스토리 모달 */}
-        <UndoHistoryModal
-          historyItems={historyItems}
-          effects={effects}
-          onUndo={undo}
-          onRedo={redo}
-          onJumpTo={jumpTo}
-          canUndo={canUndo}
-          canRedo={canRedo}
-          onFilterByType={filterByType}
-          onFilterByProductId={filterByProductId}
-          open={showUndoHistoryModal}
-          onOpenChange={setShowUndoHistoryModal}
-        />
-      </div>
-    </>
-  )
-} 
+        </div>
+      </>
+    );
+  }
