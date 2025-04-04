@@ -29,7 +29,21 @@ export const parseChannelBasicInfo = (channel: ChannelInfo) => {
   // 문자열에서 쉼표 제거 후 숫자로 변환
   const exchangeRate = parseFloat(channel.applied_exchange_rate?.replace(/,/g, '') || '0');
   const markupRatio = parseFloat(channel.markup_ratio?.replace(/,/g, '') || '0');
-  const rounddown = parseFloat(channel.rounddown?.replace(/,/g, '') || '0');
+  
+  // rounddown 값이 문자열인 경우 숫자로 변환
+  let rounddown = 0;
+  if (typeof channel.rounddown === 'string') {
+    // 음수 기호(-)를 보존하면서 쉼표 제거
+    const cleanValue = channel.rounddown.replace(/,/g, '');
+    // 소수점이 있는 경우 parseFloat 사용, 없는 경우 Number 사용
+    rounddown = cleanValue.includes('.') ? parseFloat(cleanValue) : Number(cleanValue);
+  } else if (typeof channel.rounddown === 'number') {
+    rounddown = channel.rounddown;
+  } else if (channel.rounddown === null || channel.rounddown === undefined) {
+    rounddown = 0;
+  }
+  
+  
   const digitAdjustment = parseFloat(channel.digit_adjustment?.replace(/,/g, '') || '0');
   const amazonShippingCost = channel.amazon_shipping_cost || 0;
   const freeShipping = channel.free_shipping || 0;
@@ -49,12 +63,20 @@ export const parseChannelBasicInfo = (channel: ChannelInfo) => {
 /**
  * 가격을 소수점 자리수에 맞게 반올림
  * @param price 가격
- * @param decimals 소수점 자리수
+ * @param rounddown 버림 자리수 (0: 소수점 버림, -1: 1자리 버림, -2: 10자리 버림, -3: 100자리 버림)
  * @returns 반올림된 가격
  */
-export const roundPrice = (price: number, decimals: number = 0): number => {
-  const multiplier = Math.pow(10, decimals);
-  return Math.round(price * multiplier) / multiplier;
+export const roundPrice = (price: number, rounddown: number = 0): number => {
+  // rounddown 값이 0보다 크거나 같으면 소수점 자리수로 처리
+  if (rounddown >= 0) {
+    const multiplier = Math.pow(10, rounddown);
+    return Math.floor(price * multiplier) / multiplier;
+  } 
+  // rounddown 값이 음수이면 해당 자리수로 버림 처리
+  else {
+    const multiplier = Math.pow(10, Math.abs(rounddown));
+    return Math.floor(price / multiplier) * multiplier;
+  }
 };
 
 /**

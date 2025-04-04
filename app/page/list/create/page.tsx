@@ -781,8 +781,7 @@ export default function CartPage() {
         ...(priceError ? { priceError: true } : {})
       };
     });
-    
-    console.log('[handleChannelSelect] 상태 업데이트 시작');
+     
     setChannelSearchTerm(channelInfo.channel_name_2);
     setIsValidChannel(true);
     setFilters(prev => ({
@@ -791,8 +790,7 @@ export default function CartPage() {
     }));
     setProducts(updatedProducts);
     setSelectedChannelInfo(channelInfo);
-    setShowChannelSuggestions(false);
-    console.log('[handleChannelSelect] 상태 업데이트 완료');
+    setShowChannelSuggestions(false); 
 
     // 계산이 완료된 후 현재 상태 자동 저장
     console.log('[handleChannelSelect] 계산 완료 후 상태 자동 저장 시작');
@@ -808,7 +806,7 @@ export default function CartPage() {
       })
     };
     setAutoSavedCalculations(savedState);
-    console.log('[handleChannelSelect] 자동 저장된 상태:', JSON.stringify(savedState, null, 2));
+    {/* console.log('[handleChannelSelect] 자동 저장된 상태:', JSON.stringify(savedState, null, 2)); */}
     
     console.log('[handleChannelSelect] 장바구니 정보 저장 시작');
     // await saveCartInfo(); 제거

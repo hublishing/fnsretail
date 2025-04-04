@@ -30,7 +30,7 @@ export async function GET() {
         type,
         markup_ratio,
         applied_exchange_rate,
-        rounddown,
+        CAST(COALESCE(NULLIF(rounddown, ''), '0') AS FLOAT64) as rounddown,
         digit_adjustment,
         currency_2,
         average_fee_rate,
@@ -48,6 +48,8 @@ export async function GET() {
       WHERE channel_name_2 IS NOT NULL
       ORDER BY channel_name_2
     `;
+
+    console.log('BigQuery 쿼리 실행:', query);
 
     // JWT 토큰 생성
     const now = Math.floor(Date.now() / 1000);
@@ -120,41 +122,50 @@ export async function GET() {
     const data = await response.json();
     
     // 결과 처리
-    const channels = data.rows?.map((row: any) => ({
-      channel_name: row.f[0].v,
-      channel_name_2: row.f[1].v,
-      channel_category_2: row.f[2].v,
-      channel_category_3: row.f[3].v,
-      team: row.f[4].v,
-      manager: row.f[5].v,
-      shop_id: row.f[6].v,
-      shop_name: row.f[7].v,
-      used: row.f[8].v,
-      price_formula: row.f[9].v,
-      shipping_formula: row.f[10].v,
-      currency: row.f[12].v,
-      correction_rate: row.f[13].v,
-      amount: row.f[14].v,
-      comment: row.f[15].v,
-      use_yn: row.f[16].v,
-      type: row.f[17].v,
-      markup_ratio: row.f[18].v,
-      applied_exchange_rate: row.f[19].v,
-      rounddown: row.f[20].v,
-      digit_adjustment: row.f[21].v,
-      currency_2: row.f[22].v,
-      average_fee_rate: row.f[23].v,
-      shipping_condition: row.f[24].v,
-      outerbox_fee: row.f[25].v,
-      domestic_delivery_fee: row.f[26].v,
-      shipping_fee: row.f[27].v,
-      customs_fee: row.f[28].v,
-      declaration_fee: row.f[29].v,
-      innerbox_fee: row.f[30].v,
-      packingbox_fee: row.f[31].v,
-      free_shipping: row.f[32].v ? parseFloat(row.f[32].v) : 0,
-      conditional_shipping: row.f[33].v ? parseFloat(row.f[33].v) : 0
-    })) || [];
+    const channels = data.rows?.map((row: any) => {
+      console.log('채널 정보:', {
+        channel_name_2: row.f[1].v,
+        rounddown_raw: row.f[20].v,
+        rounddown_type: typeof row.f[20].v,
+        rounddown_parsed: parseFloat(row.f[20].v?.replace(/,/g, '') || '0')
+      });
+      
+      return {
+        channel_name: row.f[0].v,
+        channel_name_2: row.f[1].v,
+        channel_category_2: row.f[2].v,
+        channel_category_3: row.f[3].v,
+        team: row.f[4].v,
+        manager: row.f[5].v,
+        shop_id: row.f[6].v,
+        shop_name: row.f[7].v,
+        used: row.f[8].v,
+        price_formula: row.f[9].v,
+        shipping_formula: row.f[10].v,
+        currency: row.f[12].v,
+        correction_rate: row.f[13].v,
+        amount: row.f[14].v,
+        comment: row.f[15].v,
+        use_yn: row.f[16].v,
+        type: row.f[17].v,
+        markup_ratio: row.f[18].v,
+        applied_exchange_rate: row.f[19].v,
+        rounddown: row.f[20].v,
+        digit_adjustment: row.f[21].v,
+        currency_2: row.f[22].v,
+        average_fee_rate: row.f[23].v,
+        shipping_condition: row.f[24].v,
+        outerbox_fee: row.f[25].v,
+        domestic_delivery_fee: row.f[26].v,
+        shipping_fee: row.f[27].v,
+        customs_fee: row.f[28].v,
+        declaration_fee: row.f[29].v,
+        innerbox_fee: row.f[30].v,
+        packingbox_fee: row.f[31].v,
+        free_shipping: row.f[32].v ? parseFloat(row.f[32].v) : 0,
+        conditional_shipping: row.f[33].v ? parseFloat(row.f[33].v) : 0
+      };
+    }) || [];
     
     return NextResponse.json({ channels });
   } catch (error) {
