@@ -89,11 +89,11 @@ export function ImmediateDiscountModal({
           let newPrice;
           
           if (discountState.discountType === '즉시할인') {
-            newPrice = calculateDiscount(basePrice, discountState.discountValue, 'round', '0.01');
+            newPrice = calculateDiscount(basePrice, discountState.discountValue, 'round', '0.01', selectedChannelInfo);
           } else {
             // 최저손익 로직 - 단위에 따라 다르게 처리
             if (discountState.unitType === '%') {
-              newPrice = calculateDiscount(basePrice, discountState.discountValue, 'round', '0.01');
+              newPrice = calculateDiscount(basePrice, discountState.discountValue, 'round', '0.01', selectedChannelInfo);
             } else {
               // 원 단위면 직접 금액 차감
               newPrice = basePrice - discountState.discountValue;
