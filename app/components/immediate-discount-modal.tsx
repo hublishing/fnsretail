@@ -17,7 +17,7 @@ import {
 } from "@/app/components/ui/select"
 import { useState } from "react"
 import { Product, ChannelInfo } from '@/app/types/cart'
-import { calculateDiscount } from '@/app/utils/calculations/common'
+import { calculateDiscount } from '@/app/utils/calculations/discount'
 
 type DiscountType = '즉시할인' | '최저손익'
 
