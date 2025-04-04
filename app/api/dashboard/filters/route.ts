@@ -15,32 +15,74 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const category2 = searchParams.get('category2');
     const category3 = searchParams.get('category3');
+    const country = searchParams.get('country');
+    
+    logDebug('요청 파라미터', { 
+      category2, 
+      category3,
+      country
+    });
 
     // 필터 데이터를 가져오는 쿼리
     const query = `
-      WITH category2_data AS (
-        SELECT DISTINCT channel_category_2 as value
+      WITH base_data AS (
+        SELECT DISTINCT
+          code30,
+          channel_category_2,
+          channel_category_3,
+          channel_name,
+          final_calculated_amount
         FROM \`third-current-410914.project_m.order_db\`
-        WHERE channel_category_2 IS NOT NULL
-        AND channel_category_2 != 'nan'
-        ORDER BY channel_category_2
-      ),
-      category3_data AS (
-        SELECT DISTINCT channel_category_3 as value
-        FROM \`third-current-410914.project_m.order_db\`
-        WHERE channel_category_3 IS NOT NULL
-        AND channel_category_3 != 'nan'
-        ${category2 ? `AND channel_category_2 = '${category2}'` : ''}
-        ORDER BY channel_category_3
-      ),
-      channel_data AS (
-        SELECT DISTINCT channel_name as value
-        FROM \`third-current-410914.project_m.order_db\`
-        WHERE channel_name IS NOT NULL
-        AND channel_name != 'nan'
+        WHERE code30 IS NOT NULL
+        AND code30 != 'nan'
+        AND code30 != ''
+        ${country ? `AND code30 = '${country}'` : ''}
         ${category2 ? `AND channel_category_2 = '${category2}'` : ''}
         ${category3 ? `AND channel_category_3 = '${category3}'` : ''}
-        ORDER BY channel_name
+      ),
+      category2_data AS (
+        SELECT DISTINCT 
+          channel_category_2 as value,
+          SUM(final_calculated_amount) as total_amount
+        FROM base_data
+        WHERE channel_category_2 IS NOT NULL
+        AND channel_category_2 != 'nan'
+        AND channel_category_2 != ''
+        GROUP BY channel_category_2
+        ORDER BY total_amount DESC, value
+      ),
+      category3_data AS (
+        SELECT DISTINCT 
+          channel_category_3 as value,
+          SUM(final_calculated_amount) as total_amount
+        FROM base_data
+        WHERE channel_category_3 IS NOT NULL
+        AND channel_category_3 != 'nan'
+        AND channel_category_3 != ''
+        GROUP BY channel_category_3
+        ORDER BY total_amount DESC, value
+      ),
+      channel_data AS (
+        SELECT DISTINCT 
+          channel_name as value,
+          SUM(final_calculated_amount) as total_amount
+        FROM base_data
+        WHERE channel_name IS NOT NULL
+        AND channel_name != 'nan'
+        AND channel_name != ''
+        GROUP BY channel_name
+        ORDER BY total_amount DESC, value
+      ),
+      country_data AS (
+        SELECT DISTINCT 
+          code30 as value,
+          SUM(final_calculated_amount) as total_amount
+        FROM \`third-current-410914.project_m.order_db\`
+        WHERE code30 IS NOT NULL
+        AND code30 != 'nan'
+        AND code30 != ''
+        GROUP BY code30
+        ORDER BY total_amount DESC, value
       )
       SELECT 
         'category2' as type,
@@ -56,8 +98,22 @@ export async function GET(request: NextRequest) {
         'channel' as type,
         value
       FROM channel_data
+      UNION ALL
+      SELECT 
+        'country' as type,
+        value
+      FROM country_data
       ORDER BY type, value
     `;
+
+    logDebug('실행할 쿼리:', { 
+      query,
+      filters: {
+        category2,
+        category3,
+        country
+      }
+    });
 
     // Google Cloud API 엔드포인트
     const url = `https://bigquery.googleapis.com/bigquery/v2/projects/${process.env.GOOGLE_CLOUD_PROJECT_ID}/queries`;
@@ -141,7 +197,8 @@ export async function GET(request: NextRequest) {
     const filters = {
       category2: results.filter((item: { type: string; value: string }) => item.type === 'category2').map((item: { type: string; value: string }) => item.value),
       category3: results.filter((item: { type: string; value: string }) => item.type === 'category3').map((item: { type: string; value: string }) => item.value),
-      channel: results.filter((item: { type: string; value: string }) => item.type === 'channel').map((item: { type: string; value: string }) => item.value)
+      channel: results.filter((item: { type: string; value: string }) => item.type === 'channel').map((item: { type: string; value: string }) => item.value),
+      country: results.filter((item: { type: string; value: string }) => item.type === 'country').map((item: { type: string; value: string }) => item.value)
     };
 
     return NextResponse.json(filters, { status: 200 });

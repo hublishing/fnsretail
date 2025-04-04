@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
     const category2 = searchParams.get('category2');
     const category3 = searchParams.get('category3');
     const channel = searchParams.get('channel');
+    const country = searchParams.get('country');
     
     // 날짜가 없으면 어제 날짜 사용
     const targetStartDate = startDate || new Date(new Date().setDate(new Date().getDate() - 1)).toISOString().split('T')[0];
@@ -39,6 +40,7 @@ export async function GET(request: NextRequest) {
       category2, 
       category3, 
       channel,
+      country,
       targetStartDate,
       targetEndDate
     });
@@ -59,6 +61,7 @@ export async function GET(request: NextRequest) {
           ${category2 ? `AND channel_category_2 = '${category2}'` : ''}
           ${category3 ? `AND channel_category_3 = '${category3}'` : ''}
           ${channel ? `AND channel_name = '${channel}'` : ''}
+          ${country ? `AND code30 = '${country}'` : ''}
         GROUP BY 
           channel_name
       ),
@@ -79,6 +82,7 @@ export async function GET(request: NextRequest) {
           ${category2 ? `AND o.channel_category_2 = '${category2}'` : ''}
           ${category3 ? `AND o.channel_category_3 = '${category3}'` : ''}
           ${channel ? `AND o.channel_name = '${channel}'` : ''}
+          ${country ? `AND o.code30 = '${country}'` : ''}
         GROUP BY 
           p.category_3
       )
@@ -105,7 +109,8 @@ export async function GET(request: NextRequest) {
       filters: {
         category2,
         category3,
-        channel
+        channel,
+        country
       }
     });
 
@@ -242,7 +247,8 @@ export async function GET(request: NextRequest) {
       appliedFilters: {
         category2,
         category3,
-        channel
+        channel,
+        country
       }
     });
 

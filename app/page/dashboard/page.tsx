@@ -33,6 +33,7 @@ interface FilterData {
   category2: string[];
   category3: string[];
   channel: string[];
+  country: string[];
 }
 
 export default function DashboardPage() {
@@ -54,11 +55,13 @@ export default function DashboardPage() {
   const [filterData, setFilterData] = useState<FilterData>({
     category2: [],
     category3: [],
-    channel: []
+    channel: [],
+    country: []
   });
   const [selectedCategory2, setSelectedCategory2] = useState<string>('');
   const [selectedCategory3, setSelectedCategory3] = useState<string>('');
   const [selectedChannel, setSelectedChannel] = useState<string>('');
+  const [selectedCountry, setSelectedCountry] = useState<string>('');
 
   // 초기화 핸들러
   const handleReset = async () => {
@@ -72,6 +75,7 @@ export default function DashboardPage() {
       setSelectedCategory2('');
       setSelectedCategory3('');
       setSelectedChannel('');
+      setSelectedCountry('');
       
       // 데이터 초기화
       const params = new URLSearchParams();
@@ -112,7 +116,8 @@ export default function DashboardPage() {
         endDate,
         category2: selectedCategory2,
         category3: selectedCategory3,
-        channel: selectedChannel
+        channel: selectedChannel,
+        country: selectedCountry
       });
       
       // 판매 데이터 로드
@@ -122,6 +127,7 @@ export default function DashboardPage() {
       if (selectedCategory2) params.append('category2', selectedCategory2);
       if (selectedCategory3) params.append('category3', selectedCategory3);
       if (selectedChannel) params.append('channel', selectedChannel);
+      if (selectedCountry) params.append('country', selectedCountry);
       
       const response = await fetch(`/api/dashboard/channel-sales?${params.toString()}`);
       const data = await response.json();
@@ -136,7 +142,8 @@ export default function DashboardPage() {
         filters: {
           category2: selectedCategory2,
           category3: selectedCategory3,
-          channel: selectedChannel
+          channel: selectedChannel,
+          country: selectedCountry
         }
       });
       
@@ -185,6 +192,45 @@ export default function DashboardPage() {
   }, [selectedCategory2, selectedCategory3]);
 
   // 필터 선택 핸들러
+  const handleCountryChange = async (value: string) => {
+    setIsLoading(true);
+    try {
+      // 상태 업데이트 - 국가 선택 시 다른 필터 초기화
+      setSelectedCountry(value);
+      setSelectedCategory2('');
+      setSelectedCategory3('');
+      setSelectedChannel('');
+      
+      // 필터 데이터 로드
+      const params = new URLSearchParams();
+      if (value) params.append('country', value);
+      const res = await fetch(`/api/dashboard/filters?${params.toString()}`);
+      const filterData = await res.json();
+      setFilterData(filterData);
+      
+      // 대시보드 데이터 로드
+      const dashboardParams = new URLSearchParams();
+      dashboardParams.append('startDate', startDate);
+      dashboardParams.append('endDate', endDate);
+      if (value) dashboardParams.append('country', value);
+      
+      const response = await fetch(`/api/dashboard/channel-sales?${dashboardParams.toString()}`);
+      const data = await response.json();
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      setChannelData(data.channelData || []);
+      setCategoryData(data.categoryData || []);
+    } catch (err: any) {
+      console.error('데이터 로드 오류:', err);
+      setError(err.message || '데이터를 불러오는 중 오류가 발생했습니다.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleCategory2Change = async (value: string) => {
     setIsLoading(true);
     try {
@@ -195,6 +241,7 @@ export default function DashboardPage() {
       
       // 필터 데이터 로드
       const params = new URLSearchParams();
+      if (selectedCountry) params.append('country', selectedCountry);
       if (value) params.append('category2', value);
       const res = await fetch(`/api/dashboard/filters?${params.toString()}`);
       const filterData = await res.json();
@@ -204,6 +251,7 @@ export default function DashboardPage() {
       const dashboardParams = new URLSearchParams();
       dashboardParams.append('startDate', startDate);
       dashboardParams.append('endDate', endDate);
+      if (selectedCountry) dashboardParams.append('country', selectedCountry);
       if (value) dashboardParams.append('category2', value);
       
       const response = await fetch(`/api/dashboard/channel-sales?${dashboardParams.toString()}`);
@@ -232,6 +280,7 @@ export default function DashboardPage() {
       
       // 필터 데이터 로드
       const params = new URLSearchParams();
+      if (selectedCountry) params.append('country', selectedCountry);
       if (selectedCategory2) params.append('category2', selectedCategory2);
       if (value) params.append('category3', value);
       const res = await fetch(`/api/dashboard/filters?${params.toString()}`);
@@ -242,6 +291,7 @@ export default function DashboardPage() {
       const dashboardParams = new URLSearchParams();
       dashboardParams.append('startDate', startDate);
       dashboardParams.append('endDate', endDate);
+      if (selectedCountry) dashboardParams.append('country', selectedCountry);
       if (selectedCategory2) dashboardParams.append('category2', selectedCategory2);
       if (value) dashboardParams.append('category3', value);
       
@@ -272,6 +322,7 @@ export default function DashboardPage() {
       const params = new URLSearchParams();
       params.append('startDate', startDate);
       params.append('endDate', endDate);
+      if (selectedCountry) params.append('country', selectedCountry);
       if (selectedCategory2) params.append('category2', selectedCategory2);
       if (selectedCategory3) params.append('category3', selectedCategory3);
       if (value) params.append('channel', value);
@@ -344,21 +395,21 @@ export default function DashboardPage() {
               type="date"
               value={startDate}
               onChange={handleStartDateChange}
-              className="w-40 h-10"
+              className="w-40 h-8"
             />
             <span className="text-gray-500">-</span>
             <Input
               type="date"
               value={endDate}
               onChange={handleEndDateChange}
-              className="w-40 h-10"
+              className="w-40 h-8"
             />
             <div className="flex gap-1 ml-2">
               <Button 
                 variant="outline" 
                 size="sm"
                 onClick={() => handleQuickDateSelect('today')}
-                className="px-2 h-10 text-xs"
+                className="px-2 h-8 text-xs"
               >
                 오늘
               </Button>
@@ -366,7 +417,7 @@ export default function DashboardPage() {
                 variant="outline" 
                 size="sm"
                 onClick={() => handleQuickDateSelect('yesterday')}
-                className="px-2 h-10 text-xs"
+                className="px-2 h-8 text-xs"
               >
                 어제
               </Button>
@@ -374,7 +425,7 @@ export default function DashboardPage() {
                 variant="outline" 
                 size="sm"
                 onClick={() => handleQuickDateSelect('week')}
-                className="px-2 h-10 text-xs"
+                className="px-2 h-8 text-xs"
               >
                 일주일
               </Button>
@@ -382,18 +433,32 @@ export default function DashboardPage() {
                 variant="outline" 
                 size="sm"
                 onClick={() => handleQuickDateSelect('month')}
-                className="px-2 h-10 text-xs"
+                className="px-2 h-8 text-xs"
               >
                 한달
               </Button>
             </div>
             <div className="flex gap-2 ml-4">
+              <Select value={selectedCountry} onValueChange={handleCountryChange}>
+                <SelectTrigger className={`w-[150px] h-8 ${selectedCountry ? 'border-blue-500 text-blue-700 dark:text-blue-300' : ''}`}>
+                  <SelectValue placeholder="국가 선택" />
+                </SelectTrigger>
+                <SelectContent>
+                  {filterData.country
+                    .filter(value => value && value !== 'nan')
+                    .map((value) => (
+                      <SelectItem key={value} value={value}>
+                        {value}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
               <Select value={selectedCategory2} onValueChange={handleCategory2Change}>
-                <SelectTrigger className={`w-[180px] h-10 ${selectedCategory2 ? 'border-blue-500 text-blue-700 dark:text-blue-300' : ''}`}>
+                <SelectTrigger className={`w-[150px] h-8 ${selectedCategory2 ? 'border-blue-500 text-blue-700 dark:text-blue-300' : ''}`}>
                   <SelectValue placeholder="구분 선택" />
                 </SelectTrigger>
                 <SelectContent>
-                  {filterData.category2.map((value) => (
+                  {filterData.category2.filter(value => value && value !== 'nan').map((value) => (
                     <SelectItem key={value} value={value}>
                       {value}
                     </SelectItem>
@@ -401,11 +466,11 @@ export default function DashboardPage() {
                 </SelectContent>
               </Select>
               <Select value={selectedCategory3} onValueChange={handleCategory3Change}>
-                <SelectTrigger className={`w-[180px] h-10 ${selectedCategory3 ? 'border-blue-500 text-blue-700 dark:text-blue-300' : ''}`}>
+                <SelectTrigger className={`w-[150px] h-8 ${selectedCategory3 ? 'border-blue-500 text-blue-700 dark:text-blue-300' : ''}`}>
                   <SelectValue placeholder="분류 선택" />
                 </SelectTrigger>
                 <SelectContent>
-                  {filterData.category3.map((value) => (
+                  {filterData.category3.filter(value => value && value !== 'nan').map((value) => (
                     <SelectItem key={value} value={value}>
                       {value}
                     </SelectItem>
@@ -413,11 +478,11 @@ export default function DashboardPage() {
                 </SelectContent>
               </Select>
               <Select value={selectedChannel} onValueChange={handleChannelChange}>
-                <SelectTrigger className={`w-[180px] h-10 ${selectedChannel ? 'border-blue-500 text-blue-700 dark:text-blue-300' : ''}`}>
+                <SelectTrigger className={`w-[150px] h-8 ${selectedChannel ? 'border-blue-500 text-blue-700 dark:text-blue-300' : ''}`}>
                   <SelectValue placeholder="채널 선택" />
                 </SelectTrigger>
                 <SelectContent>
-                  {filterData.channel.map((value) => (
+                  {filterData.channel.filter(value => value && value !== 'nan').map((value) => (
                     <SelectItem key={value} value={value}>
                       {value}
                     </SelectItem>
@@ -428,7 +493,7 @@ export default function DashboardPage() {
                 variant="outline" 
                 size="sm"
                 onClick={handleReset}
-                className="h-10 px-4 text-sm"
+                className="h-8 px-4 text-sm"
               >
                 초기화
               </Button>

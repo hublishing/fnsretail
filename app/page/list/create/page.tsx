@@ -1502,17 +1502,17 @@ export default function CartPage() {
                 <span className="mr-4">작성자 : {user?.uid === 'a8mwwycqhaZLIb9iOcshPbpAVrj2' ? '한재훈' :
                  user?.uid === 'MhMI2KxbxkPHIAJP0o4sPSZG35e2' ? '이세명' :
                  user?.uid === '6DnflkbFSifLCNVQGWGv7aqJ2w72' ? '박연수' : ''}</span>
-                {selectedChannelInfo?.average_fee_rate && (<span className="mr-4 rounded-md shadow-sm bg-muted px-2 py-1">평균수수료 : {selectedChannelInfo.average_fee_rate}</span>)}
+                {selectedChannelInfo?.average_fee_rate && (<span className="mr-4 rounded-md shadow-sm bg-muted px-2 py-1">평균수수료 : {parseFloat(selectedChannelInfo.average_fee_rate).toFixed(1)}%</span>)}
                 {products.length > 0 && (
                   <> 
                     <span className="mr-4 rounded-md shadow-sm bg-muted px-2 py-1">
-                      평균할인율 : {calculateAverageDiscountRate(products)}%
+                      평균할인율 : {calculateAverageDiscountRate(products).toFixed(1)}%
                     </span>
                     <span className="mr-4 rounded-md shadow-sm bg-muted px-2 py-1">
-                      평균원가율 : {calculateAverageCostRatio(products)}%
+                      평균원가율 : {selectedChannelInfo ? calculateAverageCostRatio(products).toFixed(1) : 0}%
                     </span>
                     <span className="mr-4 rounded-md shadow-sm bg-muted px-2 py-1">
-                      평균순이익률 : {selectedChannelInfo ? calculateAverageProfitMargin(products, selectedChannelInfo) : 0}%
+                      평균순이익률 : {selectedChannelInfo ? calculateAverageProfitMargin(products, selectedChannelInfo).toFixed(1) : 0}%
                     </span>
                   </>
                 )}

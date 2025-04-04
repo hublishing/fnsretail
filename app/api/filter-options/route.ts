@@ -44,17 +44,71 @@ export async function GET() {
 
     // 주문 필터 옵션 쿼리 - 단순화된 쿼리로 변경
     const orderFiltersQuery = `
-      SELECT DISTINCT 
-        code30,
-        channel_name,
-        channel_category_2,
-        channel_category_3
-      FROM \`third-current-410914.project_m.order_db\`
-      WHERE 
-        code30 IS NOT NULL AND code30 != '' AND
-        channel_name IS NOT NULL AND channel_name != '' AND
-        channel_category_2 IS NOT NULL AND channel_category_2 != '' AND
-        channel_category_3 IS NOT NULL AND channel_category_3 != ''
+      WITH order_data AS (
+        SELECT 
+          code30,
+          channel_name,
+          channel_category_2,
+          channel_category_3,
+          final_calculated_amount
+        FROM \`third-current-410914.project_m.order_db\`
+        WHERE 
+          code30 IS NOT NULL AND code30 != '' AND
+          channel_name IS NOT NULL AND channel_name != '' AND
+          channel_category_2 IS NOT NULL AND channel_category_2 != '' AND
+          channel_category_3 IS NOT NULL AND channel_category_3 != ''
+      ),
+      country_data AS (
+        SELECT DISTINCT 
+          code30,
+          SUM(final_calculated_amount) as total_amount
+        FROM order_data
+        GROUP BY code30
+        ORDER BY total_amount DESC
+      ),
+      channel_data AS (
+        SELECT DISTINCT 
+          channel_name,
+          SUM(final_calculated_amount) as total_amount
+        FROM order_data
+        GROUP BY channel_name
+        ORDER BY total_amount DESC
+      ),
+      category2_data AS (
+        SELECT DISTINCT 
+          channel_category_2,
+          SUM(final_calculated_amount) as total_amount
+        FROM order_data
+        GROUP BY channel_category_2
+        ORDER BY total_amount DESC
+      ),
+      category3_data AS (
+        SELECT DISTINCT 
+          channel_category_3,
+          SUM(final_calculated_amount) as total_amount
+        FROM order_data
+        GROUP BY channel_category_3
+        ORDER BY total_amount DESC
+      )
+      SELECT 
+        'country' as type,
+        code30 as value
+      FROM country_data
+      UNION ALL
+      SELECT 
+        'channel' as type,
+        channel_name as value
+      FROM channel_data
+      UNION ALL
+      SELECT 
+        'category2' as type,
+        channel_category_2 as value
+      FROM category2_data
+      UNION ALL
+      SELECT 
+        'category3' as type,
+        channel_category_3 as value
+      FROM category3_data
     `;
 
     // JWT 토큰 생성
@@ -173,22 +227,19 @@ export async function GET() {
 
     // 주문 필터 옵션 추출
     orderData.rows?.forEach((row: any) => {
-      const countryCode = row.f[0].v;
-      const channelName = row.f[1].v;
-      const category2 = row.f[2].v;
-      const category3 = row.f[3].v;
+      const type = row.f[0].v;
+      const value = row.f[1].v;
       
-      if (countryCode && countryCode !== 'NaN' && countryCode !== 'nan' && countryCode !== 'undefined' && countryCode !== 'null') {
-        code30.add(countryCode);
-      }
-      if (channelName && channelName !== 'NaN' && channelName !== 'nan' && channelName !== 'undefined' && channelName !== 'null') {
-        channel_name.add(channelName);
-      }
-      if (category2 && category2 !== 'NaN' && category2 !== 'nan' && category2 !== 'undefined' && category2 !== 'null') {
-        channel_category_2.add(category2);
-      }
-      if (category3 && category3 !== 'NaN' && category3 !== 'nan' && category3 !== 'undefined' && category3 !== 'null') {
-        channel_category_3.add(category3);
+      if (value && value !== 'NaN' && value !== 'nan' && value !== 'undefined' && value !== 'null') {
+        if (type === 'country') {
+          code30.add(value);
+        } else if (type === 'channel') {
+          channel_name.add(value);
+        } else if (type === 'category2') {
+          channel_category_2.add(value);
+        } else if (type === 'category3') {
+          channel_category_3.add(value);
+        }
       }
     });
 
