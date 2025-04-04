@@ -1811,12 +1811,12 @@ export default function CartPage() {
                               <TableHead className="text-center w-[80px]">쿠폰2</TableHead>
                               <TableHead className="text-center w-[80px]">쿠폰3</TableHead>
                               <TableHead className="text-center w-[80px]">최종할인</TableHead>
-                              <TableHead className="text-center w-[90px]">할인부담액</TableHead>
+                              <TableHead className="text-center w-[90px]">할인부담</TableHead>
                               <TableHead className="text-center w-[80px]">조정원가</TableHead>
-                              <TableHead className="text-center w-[80px]">예상수수료</TableHead>
+                              <TableHead className="text-center w-[100px]">예상수수료</TableHead>
                               <TableHead className="text-center w-[80px]">물류비</TableHead>
-                              <TableHead className="text-center w-[100px]">예상순이익액</TableHead>
-                              <TableHead className="text-center w-[100px]">정산예정금액</TableHead>
+                              <TableHead className="text-center w-[100px]">예상순이익</TableHead>
+                              <TableHead className="text-center w-[100px]">정산예정금</TableHead>
                               <TableHead className="text-center w-[80px]">원가율</TableHead>
                               <TableHead className="text-center w-[80px]">재고</TableHead>
                               <TableHead className="text-center w-[70px]">드랍</TableHead>

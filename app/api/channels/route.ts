@@ -123,13 +123,6 @@ export async function GET() {
     
     // 결과 처리
     const channels = data.rows?.map((row: any) => {
-      console.log('채널 정보:', {
-        channel_name_2: row.f[1].v,
-        rounddown_raw: row.f[20].v,
-        rounddown_type: typeof row.f[20].v,
-        rounddown_parsed: parseFloat(row.f[20].v?.replace(/,/g, '') || '0')
-      });
-      
       return {
         channel_name: row.f[0].v,
         channel_name_2: row.f[1].v,
