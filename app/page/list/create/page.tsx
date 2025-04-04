@@ -1482,6 +1482,15 @@ export default function CartPage() {
     });
   };
 
+  // 공통 포맷팅 함수 추가
+  const formatNumber = (value: number, channelInfo: ChannelInfo | null) => {
+    if (!value) return '-';
+    if (channelInfo && (channelInfo.currency_2 === 'USD' || channelInfo.currency_2 === 'SGD')) {
+      return value.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+    return Math.round(value).toLocaleString();
+  };
+
   return (
     <>
       <Toast />
@@ -1890,15 +1899,10 @@ export default function CartPage() {
                                   </div>
                                 </TableCell>
                                 <DraggableCell className="text-center">{/* 판매가 */}
-                                  <div>{product.pricing_price?.toLocaleString() || '-'}</div>
+                                  <div>{product.pricing_price ? formatNumber(product.pricing_price, selectedChannelInfo) : '-'}</div>
                                   <div className="text-sm text-muted-foreground">
                                     {selectedChannelInfo && product.org_price 
-                                      ? (() => {
-                                          const value = calculateBaseCost(product, selectedChannelInfo);
-                                          return Number.isInteger(value) 
-                                            ? value.toLocaleString() 
-                                            : value.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-                                        })()
+                                      ? formatNumber(calculateBaseCost(product, selectedChannelInfo), selectedChannelInfo)
                                       : '-'}
                                   </div>
                                 </DraggableCell>
@@ -1946,15 +1950,17 @@ export default function CartPage() {
                                   </div>
                                 </DraggableCell>
                                 <DraggableCell className="text-center">{/* 할인부담액 */}
-                                  <div>{product.discount_burden_amount?.toLocaleString() || '-'}</div>
+                                  <div>{product.discount_burden_amount ? formatNumber(product.discount_burden_amount, selectedChannelInfo) : '-'}</div>
                                 </DraggableCell>
                                 <DraggableCell className="text-center">{/* 조정원가 */}
-                                  <div>{calculateAdjustedCost(product) ? calculateAdjustedCost(product).toLocaleString() : '-'}</div>
+                                  <div>{calculateAdjustedCost(product) ? formatNumber(calculateAdjustedCost(product), selectedChannelInfo) : '-'}</div>
                                 </DraggableCell>
                                 <DraggableCell className="text-center">{/* 예상수수료 */}
-                                  <div>{selectedChannelInfo 
-                                    ? calculateCommissionFee(product, selectedChannelInfo, isAdjustFeeEnabled).toLocaleString() 
-                                    : '-'}</div>
+                                  <div>
+                                    {selectedChannelInfo 
+                                      ? formatNumber(calculateCommissionFee(product, selectedChannelInfo, isAdjustFeeEnabled), selectedChannelInfo)
+                                      : '-'}
+                                  </div>
                                   <div className="text-sm text-muted-foreground">
                                     {selectedChannelInfo 
                                       ? `${calculateAdjustedFeeRate(product, selectedChannelInfo, isAdjustFeeEnabled).toFixed(1)}%` 
@@ -1964,34 +1970,24 @@ export default function CartPage() {
                                 <DraggableCell className="text-center">{/* 물류비 */}
                                   <div>
                                     {selectedChannelInfo && deliveryType
-                                      ? (() => {
-                                          const value = calculateLogisticsCost(selectedChannelInfo, deliveryType, Number(selectedChannelInfo.amazon_shipping_cost));
-                                          return Number.isInteger(value) 
-                                            ? value.toLocaleString() 
-                                            : value.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-                                        })()
+                                      ? formatNumber(calculateLogisticsCost(selectedChannelInfo, deliveryType, Number(selectedChannelInfo.amazon_shipping_cost)), selectedChannelInfo)
                                       : '0'}
                                   </div>
                                 </DraggableCell>
                                 <DraggableCell className="text-center">{/* 예상순이익 */}
                                   <div>
                                     {selectedChannelInfo 
-                                      ? (() => {
-                                          const value = calculateNetProfit(product, selectedChannelInfo);
-                                          return Number.isInteger(value) 
-                                            ? value.toLocaleString() 
-                                            : value.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-                                        })()
+                                      ? formatNumber(calculateNetProfit(product, selectedChannelInfo), selectedChannelInfo)
                                       : '-'}
                                   </div>
                                   <div className="text-sm text-gray-500 mt-1">
                                     {selectedChannelInfo && product.pricing_price
-                                      ? `${(calculateProfitMargin(product, selectedChannelInfo) * 100).toFixed(2)}%`
+                                      ? `${(calculateProfitMargin(product, selectedChannelInfo) * 100).toFixed(1)}%`
                                       : '-'}
                                   </div>
                                 </DraggableCell>
                                 <DraggableCell className="text-center">{/* 예상정산액 */}
-                                  <div>{calculateSettlementAmount(product).toLocaleString() || '-'}</div>
+                                  <div>{formatNumber(calculateSettlementAmount(product), selectedChannelInfo)}</div>
                                 </DraggableCell>
                                 <DraggableCell className="text-center">{/* 원가율 */}
                                   <div>
