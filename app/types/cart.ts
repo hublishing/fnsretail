@@ -82,7 +82,6 @@ export interface ChannelInfo {
   used: string;
   price_formula: string;
   shipping_formula: string;
-  exchange_rate: string;
   currency: string;
   correction_rate: string;
   amount: string;

@@ -132,7 +132,6 @@ export async function GET() {
       used: row.f[8].v,
       price_formula: row.f[9].v,
       shipping_formula: row.f[10].v,
-      exchange_rate: row.f[11].v,
       currency: row.f[12].v,
       correction_rate: row.f[13].v,
       amount: row.f[14].v,

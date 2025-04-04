@@ -1187,13 +1187,13 @@ export default function CartPage() {
       ),
     },
     { key: "discount_burden_amount", label: "할인부담액", format: (value: number) => value?.toLocaleString() || '-' },
-    { key: "adjusted_cost", label: "조정원가", format: (value: number) => value?.toLocaleString() || '-' },
+    { key: "adjusted_cost", label: "조정원가", format: (value: number) => value ? value.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '-' },
     { key: "expected_commission_fee", label: "예상수수료", format: (value: number) => value?.toLocaleString() || '-' },
-    { key: "logistics_cost", label: "물류비", format: (value: number) => value?.toLocaleString() || '-' },
-    { key: "expected_net_profit", label: "예상순이익액", format: (value: number) => value?.toLocaleString() || '-' },
+    { key: "logistics_cost", label: "물류비", format: (value: number) => value ? value.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '-' },
+    { key: "expected_net_profit", label: "예상순이익액", format: (value: number) => value ? value.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '-' },
     { key: "expected_net_profit_margin", label: "예상순이익률", format: (value: number) => value ? `${(value * 100).toFixed(1)}%` : '-' },
     { key: "expected_settlement_amount", label: "정산예정금액", format: (value: number) => value?.toLocaleString() || '-' },
-    { key: "cost_ratio", label: "원가율", format: (value: number) => value?.toLocaleString() || '-' },
+    { key: "cost_ratio", label: "원가율", format: (value: number) => value ? `${value.toFixed(2)}%` : '-' },
     { key: "total_stock", label: "재고", format: (value: number) => value?.toLocaleString() || '-' },
     { key: "drop_yn", label: "드랍", format: (value: string) => value || '-' },
     { key: "supply_name", label: "공급처", format: (value: string) => value || '-' },
@@ -1895,7 +1895,12 @@ export default function CartPage() {
                                   <div>{product.pricing_price?.toLocaleString() || '-'}</div>
                                   <div className="text-sm text-muted-foreground">
                                     {selectedChannelInfo && product.org_price 
-                                      ? calculateBaseCost(product, selectedChannelInfo).toLocaleString()
+                                      ? (() => {
+                                          const value = calculateBaseCost(product, selectedChannelInfo);
+                                          return Number.isInteger(value) 
+                                            ? value.toLocaleString() 
+                                            : value.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                                        })()
                                       : '-'}
                                   </div>
                                 </DraggableCell>
@@ -1961,14 +1966,24 @@ export default function CartPage() {
                                 <DraggableCell className="text-center">{/* 물류비 */}
                                   <div>
                                     {selectedChannelInfo && deliveryType
-                                      ? calculateLogisticsCost(selectedChannelInfo, deliveryType, Number(selectedChannelInfo.amazon_shipping_cost)).toLocaleString() 
+                                      ? (() => {
+                                          const value = calculateLogisticsCost(selectedChannelInfo, deliveryType, Number(selectedChannelInfo.amazon_shipping_cost));
+                                          return Number.isInteger(value) 
+                                            ? value.toLocaleString() 
+                                            : value.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                                        })()
                                       : '0'}
                                   </div>
                                 </DraggableCell>
                                 <DraggableCell className="text-center">{/* 예상순이익 */}
                                   <div>
                                     {selectedChannelInfo 
-                                      ? `${calculateNetProfit(product, selectedChannelInfo).toLocaleString()}`
+                                      ? (() => {
+                                          const value = calculateNetProfit(product, selectedChannelInfo);
+                                          return Number.isInteger(value) 
+                                            ? value.toLocaleString() 
+                                            : value.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                                        })()
                                       : '-'}
                                   </div>
                                   <div className="text-sm text-gray-500 mt-1">

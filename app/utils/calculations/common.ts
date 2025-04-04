@@ -27,7 +27,7 @@ export const parseNumber = (value: string | number | undefined | null): number =
  */
 export const parseChannelBasicInfo = (channel: ChannelInfo) => {
   // 문자열에서 쉼표 제거 후 숫자로 변환
-  const exchangeRate = parseFloat(channel.exchange_rate?.replace(/,/g, '') || '0');
+  const exchangeRate = parseFloat(channel.applied_exchange_rate?.replace(/,/g, '') || '0');
   const markupRatio = parseFloat(channel.markup_ratio?.replace(/,/g, '') || '0');
   const rounddown = parseFloat(channel.rounddown?.replace(/,/g, '') || '0');
   const digitAdjustment = parseFloat(channel.digit_adjustment?.replace(/,/g, '') || '0');
