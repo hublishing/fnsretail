@@ -130,6 +130,15 @@ export const calculateBaseCost = (product: Product, channel: ChannelInfo): numbe
 };
 
 /**
+ * 조정원가 계산
+ * @param product 상품 정보
+ * @returns 계산된 조정원가
+ */
+export const calculateAdjustedCost = (product: Product): number => {
+  return product.adjusted_cost || 0;
+};
+
+/**
  * 할인가 계산
  * @param basePrice 기본 가격
  * @param discountType 할인 유형

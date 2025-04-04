@@ -89,7 +89,8 @@ import {
   calculateBaseCost,
   calculateFinalPrice,
   calculateAdjustedFeeRate,
-  calculateChannelPrice
+  calculateChannelPrice,
+  calculateAdjustedCost
 } from '@/app/utils/calculations';
 import { ListTopbar } from '@/app/components/list-topbar';
 import { parseChannelBasicInfo } from '@/app/utils/calculations/common';
@@ -286,6 +287,8 @@ export default function CartPage() {
   const [autoSavedCalculations, setAutoSavedCalculations] = useState<{
     products: Product[];
   } | null>(null);
+  const [showAdjustCostModal, setShowAdjustCostModal] = useState(false);
+  const [adjustCostValue, setAdjustCostValue] = useState<string>('');
   
   // 각 탭별 상태 변수들
   const [tabStates, setTabStates] = useState<{
@@ -476,45 +479,6 @@ export default function CartPage() {
     
     usedUuids.add(newUuid);
     return newUuid;
-  };
-
-  // 정보 저장 함수
-  const saveCartInfo = async () => {
-    if (!user) return;
-
-    try {
-      const cartData = {
-        products: products.map(product => {
-          const cleanProduct = { ...product };
-          Object.keys(cleanProduct).forEach(key => {
-            if (cleanProduct[key as keyof Product] === undefined) {
-              delete cleanProduct[key as keyof Product];
-            }
-          });
-          return cleanProduct;
-        }),
-        title: title || '',
-        channel_name_2: filters.channel_name_2 || '',
-        delivery_type: filters.delivery_type || '',
-        start_date: startDate || '',
-        end_date: endDate || '',
-        memo1: memo1 || '',
-        memo2: memo2 || '',
-        memo3: memo3 || '',
-        divider_rules: dividerRules.map(rule => ({
-          id: rule.id,
-          range: rule.range,
-          color: rule.color || '#FFE4E1',
-          text: rule.text || ''
-        })),
-        updatedAt: new Date().toISOString()
-      };
-
-      const docRef = doc(db, 'userCarts', user.uid);
-      await setDoc(docRef, cartData);
-    } catch (error) {
-      console.error('장바구니 정보 저장 중 오류:', error);
-    }
   };
 
   // 사용자 세션 로드
@@ -779,10 +743,6 @@ export default function CartPage() {
       const logistics_cost = calculateLogisticsCost(channelInfo, deliveryType || 'conditional', Number(channelInfo.amazon_shipping_cost));
       console.log(`[물류비 계산] 상품 ID: ${product.product_id}, 계산된 logistics_cost: ${logistics_cost}`);
 
-      // 조정원가 계산
-      const adjusted_cost = calculateBaseCost(product, channelInfo);
-      console.log(`[조정원가 계산] 상품 ID: ${product.product_id}, 계산된 adjusted_cost: ${adjusted_cost}`);
-
       // 수수료 계산
       const expected_commission_fee = calculateCommissionFee(product, channelInfo, isAdjustFeeEnabled);
       const expected_commission_fee_rate = calculateAdjustedFeeRate(product, channelInfo, isAdjustFeeEnabled);
@@ -799,7 +759,6 @@ export default function CartPage() {
 
       console.log(`[상세 계산] 상품 ID: ${product.product_id}`, {
         pricing_price,
-        adjusted_cost,
         logistics_cost,
         expected_commission_fee,
         expected_commission_fee_rate: `${expected_commission_fee_rate}%`,
@@ -812,7 +771,6 @@ export default function CartPage() {
       return {
         ...updatedProduct,
         pricing_price,
-        adjusted_cost,
         logistics_cost,
         expected_commission_fee,
         expected_commission_fee_rate,
@@ -853,7 +811,7 @@ export default function CartPage() {
     console.log('[handleChannelSelect] 자동 저장된 상태:', JSON.stringify(savedState, null, 2));
     
     console.log('[handleChannelSelect] 장바구니 정보 저장 시작');
-    await saveCartInfo();
+    // await saveCartInfo(); 제거
   };
 
   // handleDeliveryTypeChange 함수 수정
@@ -873,8 +831,7 @@ export default function CartPage() {
       }));
       setProducts(updatedProducts);
     }
-
-    await saveCartInfo();
+    // await saveCartInfo(); 제거
   };
 
   // 날짜 변경 핸들러 수정
@@ -891,19 +848,19 @@ export default function CartPage() {
   const handleMemo1Change = async (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     setMemo1(value);
-    await saveCartInfo();
+    // await saveCartInfo(); 제거
   };
 
   const handleMemo2Change = async (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     setMemo2(value);
-    await saveCartInfo();
+    // await saveCartInfo(); 제거
   };
 
   const handleMemo3Change = async (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     setMemo3(value);
-    await saveCartInfo();
+    // await saveCartInfo(); 제거
   };
 
   // 정렬 상태 변경 시 상품 정렬 - 메모이제이션 적용
@@ -1380,7 +1337,7 @@ export default function CartPage() {
         expected_commission_fee: calculateCommissionFee(product, selectedChannelInfo, checked)
       }));
       setProducts(updatedProducts);
-      await saveCartInfo();
+      // await saveCartInfo(); 제거
     }
   };
 
@@ -1489,6 +1446,42 @@ export default function CartPage() {
     });
     
     console.log('[handleRevertCalculations] END');
+  };
+
+  // 조정원가 설정 핸들러
+  const handleSetAdjustedCost = async () => {
+    if (!selectedProducts.length) {
+      toast({
+        description: "선택된 상품이 없습니다."
+      });
+      return;
+    }
+
+    const costValue = parseFloat(adjustCostValue.replace(/,/g, ''));
+    if (isNaN(costValue)) {
+      toast({
+        description: "올바른 금액을 입력해주세요."
+      });
+      return;
+    }
+
+    const updatedProducts = products.map(product => {
+      if (selectedProducts.includes(product.product_id)) {
+        return {
+          ...product,
+          adjusted_cost: costValue
+        };
+      }
+      return product;
+    });
+
+    setProducts(updatedProducts);
+    setShowAdjustCostModal(false);
+    setAdjustCostValue('');
+
+    toast({
+      description: `${selectedProducts.length}개 상품의 조정원가가 설정되었습니다.`
+    });
   };
 
   return (
@@ -1611,8 +1604,7 @@ export default function CartPage() {
                     }`}>
                       <SelectValue placeholder="배송조건" />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">배송조건</SelectItem>
+                    <SelectContent> 
                       <SelectItem value="conditional">조건부배송</SelectItem>
                       <SelectItem value="free">무료배송</SelectItem>
                     </SelectContent>
@@ -1692,6 +1684,14 @@ export default function CartPage() {
                   className="border-0 hover:bg-transparent hover:text-primary"
                 >
                   선택삭제
+                </Button> 
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowAdjustCostModal(true)} 
+                  className="border-0 hover:bg-transparent hover:text-primary"
+                >
+                  조정원가
                 </Button>
                 <Button
                   variant="outline"
@@ -1742,7 +1742,6 @@ export default function CartPage() {
                   disabled={!autoSavedCalculations || !products.some(p => selectedProducts.includes(p.product_id))}
                   className="border-0 hover:bg-transparent hover:text-primary flex items-center gap-2"
                 >
-                  <RotateCcw className="w-4 h-4" />
                   선택 초기화
                 </Button>
                 {/*<Button
@@ -1947,7 +1946,7 @@ export default function CartPage() {
                                   <div>{product.discount_burden_amount?.toLocaleString() || '-'}</div>
                                 </DraggableCell>
                                 <DraggableCell className="text-center">{/* 조정원가 */}
-                                  <div>{product.adjusted_cost?.toLocaleString() || '-'}</div>
+                                  <div>{calculateAdjustedCost(product) ? calculateAdjustedCost(product).toLocaleString() : '-'}</div>
                                 </DraggableCell>
                                 <DraggableCell className="text-center">{/* 예상수수료 */}
                                   <div>{selectedChannelInfo 
@@ -2119,6 +2118,42 @@ export default function CartPage() {
             selectedChannelInfo={selectedChannelInfo}
             currentProducts={products}
           />
+          {/* 조정원가 설정 모달 */}
+          <Dialog open={showAdjustCostModal} onOpenChange={setShowAdjustCostModal}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>조정원가 설정</DialogTitle>
+                <DialogDescription>
+                  선택된 {selectedProducts.length}개 상품의 조정원가를 설정합니다.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="adjustCost" className="text-right">
+                    조정원가
+                  </Label>
+                  <Input
+                    id="adjustCost"
+                    value={adjustCostValue}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/[^0-9,]/g, '');
+                      setAdjustCostValue(value);
+                    }}
+                    className="col-span-3"
+                    placeholder="금액을 입력하세요"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowAdjustCostModal(false)}>
+                  취소
+                </Button>
+                <Button onClick={handleSetAdjustedCost}>
+                  설정
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </>
     );
