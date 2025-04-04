@@ -114,10 +114,22 @@ export async function GET(request: Request) {
     const orderWhereClause = orderConditions.length > 0 ? `WHERE ${orderConditions.join(' AND ')}` : '';
      
     const query = `
-      WITH FilteredProducts AS (
+      WITH ChannelProducts AS (
+        SELECT DISTINCT product_id
+        FROM \`third-current-410914.project_m.order_db\`
+        WHERE 1=1
+        ${channel_name && channel_name !== 'all' ? `AND channel_name = '${channel_name}'` : ''}
+        ${channel_category_2 && channel_category_2 !== 'all' ? `AND channel_category_2 = '${channel_category_2}'` : ''}
+        ${channel_category_3 && channel_category_3 !== 'all' ? `AND channel_category_3 = '${channel_category_3}'` : ''}
+      ),
+      FilteredProducts AS (
         SELECT *
-        FROM \`third-current-410914.project_m.product_db\`
-        ${productWhereClause}
+        FROM \`third-current-410914.project_m.product_db\` p
+        WHERE 1=1
+        ${productConditions.length > 0 ? `AND ${productConditions.join(' AND ')}` : ''}
+        ${(channel_name !== 'all' || channel_category_2 !== 'all' || channel_category_3 !== 'all') 
+          ? 'AND p.product_id IN (SELECT product_id FROM ChannelProducts)' 
+          : ''}
       ),
       FilteredOrders AS (
         SELECT *
