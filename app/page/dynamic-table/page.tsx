@@ -772,6 +772,8 @@ export default function DynamicTable() {
       
       <div className="flex justify-between mb-6 py-5 px-5 bg-card rounded-lg shadow-sm">
         <div className="">
+          <h1 className="text-1xl font-bold mb-4">상품 검색 필터</h1>
+        
           <div className="flex items-center gap-4 pb-4">
           <div className="text-sm text-gray-500">검색조건</div>
             <Select
@@ -887,6 +889,7 @@ export default function DynamicTable() {
         </div>
 
         <div className="">
+          <h1 className="text-1xl font-bold mb-4">판매량 필터</h1>
           <div className="flex items-center gap-4 pb-4">
           <div className="text-sm text-gray-500">판매량 분류</div>
             <Select
