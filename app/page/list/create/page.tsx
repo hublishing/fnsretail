@@ -93,8 +93,8 @@ import {
 } from '@/app/utils/calculations';
 import { ListTopbar } from '@/app/components/list-topbar';
 import { parseChannelBasicInfo } from '@/app/utils/calculations/common';
-import { useToast } from "@/app/components/ui/use-toast"
-import { Toast } from "@/app/components/ui/toast"
+import { useToast } from "@/components/ui/use-toast"
+import { Toast } from "@/components/ui/toast"
 
 // 정렬 가능한 행 컴포넌트
 function SortableTableRow({ product, children, ...props }: { 
