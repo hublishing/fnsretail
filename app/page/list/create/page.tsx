@@ -1688,10 +1688,10 @@ export default function CartPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setShowAdjustCostModal(true)} 
+                  onClick={() => setShowDividerModal(true)}
                   className="border-0 hover:bg-transparent hover:text-primary"
                 >
-                  조정원가
+                  구분자
                 </Button>
                 <Button
                   variant="outline"
@@ -1712,10 +1712,10 @@ export default function CartPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setShowDividerModal(true)}
+                  onClick={() => setShowAdjustCostModal(true)} 
                   className="border-0 hover:bg-transparent hover:text-primary"
                 >
-                  구분자
+                  조정원가
                 </Button>
                 <Button
                   variant="outline"
