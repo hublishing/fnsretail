@@ -839,58 +839,15 @@ export default function CartPage() {
     // 계산이 완료된 후 현재 상태 자동 저장
     console.log('[handleChannelSelect] 계산 완료 후 상태 자동 저장 시작');
     const savedState = {
-      products: updatedProducts.map(p => ({
-        ...p,
-        // 기본 정보
-        product_id: p.product_id,
-        name: p.name,
-        brand: p.brand,
-        category_1: p.category_1,
-        category_3: p.category_3,
-        extra_column2: p.extra_column2,
-        img_desc1: p.img_desc1,
-        product_desc: p.product_desc,
+      products: updatedProducts.map(p => {
+        // logistics_cost를 제외한 나머지 필드만 저장
+        const {
+          logistics_cost,  // 구조분해할당으로 제외
+          ...productWithoutLogistics
+        } = p;
         
-        // 가격 정보
-        org_price: p.org_price,
-        shop_price: p.shop_price,
-        global_price: p.global_price,
-        pricing_price: p.pricing_price,
-        
-        // 할인 정보
-        discount_price: p.discount_price,
-        discount_rate: p.discount_rate,
-        discount_unit: p.discount_unit,
-        coupon_price_1: p.coupon_price_1,
-        coupon_price_2: p.coupon_price_2,
-        coupon_price_3: p.coupon_price_3,
-        discount_burden_amount: p.discount_burden_amount,
-        discount: p.discount,
-        
-        // 원가 및 수수료 정보
-        adjusted_cost: p.adjusted_cost,
-        logistics_cost: p.logistics_cost,
-        expected_commission_fee: p.expected_commission_fee,
-        expected_commission_fee_rate: p.expected_commission_fee_rate,
-        
-        // 이익 정보
-        expected_net_profit: p.expected_net_profit,
-        expected_net_profit_margin: p.expected_net_profit_margin,
-        expected_settlement_amount: p.expected_settlement_amount,
-        cost_ratio: p.cost_ratio,
-        
-        // 재고 정보
-        total_stock: p.total_stock,
-        main_wh_available_stock_excl_production_stock: p.main_wh_available_stock_excl_production_stock,
-        soldout_rate: p.soldout_rate,
-        
-        // 기타 정보
-        drop_yn: p.drop_yn,
-        supply_name: p.supply_name,
-        exclusive2: p.exclusive2,
-        rowColor: p.rowColor,
-        dividerText: p.dividerText
-      }))
+        return productWithoutLogistics;
+      })
     };
     setAutoSavedCalculations(savedState);
     console.log('[handleChannelSelect] 자동 저장된 상태:', JSON.stringify(savedState, null, 2));
@@ -912,7 +869,7 @@ export default function CartPage() {
     if (selectedChannelInfo) {
       const updatedProducts = products.map(product => ({
         ...product,
-        logistics_cost: calculateLogisticsCost(selectedChannelInfo, value, Number(selectedChannelInfo.amazon_shipping_cost))
+        logistics_cost: value ? calculateLogisticsCost(selectedChannelInfo, value, Number(selectedChannelInfo.amazon_shipping_cost)) : 0
       }));
       setProducts(updatedProducts);
     }
@@ -928,7 +885,6 @@ export default function CartPage() {
     } else {
       setEndDate(value);
     }
-    await saveCartInfo();
   };
 
   // 메모 변경 핸들러들
@@ -1509,77 +1465,18 @@ export default function CartPage() {
       );
       
       if (savedProduct) {
-        console.log(`[handleRevertCalculations] 상품 되돌리기 - ID: ${product.product_id}`, {
-          이전_상태: {
-            pricing_price: product.pricing_price,
-            discount_price: product.discount_price,
-            discount_rate: product.discount_rate,
-            discount_unit: product.discount_unit,
-            coupon_price_1: product.coupon_price_1,
-            coupon_price_2: product.coupon_price_2,
-            coupon_price_3: product.coupon_price_3,
-            discount_burden_amount: product.discount_burden_amount,
-            adjusted_cost: product.adjusted_cost,
-            logistics_cost: product.logistics_cost,
-            expected_commission_fee: product.expected_commission_fee,
-            expected_commission_fee_rate: product.expected_commission_fee_rate,
-            expected_net_profit: product.expected_net_profit,
-            expected_net_profit_margin: product.expected_net_profit_margin,
-            expected_settlement_amount: product.expected_settlement_amount,
-            cost_ratio: product.cost_ratio,
-            discount: product.discount
-          },
-          새로운_상태: {
-            pricing_price: savedProduct.pricing_price,
-            discount_price: savedProduct.discount_price,
-            discount_rate: savedProduct.discount_rate,
-            discount_unit: savedProduct.discount_unit,
-            coupon_price_1: savedProduct.coupon_price_1,
-            coupon_price_2: savedProduct.coupon_price_2,
-            coupon_price_3: savedProduct.coupon_price_3,
-            discount_burden_amount: savedProduct.discount_burden_amount,
-            adjusted_cost: savedProduct.adjusted_cost,
-            logistics_cost: savedProduct.logistics_cost,
-            expected_commission_fee: savedProduct.expected_commission_fee,
-            expected_commission_fee_rate: savedProduct.expected_commission_fee_rate,
-            expected_net_profit: savedProduct.expected_net_profit,
-            expected_net_profit_margin: savedProduct.expected_net_profit_margin,
-            expected_settlement_amount: savedProduct.expected_settlement_amount,
-            cost_ratio: savedProduct.cost_ratio,
-            discount: savedProduct.discount
-          }
-        });
-        
-        // 저장된 상태로 완전히 복원
         return {
-          ...product,
-          // 가격 정보
-          pricing_price: savedProduct.pricing_price,
-          
-          // 할인 정보
-          discount_price: savedProduct.discount_price,
-          discount_rate: savedProduct.discount_rate,
-          discount_unit: savedProduct.discount_unit,
-          coupon_price_1: savedProduct.coupon_price_1,
-          coupon_price_2: savedProduct.coupon_price_2,
-          coupon_price_3: savedProduct.coupon_price_3,
-          discount_burden_amount: savedProduct.discount_burden_amount,
-          discount: savedProduct.discount,
-          
-          // 원가 및 수수료 정보
-          adjusted_cost: savedProduct.adjusted_cost,
-          logistics_cost: savedProduct.logistics_cost,
-          expected_commission_fee: savedProduct.expected_commission_fee,
-          expected_commission_fee_rate: savedProduct.expected_commission_fee_rate,
-          
-          // 이익 정보
-          expected_net_profit: savedProduct.expected_net_profit,
-          expected_net_profit_margin: savedProduct.expected_net_profit_margin,
-          expected_settlement_amount: savedProduct.expected_settlement_amount,
-          cost_ratio: savedProduct.cost_ratio
+          ...savedProduct,
+          // 배송비는 현재 배송조건으로 계산
+          logistics_cost: selectedChannelInfo 
+            ? calculateLogisticsCost(
+                selectedChannelInfo, 
+                deliveryType,  // 현재 선택된 배송조건 사용
+                Number(selectedChannelInfo.amazon_shipping_cost)
+              )
+            : 0
         };
       }
-      
       return product;
     });
 
@@ -1616,7 +1513,7 @@ export default function CartPage() {
                  user?.uid === '6DnflkbFSifLCNVQGWGv7aqJ2w72' ? '박연수' : ''}</span>
                 {selectedChannelInfo?.average_fee_rate && (<span className="mr-4 rounded-md shadow-sm bg-muted px-2 py-1">평균수수료 : {selectedChannelInfo.average_fee_rate}</span>)}
                 {products.length > 0 && (
-                  <>
+                  <> 
                     <span className="mr-4 rounded-md shadow-sm bg-muted px-2 py-1">
                       평균할인율 : {calculateAverageDiscountRate(products)}%
                     </span>
@@ -1715,6 +1612,7 @@ export default function CartPage() {
                       <SelectValue placeholder="배송조건" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="none">배송조건</SelectItem>
                       <SelectItem value="conditional">조건부배송</SelectItem>
                       <SelectItem value="free">무료배송</SelectItem>
                     </SelectContent>
@@ -2063,9 +1961,9 @@ export default function CartPage() {
                                 </DraggableCell>
                                 <DraggableCell className="text-center">{/* 물류비 */}
                                   <div>
-                                    {selectedChannelInfo 
+                                    {selectedChannelInfo && deliveryType
                                       ? calculateLogisticsCost(selectedChannelInfo, deliveryType, Number(selectedChannelInfo.amazon_shipping_cost)).toLocaleString() 
-                                      : '-'}
+                                      : '0'}
                                   </div>
                                 </DraggableCell>
                                 <DraggableCell className="text-center">{/* 예상순이익 */}
