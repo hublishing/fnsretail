@@ -1511,6 +1511,7 @@ export default function CartPage() {
                 <span className="mr-4">작성자 : {user?.uid === 'a8mwwycqhaZLIb9iOcshPbpAVrj2' ? '한재훈' :
                  user?.uid === 'MhMI2KxbxkPHIAJP0o4sPSZG35e2' ? '이세명' :
                  user?.uid === '6DnflkbFSifLCNVQGWGv7aqJ2w72' ? '박연수' : ''}</span>
+                <span className="mr-4">상품 : {products.length}개</span>
                 {selectedChannelInfo?.average_fee_rate && (<span className="mr-4 rounded-md shadow-sm bg-muted px-2 py-1">평균수수료 : {parseFloat(selectedChannelInfo.average_fee_rate).toFixed(1)}%</span>)}
                 {products.length > 0 && (
                   <> 

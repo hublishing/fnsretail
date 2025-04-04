@@ -1054,21 +1054,25 @@ export default function DynamicTable() {
               양식변경
             </Button>
           </div>
-          
-          <Select
-            value={filters.sort_by_qty}
-            onValueChange={handleSortChange}
-          >
-            <SelectTrigger className="w-[140px] border-none focus:ring-0 focus:ring-offset-0 shadow-none h-8">
-              <SelectValue placeholder="정렬 기준" />
-            </SelectTrigger>
-            <SelectContent className="min-w-[140px]">
-              <SelectItem value="desc">판매 많은 순</SelectItem>
-              <SelectItem value="asc">판매 적은 순</SelectItem>
-              <SelectItem value="stock_desc">재고 많은 순</SelectItem>
-              <SelectItem value="stock_asc">재고 적은 순</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-2">
+            <div className="text-sm text-gray-500">
+            검색된 항목 : {data.length}개
+            </div>
+            <Select
+              value={filters.sort_by_qty}
+              onValueChange={handleSortChange}
+            >
+              <SelectTrigger className="w-[140px] border-none focus:ring-0 focus:ring-offset-0 shadow-none h-8">
+                <SelectValue placeholder="정렬 기준" />
+              </SelectTrigger>
+              <SelectContent className="min-w-[140px]">
+                <SelectItem value="desc">판매 많은 순</SelectItem>
+                <SelectItem value="asc">판매 적은 순</SelectItem>
+                <SelectItem value="stock_desc">재고 많은 순</SelectItem>
+                <SelectItem value="stock_asc">재고 적은 순</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <div className="rounded-md border overflow-hidden">
