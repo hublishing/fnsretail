@@ -20,7 +20,7 @@ import { useState } from "react"
 import { Product, ChannelInfo } from '@/app/types/cart'
 import { calculateDiscount } from '@/app/utils/calculations/common'
 import { useToast } from "@/components/ui/use-toast"
-import { CheckCircle } from "lucide-react"
+import { CheckCircle2 } from "lucide-react"
 
 type DiscountType = 'amount' | 'rate'
 
@@ -206,7 +206,7 @@ export function DiscountModal({
       
       setShowDiscountModal(false);
       toast({
-        description: <div className="flex items-center gap-2"><CheckCircle className="h-5 w-5" /> 할인이 적용되었습니다.</div>,
+        description: <div className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5" /> 할인이 적용되었습니다.</div>,
       });
     } catch (error) {
       console.error('할인 적용 중 오류:', error);

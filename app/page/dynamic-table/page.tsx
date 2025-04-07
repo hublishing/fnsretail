@@ -39,6 +39,8 @@ import {
 } from "@/components/ui/popover"
 import { Calendar as CalendarComponent } from "@/components/ui/calendar"
 import { useToast } from "@/components/ui/use-toast"
+import { CheckCircle2 } from "lucide-react"
+import { CircleAlert  } from "lucide-react"
 
 // 고정 필터 옵션
 const STATIC_FILTER_OPTIONS = {
@@ -600,15 +602,15 @@ export default function DynamicTable() {
           return newSet;
         });
  
-        toast({ 
-          description: "담은 상품에서 제거되었습니다.",
+        toast({
+          description: <div className="flex items-center gap-2"><CircleAlert className="h-5 w-5" /> 담은 상품에서 제거되었습니다.</div>,
           variant: "destructive"
         });
       }
     } catch (error) { 
       toast({
         title: "오류",
-        description: "담은 상품에서 제거하는 중 오류가 발생했습니다.",
+        description: <div className="flex items-center gap-2"><CircleAlert className="h-5 w-5" /> 담은 상품에서 제거하는 중 오류가 발생했습니다.</div>,
         variant: "destructive"
       });
     }
@@ -620,7 +622,7 @@ export default function DynamicTable() {
       if (!user) { 
         toast({
           title: "로그인 필요",
-          description: "상품을 담으려면 로그인이 필요합니다.",
+          description: <div className="flex items-center gap-2"><CircleAlert className="h-5 w-5" /> 상품을 담으려면 로그인이 필요합니다.</div>,
           variant: "destructive"
         });
         return;
@@ -642,7 +644,7 @@ export default function DynamicTable() {
 
       if (newProducts.length === 0) { 
         toast({ 
-          description: "선택한 상품이 모두 이미 장바구니에 있습니다.",
+          description: <div className="flex items-center gap-2"><CircleAlert className="h-5 w-5" /> 선택한 상품이 모두 이미 장바구니에 있습니다.</div>,
           variant: "destructive"
         });
         return;
@@ -662,12 +664,12 @@ export default function DynamicTable() {
       setSelectedProducts(new Set()); // 선택 초기화
  
       toast({ 
-        description: `${newProducts.length}개의 상품을 리스트에 추가 했습니다.`
+        description: <div className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5" /> {newProducts.length}개의 상품을 리스트에 추가 했습니다.</div>,
       });
     } catch (error) { 
       toast({
         title: "오류",
-        description: "선택한 상품을 리스트에 담는 중 오류가 발생했습니다.",
+        description: <div className="flex items-center gap-2"><CircleAlert className="h-5 w-5" /> 선택한 상품을 리스트에 담는 중 오류가 발생했습니다.</div>,
         variant: "destructive"
       });
     }

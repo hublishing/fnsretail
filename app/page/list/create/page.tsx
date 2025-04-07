@@ -108,6 +108,10 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 
+import { CheckCircle2 } from "lucide-react"
+import { CircleAlert  } from "lucide-react"
+
+
 // 정렬 가능한 행 컴포넌트
 function SortableTableRow({ product, children, ...props }: { 
   product: Product;
@@ -1019,7 +1023,13 @@ export default function CartPage() {
 
   // 선택된 상품 삭제 핸들러
   const handleRemoveSelectedProducts = () => {
-    if (selectedProducts.length === 0) return;
+    if (selectedProducts.length === 0) {
+      toast({
+        description: <div className="flex items-center gap-2"><CircleAlert className="h-5 w-5" /> 선택된 상품이 없습니다.</div>,
+        variant: "destructive"
+      });
+      return;
+    }
     
     const updatedProducts = products.filter(p => !selectedProducts.includes(p.product_id));
     setProducts(updatedProducts);
@@ -1027,6 +1037,10 @@ export default function CartPage() {
     
     // 되돌리기 기능에 기록
     recordStateChange('PRODUCT_REMOVE', selectedProducts, '선택된 상품 삭제');
+
+    toast({
+      description: <div className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5" /> {selectedProducts.length}개의 상품이 삭제되었습니다.</div>,
+    });
   };
 
   // 초기화 핸들러 추가
@@ -1432,7 +1446,7 @@ export default function CartPage() {
     if (!autoSavedCalculations) {
       console.log('[handleRevertCalculations] 저장된 계산 데이터가 없음');
       toast({
-        description: "저장된 계산 데이터가 없습니다.",
+        description: <div className="flex items-center gap-2"><CircleAlert className="h-5 w-5" /> 저장된 계산 데이터가 없습니다.</div>,
         variant: "destructive"
       });
       return;
@@ -1444,7 +1458,7 @@ export default function CartPage() {
     if (checkedProducts.length === 0) {
       console.log('[handleRevertCalculations] 선택된 상품이 없음');
       toast({
-        description: "선택된 상품이 없습니다.",
+        description: <div className="flex items-center gap-2"><CircleAlert className="h-5 w-5" /> 선택된 상품이 없습니다.</div>,
         variant: "destructive"
       });
       return;
@@ -1481,7 +1495,7 @@ export default function CartPage() {
     
     console.log('[handleRevertCalculations] 토스트 메시지 표시');
     toast({
-      description: `${checkedProducts.length}개 상품의 계산 데이터를 되돌렸습니다.`
+      description: <div className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5" /> {checkedProducts.length}개 상품의 계산 데이터를 되돌렸습니다.</div>,
     });
     
     console.log('[handleRevertCalculations] END');
@@ -1491,7 +1505,7 @@ export default function CartPage() {
   const handleSetAdjustedCost = async () => {
     if (!selectedProducts.length) {
       toast({
-        description: "선택된 상품이 없습니다."
+        description: <div className="flex items-center gap-2"><CircleAlert className="h-5 w-5" /> 선택된 상품이 없습니다.</div>,
       });
       return;
     }
@@ -1499,7 +1513,7 @@ export default function CartPage() {
     const costValue = parseFloat(adjustCostValue.replace(/,/g, ''));
     if (isNaN(costValue)) {
       toast({
-        description: "올바른 금액을 입력해주세요."
+        description: <div className="flex items-center gap-2"><CircleAlert className="h-5 w-5" /> 올바른 금액을 입력해주세요.</div>,
       });
       return;
     }
@@ -1519,7 +1533,7 @@ export default function CartPage() {
     setAdjustCostValue('');
 
     toast({
-      description: `${selectedProducts.length}개 상품의 조정원가가 설정되었습니다.`
+      description: <div className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5" /> {selectedProducts.length}개 상품의 조정원가가 설정되었습니다.</div>,
     });
   };
 
