@@ -1,5 +1,11 @@
 import { Calendar, Home, Inbox, Settings } from "lucide-react"
-import { Menu, LogOut, History, LayoutDashboard, ShoppingCart, Search, FileText, PlusCircle, NotebookText, List } from "lucide-react"
+import { Menu, LogOut, History, LayoutDashboard, ShoppingCart, Search, FileText, PlusCircle, NotebookText, List, ChevronDown } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 import {
   Sidebar,
@@ -10,6 +16,8 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarFooter,
+  SidebarHeader,
 } from "@/components/ui/sidebar"
 
 // Menu items.
@@ -39,25 +47,48 @@ const items = [
 export function AppSidebar() {
   return (
     <Sidebar>
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Application</SidebarGroupLabel>
-          <SidebarGroupContent>
+        <SidebarHeader>
             <SidebarMenu>
-              {items.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <a href={item.href}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+            <SidebarMenuItem>
+                <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <SidebarMenuButton>
+                    Select Workspace
+                    <ChevronDown className="ml-auto" />
+                    </SidebarMenuButton>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-[--radix-popper-anchor-width]">
+                    <DropdownMenuItem>
+                    <span>Acme Inc</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                    <span>Acme Corp.</span>
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+                </DropdownMenu>
+            </SidebarMenuItem>
             </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
+        </SidebarHeader>
+        <SidebarContent>
+            <SidebarGroup>
+            <SidebarGroupLabel>Application</SidebarGroupLabel>
+            <SidebarGroupContent>
+                <SidebarMenu>
+                {items.map((item) => (
+                    <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                        <a href={item.href}>
+                        <item.icon />
+                        <span>{item.title}</span>
+                        </a>
+                    </SidebarMenuButton>
+                    </SidebarMenuItem>
+                ))}
+                </SidebarMenu>
+            </SidebarGroupContent>
+            </SidebarGroup>
+        </SidebarContent>
+        <SidebarFooter />
     </Sidebar>
   )
 }
