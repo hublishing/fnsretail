@@ -136,7 +136,7 @@ function SortableTableRow({ product, children, ...props }: {
   const childrenWithProps = React.Children.map(children, (child, index) => {
     if (React.isValidElement(child)) {
       // 체크박스 셀(index 0)과 상품명 셀(index 4)에만 드래그 속성을 전달하지 않음
-      if (index === 0 || index === 4) {
+      if (index === 0 || index === 5) {
         return child;
       }
       // 1번째와 2번째 셀에만 배경색 적용

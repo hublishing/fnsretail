@@ -111,13 +111,13 @@ export async function signOut() {
     const cookieStore = await cookies()
     cookieStore.delete('session')
     
-    redirect('/login')
+    redirect('/page/login')
   } catch (error) {
     console.error('로그아웃 오류:', error)
     // 오류가 발생해도 로그아웃은 진행
     const cookieStore = await cookies()
     cookieStore.delete('session')
-    redirect('/login')
+    redirect('/page/login')
   }
 }
 
