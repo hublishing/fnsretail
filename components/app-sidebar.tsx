@@ -171,8 +171,8 @@ export function AppSidebar() {
                   side="top"
                   className="w-[--radix-popper-anchor-width]"
                 >
-                  <DropdownMenuItem>
-                    <span onClick={handleLogout}>Sign out</span>
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <span>Sign out</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
