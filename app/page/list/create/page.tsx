@@ -1915,7 +1915,7 @@ export default function CartPage() {
                               </TableHead>
                               <TableHead className="text-center w-[50px]">번호</TableHead>
                               <TableHead className="text-center w-[80px]">이지어드민</TableHead>
-                              <TableHead className="text-center w-[80px]">쇼핑몰상품코드</TableHead>
+                              <TableHead className="text-center w-[80px]">채널코드</TableHead>
                               <TableHead className="text-center w-[70px]">이미지</TableHead>
                               <TableHead className="text-left w-[200px]">상품명</TableHead>
                               <TableHead className="text-center w-[80px]">판매가</TableHead> 
