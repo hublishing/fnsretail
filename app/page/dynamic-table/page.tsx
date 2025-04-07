@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Search, FileDown, Plus, Settings } from "lucide-react"
+import { Search, FileDown, Plus, Settings, Calendar } from "lucide-react"
 import {
   Select,
   SelectContent,
@@ -28,6 +28,16 @@ import { ProductDetailModal } from "@/components/product-detail-modal"
 import * as XLSX from 'xlsx';
 import { ExcelSettingsModal } from "@/components/excel-settings-modal"
 import { Checkbox } from "@/components/ui/checkbox"
+import { DateRange } from 'react-day-picker'
+import { format } from 'date-fns'
+import { ko } from 'date-fns/locale'
+import { cn } from "@/lib/utils"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { Calendar as CalendarComponent } from "@/components/ui/calendar"
 
 // 고정 필터 옵션
 const STATIC_FILTER_OPTIONS = {
@@ -506,40 +516,16 @@ export default function DynamicTable() {
     }
   };
 
-  // 날짜 필드 핸들러
-  const handleDateChange = async (e: React.ChangeEvent<HTMLInputElement>, field: 'order_date_from' | 'order_date_to') => {
-    console.log('날짜 변경 시작:', { field, value: e.target.value });
-    const value = e.target.value || '';
-    
-    const newFilters = { ...filters, [field]: value };
-    console.log('새로운 필터 상태:', newFilters);
-
-    // Firestore 저장 로직을 별도로 처리
-    if (user) {
-      try {
-        const docRef = doc(db, 'userSearchStates', user.uid);
-        await setDoc(docRef, {
-          searchTerm,
-          searchType,
-          filters: newFilters,
-          updatedAt: new Date().toISOString()
-        });
-        console.log('Firestore 저장 성공');
-      } catch (error) {
-        console.error('Firestore 저장 실패:', error);
-      }
-    }
-
-    // 필터 상태 업데이트
-    setFilters(newFilters);
-    
-    // API 호출
-    try {
-      console.log('API 호출 시작');
-      await fetchData();
-      console.log('API 호출 완료');
-    } catch (error) {
-      console.error('API 호출 실패:', error);
+  // 날짜 선택 핸들러 추가
+  const handleDateSelect = (range: DateRange | undefined) => {
+    if (range?.from) {
+      const newFilters = {
+        ...filters,
+        order_date_from: format(range.from, 'yyyy-MM-dd'),
+        order_date_to: range.to ? format(range.to, 'yyyy-MM-dd') : ''
+      };
+      setFilters(newFilters);
+      fetchData(newFilters);
     }
   };
 
@@ -565,17 +551,8 @@ export default function DynamicTable() {
       order_date_to: period === 'all' ? '' : endDate 
     };
 
-    // 필터 상태 업데이트
     setFilters(newFilters);
-    
-    // API 호출
-    try {
-      await fetchData(newFilters);
-    } catch (error) {
-      console.error('API 호출 실패:', error);
-      // 에러 발생 시 이전 상태로 복구
-      setFilters(filters);
-    }
+    await fetchData(newFilters);
   };
 
   const handleSearch = () => {
@@ -953,19 +930,40 @@ export default function DynamicTable() {
           <div className="flex items-center gap-4">
           <div className="text-sm text-gray-500">판매량 기간</div>
             <div className="flex items-center gap-2">
-              <Input
-                type="date"
-                value={filters.order_date_from || ''}
-                onChange={(e) => handleDateChange(e, 'order_date_from')}
-                className={`w-30 ${filters.order_date_from ? 'bg-blue-50 border-blue-200' : ''} h-8`}
-              />
-              <span>-</span>
-              <Input
-                type="date"
-                value={filters.order_date_to || ''}
-                onChange={(e) => handleDateChange(e, 'order_date_to')}
-                className={`w-30 ${filters.order_date_to ? 'bg-blue-50 border-blue-200' : ''} h-8`}
-              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "w-[300px] justify-start text-left font-normal",
+                      !filters.order_date_from && "text-muted-foreground"
+                    )}
+                  >
+                    <Calendar className="mr-2 h-4 w-4" />
+                    {filters.order_date_from ? (
+                      <>
+                        {format(new Date(filters.order_date_from), 'PPP', { locale: ko })} -{" "}
+                        {filters.order_date_to ? format(new Date(filters.order_date_to), 'PPP', { locale: ko }) : "선택"}
+                      </>
+                    ) : (
+                      <span>날짜 선택</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarComponent
+                    mode="range"
+                    defaultMonth={filters.order_date_from ? new Date(filters.order_date_from) : new Date()}
+                    selected={{
+                      from: filters.order_date_from ? new Date(filters.order_date_from) : undefined,
+                      to: filters.order_date_to ? new Date(filters.order_date_to) : undefined
+                    }}
+                    onSelect={handleDateSelect}
+                    locale={ko}
+                    numberOfMonths={2}
+                  />
+                </PopoverContent>
+              </Popover>
               <div className="flex gap-1 ml-2">
                 <Button 
                   variant="outline" 
