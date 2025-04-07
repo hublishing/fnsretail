@@ -730,101 +730,149 @@ export default function CartPage() {
       });
     }
 
-    // 제품 가격 계산 및 업데이트
-    const updatedProducts = products.map(product => {
-      console.log(`[상품 처리] ID: ${product.product_id}, 이름: ${product.name}`);
-      
-      // shop_price 및 global_price 체크
-      let updatedProduct = { ...product };
-      let priceError = false;
-      
-      if (channelInfo.type === '일본' || channelInfo.type === '자사몰') {
-        if (!product.shop_price) {
-          console.log(`[오류] 상품 ID: ${product.product_id}의 shop_price가 없습니다.`);
-          priceError = true;
-        }
-      } else if (channelInfo.type === '국내' || channelInfo.type === '해외') {
-        if (!product.global_price) {
-          console.log(`[오류] 상품 ID: ${product.product_id}의 global_price가 없습니다.`);
-          priceError = true;
-        }
-      }
-      
-      // 가격 계산
-      const pricing_price = calculateChannelPrice(product, channelInfo);
-      console.log(`[가격 계산] 상품 ID: ${product.product_id}, 계산된 pricing_price: ${pricing_price}`);
-      
-      // 물류비 계산 - deliveryType 변수 사용
-      const logistics_cost = calculateLogisticsCost(channelInfo, deliveryType || 'conditional', Number(channelInfo.amazon_shipping_cost));
-      console.log(`[물류비 계산] 상품 ID: ${product.product_id}, 계산된 logistics_cost: ${logistics_cost}`);
-
-      // 수수료 계산
-      const expected_commission_fee = calculateCommissionFee(product, channelInfo, isAdjustFeeEnabled);
-      const expected_commission_fee_rate = calculateAdjustedFeeRate(product, channelInfo, isAdjustFeeEnabled);
-      
-      // 순이익 계산
-      const expected_net_profit = calculateNetProfit(product, channelInfo);
-      const expected_net_profit_margin = calculateProfitMargin(product, channelInfo);
-      
-      // 정산금액 계산
-      const expected_settlement_amount = calculateSettlementAmount(product);
-      
-      // 원가율 계산
-      const cost_ratio = calculateCostRatio(product, channelInfo);
-
-      console.log(`[상세 계산] 상품 ID: ${product.product_id}`, {
-        pricing_price,
-        logistics_cost,
-        expected_commission_fee,
-        expected_commission_fee_rate: `${expected_commission_fee_rate}%`,
-        expected_net_profit,
-        expected_net_profit_margin: `${expected_net_profit_margin * 100}%`,
-        expected_settlement_amount,
-        cost_ratio: `${cost_ratio}%`
+    // shop_product_id 가져오기
+    try {
+      console.log('[handleChannelSelect] shop_product_id 가져오기 시작:', {
+        channel_name: channelInfo.channel_name_2
       });
       
-      return {
-        ...updatedProduct,
-        pricing_price,
-        logistics_cost,
-        expected_commission_fee,
-        expected_commission_fee_rate,
-        expected_net_profit,
-        expected_net_profit_margin,
-        expected_settlement_amount,
-        cost_ratio,
-        ...(priceError ? { priceError: true } : {})
+      // API를 통해 데이터 가져오기
+      const response = await fetch(`/api/shop-product-ids?channel=${encodeURIComponent(channelInfo.channel_name_2)}`);
+      
+      if (!response.ok) {
+        throw new Error(`API 요청 실패: ${response.status}`);
+      }
+      
+      const data = await response.json() as { 
+        success: boolean; 
+        shopProductIds?: Record<string, string>;
+        error?: string;
       };
-    });
-     
-    setChannelSearchTerm(channelInfo.channel_name_2);
-    setIsValidChannel(true);
-    setFilters(prev => ({
-      ...prev,
-      channel_name_2: channelInfo.channel_name_2
-    }));
-    setProducts(updatedProducts);
-    setSelectedChannelInfo(channelInfo);
-    setShowChannelSuggestions(false); 
+      
+      console.log('[handleChannelSelect] API 응답:', {
+        success: data.success,
+        count: data.shopProductIds ? Object.keys(data.shopProductIds).length : 0
+      });
+      
+      const shopProductIds = new Map<string, string>();
+      
+      if (data.success && data.shopProductIds) {
+        Object.entries(data.shopProductIds).forEach(([productId, shopProductId]) => {
+          shopProductIds.set(productId, shopProductId);
+        });
+      }
+      
+      console.log('[handleChannelSelect] 매핑된 shop_product_ids:', 
+        Array.from(shopProductIds.entries()).slice(0, 5) // 처음 5개만 로그로 출력
+      );
 
-    // 계산이 완료된 후 현재 상태 자동 저장
-    console.log('[handleChannelSelect] 계산 완료 후 상태 자동 저장 시작');
-    const savedState = {
-      products: updatedProducts.map(p => {
-        // logistics_cost를 제외한 나머지 필드만 저장
-        const {
-          logistics_cost,  // 구조분해할당으로 제외
-          ...productWithoutLogistics
-        } = p;
+      // 제품 가격 계산 및 업데이트
+      const updatedProducts = products.map(product => {
+        console.log(`[상품 처리] ID: ${product.product_id}, 이름: ${product.name}`);
         
-        return productWithoutLogistics;
-      })
-    };
-    setAutoSavedCalculations(savedState);
-    {/* console.log('[handleChannelSelect] 자동 저장된 상태:', JSON.stringify(savedState, null, 2)); */}
-    
-    console.log('[handleChannelSelect] 장바구니 정보 저장 시작');
-    // await saveCartInfo(); 제거
+        // shop_price 및 global_price 체크
+        let updatedProduct = { ...product };
+        let priceError = false;
+        
+        if (channelInfo.type === '일본' || channelInfo.type === '자사몰') {
+          if (!product.shop_price) {
+            console.log(`[오류] 상품 ID: ${product.product_id}의 shop_price가 없습니다.`);
+            priceError = true;
+          }
+        } else if (channelInfo.type === '국내' || channelInfo.type === '해외') {
+          if (!product.global_price) {
+            console.log(`[오류] 상품 ID: ${product.product_id}의 global_price가 없습니다.`);
+            priceError = true;
+          }
+        }
+        
+        // 가격 계산
+        const pricing_price = calculateChannelPrice(product, channelInfo);
+        console.log(`[가격 계산] 상품 ID: ${product.product_id}, 계산된 pricing_price: ${pricing_price}`);
+        
+        // 물류비 계산 - deliveryType 변수 사용
+        const logistics_cost = calculateLogisticsCost(channelInfo, deliveryType || 'conditional', Number(channelInfo.amazon_shipping_cost));
+        console.log(`[물류비 계산] 상품 ID: ${product.product_id}, 계산된 logistics_cost: ${logistics_cost}`);
+
+        // 수수료 계산
+        const expected_commission_fee = calculateCommissionFee(product, channelInfo, isAdjustFeeEnabled);
+        const expected_commission_fee_rate = calculateAdjustedFeeRate(product, channelInfo, isAdjustFeeEnabled);
+        
+        // 순이익 계산
+        const expected_net_profit = calculateNetProfit(product, channelInfo);
+        const expected_net_profit_margin = calculateProfitMargin(product, channelInfo);
+        
+        // 정산금액 계산
+        const expected_settlement_amount = calculateSettlementAmount(product);
+        
+        // 원가율 계산
+        const cost_ratio = calculateCostRatio(product, channelInfo);
+
+        // shop_product_id 추가
+        const shop_product_id = shopProductIds.get(product.product_id) || undefined;
+
+        console.log(`[상세 계산] 상품 ID: ${product.product_id}`, {
+          pricing_price,
+          logistics_cost,
+          expected_commission_fee,
+          expected_commission_fee_rate: `${expected_commission_fee_rate}%`,
+          expected_net_profit,
+          expected_net_profit_margin: `${expected_net_profit_margin * 100}%`,
+          expected_settlement_amount,
+          cost_ratio: `${cost_ratio}%`,
+          shop_product_id
+        });
+        
+        return {
+          ...updatedProduct,
+          pricing_price,
+          logistics_cost,
+          expected_commission_fee,
+          expected_commission_fee_rate,
+          expected_net_profit,
+          expected_net_profit_margin,
+          expected_settlement_amount,
+          cost_ratio,
+          shop_product_id,
+          ...(priceError ? { priceError: true } : {})
+        };
+      });
+
+      setChannelSearchTerm(channelInfo.channel_name_2);
+      setIsValidChannel(true);
+      setFilters(prev => ({
+        ...prev,
+        channel_name_2: channelInfo.channel_name_2
+      }));
+      setProducts(updatedProducts);
+      setSelectedChannelInfo(channelInfo);
+      setShowChannelSuggestions(false); 
+
+      // 계산이 완료된 후 현재 상태 자동 저장
+      console.log('[handleChannelSelect] 계산 완료 후 상태 자동 저장 시작');
+      const savedState = {
+        products: updatedProducts.map(p => {
+          // logistics_cost를 제외한 나머지 필드만 저장
+          const {
+            logistics_cost,  // 구조분해할당으로 제외
+            ...productWithoutLogistics
+          } = p;
+          
+          return productWithoutLogistics;
+        })
+      };
+      setAutoSavedCalculations(savedState);
+      {/* console.log('[handleChannelSelect] 자동 저장된 상태:', JSON.stringify(savedState, null, 2)); */}
+      
+      console.log('[handleChannelSelect] 장바구니 정보 저장 시작');
+      // await saveCartInfo(); 제거
+    } catch (error) {
+      console.error('채널 정보 로드 중 오류:', error);
+      toast({
+        description: <div className="flex items-center gap-2"><CircleAlert className="h-5 w-5" /> 채널 정보를 로드하는데 실패했습니다.</div>,
+        variant: "destructive"
+      });
+    }
   };
 
   // handleDeliveryTypeChange 함수 수정
@@ -1867,6 +1915,7 @@ export default function CartPage() {
                               </TableHead>
                               <TableHead className="text-center w-[50px]">번호</TableHead>
                               <TableHead className="text-center w-[80px]">이지어드민</TableHead>
+                              <TableHead className="text-center w-[80px]">쇼핑몰상품코드</TableHead>
                               <TableHead className="text-center w-[70px]">이미지</TableHead>
                               <TableHead className="text-left w-[200px]">상품명</TableHead>
                               <TableHead className="text-center w-[80px]">판매가</TableHead> 
@@ -1911,6 +1960,9 @@ export default function CartPage() {
                                 </DraggableCell>
                                 <DraggableCell className="text-center">{/* 이지어드민상품코드 */}
                                   <div>{product.product_id}</div>
+                                </DraggableCell>
+                                <DraggableCell className="text-center">{/* 쇼핑몰상품코드 */}
+                                  <div>{product.shop_product_id || '-'}</div>
                                 </DraggableCell>
                                 <DraggableCell className="text-center">{/* 이미지 */}
                                   <div className="flex justify-center" >
