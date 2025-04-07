@@ -31,8 +31,8 @@ export default function RootLayout({
         <link rel="stylesheet" as="style" crossOrigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
       </head>
       <body className={cn("h-screen")}>
+        <Toaster />
         <ClientLayout>
-            <Toaster />
             <div className="grid flex-1 gap-4 p-4 w-full mx-auto">
               {children}
             </div>

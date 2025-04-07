@@ -96,6 +96,7 @@ import { ListTopbar } from '@/components/list-topbar';
 import { parseChannelBasicInfo } from '@/app/utils/calculations/common';
 import { useToast } from "@/components/ui/use-toast"
 import { Toast } from "@/components/ui/toast"
+import { ToastProvider } from "@/components/ui/toaster"
 
 // 정렬 가능한 행 컴포넌트
 function SortableTableRow({ product, children, ...props }: { 
@@ -1492,15 +1493,9 @@ export default function CartPage() {
   };
 
   return (
-    <>
-      <Toast />
-      <ListTopbar/>
-        <div className="container mx-auto py-5">
-            <div className="flex justify-between items-center mb-6">
-                <div className="flex flex-col">
-                    <h1 className="text-2xl font-bold">리스트 편집</h1>
-                </div>
-            </div>
+    <ToastProvider>
+      <div className="container mx-auto py-4">
+        <ListTopbar/>
         
         {/* 편집 섹션 */}
         <Card className="mb-6 py-5 px-5 bg-card rounded-lg shadow-sm">
@@ -2165,6 +2160,6 @@ export default function CartPage() {
             </DialogContent>
           </Dialog>
         </div>
-      </>
+      </ToastProvider>
     );
   }
