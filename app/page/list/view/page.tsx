@@ -1,8 +1,8 @@
 "use client"
 
-import { Sidebar } from "@/app/components/sidebar"
-import { ListTopbar } from "@/app/components/list-topbar"
-import { Card } from "@/app/components/ui/card"
+import { Sidebar } from "@/components/sidebar"
+import { ListTopbar } from "@/components/list-topbar"
+import { Card } from "@/components/ui/card"
 
 export default function ListViewPage() {
   return (

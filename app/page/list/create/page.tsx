@@ -8,25 +8,25 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/app/components/ui/table"
-import { Button } from "@/app/components/ui/button"
+} from "@/components/ui/table"
+import { Button } from "@/components/ui/button"
 import { doc, setDoc, getDoc, getDocs, query, where, collection, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { getSession } from '@/app/actions/auth';
-import { ProductDetailModal } from "@/app/components/product-detail-modal"
+import { ProductDetailModal } from "@/components/product-detail-modal"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/app/components/ui/select"
-import { Checkbox } from "@/app/components/ui/checkbox"
-import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card"
+} from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { v4 as uuidv4 } from 'uuid';
 import { Search, FileDown, Settings, Save, Download, RotateCcw } from "lucide-react"
 import * as XLSX from 'xlsx';
-import { ExcelSettingsModal } from "@/app/components/excel-settings-modal"
+import { ExcelSettingsModal } from "@/components/excel-settings-modal"
 import {
   DndContext,
   closestCenter,
@@ -46,8 +46,8 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import React from 'react';
-import { DiscountModal } from "@/app/components/coupon-discount-modal"
-import { ImmediateDiscountModal } from "@/app/components/immediate-discount-modal"
+import { DiscountModal } from "@/components/coupon-discount-modal"
+import { ImmediateDiscountModal } from "@/components/immediate-discount-modal"
 import {
   Dialog,
   DialogContent,
@@ -55,19 +55,19 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/app/components/ui/dialog"
-import { Label } from "@/app/components/ui/label"
-import { Input } from "@/app/components/ui/input"
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
 import {
   Tabs,
   TabsList,
   TabsTrigger,
   TabsContent,
-} from "@/app/components/ui/tabs"
-import { Slider } from "@/app/components/ui/slider"
-import { DividerModal } from '@/app/components/divider-modal';
-import { Switch } from "@/app/components/ui/switch"
-import { Textarea } from "@/app/components/ui/textarea"
+} from "@/components/ui/tabs"
+import { Slider } from "@/components/ui/slider"
+import { DividerModal } from '@/components/divider-modal';
+import { Switch } from "@/components/ui/switch"
+import { Textarea } from "@/components/ui/textarea"
 import { Product, ChannelInfo, Filters, ExcelSettings, CartItem, DividerRule, ImpactMap, Column } from '@/app/types/cart';
 import { 
   calculateLogisticsCost,
@@ -92,10 +92,10 @@ import {
   calculateChannelPrice,
   calculateAdjustedCost
 } from '@/app/utils/calculations';
-import { ListTopbar } from '@/app/components/list-topbar';
+import { ListTopbar } from '@/components/list-topbar';
 import { parseChannelBasicInfo } from '@/app/utils/calculations/common';
-import { useToast } from "@/app/components/ui/use-toast"
-import { Toast } from "@/app/components/ui/toast"
+import { useToast } from "@/components/ui/use-toast"
+import { Toast } from "@/components/ui/toast"
 
 // 정렬 가능한 행 컴포넌트
 function SortableTableRow({ product, children, ...props }: { 

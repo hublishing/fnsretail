@@ -8,9 +8,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/app/components/ui/table"
-import { Input } from "@/app/components/ui/input"
-import { Button } from "@/app/components/ui/button"
+} from "@/components/ui/table"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
 import { Search, FileDown, Plus, Settings } from "lucide-react"
 import {
   Select,
@@ -18,16 +18,16 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/app/components/ui/select"
+} from "@/components/ui/select"
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/auth';
 import { getSession } from '@/app/actions/auth';
 import { useRouter } from "next/navigation"
-import { ProductDetailModal } from "@/app/components/product-detail-modal"
+import { ProductDetailModal } from "@/components/product-detail-modal"
 import * as XLSX from 'xlsx';
-import { ExcelSettingsModal } from "@/app/components/excel-settings-modal"
-import { Checkbox } from "@/app/components/ui/checkbox"
+import { ExcelSettingsModal } from "@/components/excel-settings-modal"
+import { Checkbox } from "@/components/ui/checkbox"
 
 // 고정 필터 옵션
 const STATIC_FILTER_OPTIONS = {
@@ -773,7 +773,6 @@ export default function DynamicTable() {
       <div className="flex justify-between mb-6 py-5 px-5 bg-card rounded-lg shadow-sm">
         <div className="">
           <h1 className="text-1xl font-bold mb-4">상품 검색 필터</h1>
-        
           <div className="flex items-center gap-4 pb-4">
           <div className="text-sm text-gray-500">검색조건</div>
             <Select

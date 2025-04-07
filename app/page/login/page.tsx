@@ -3,7 +3,7 @@
 import type { ReactElement } from 'react'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { LoginForm } from '@/app/components/login-form'
+import { LoginForm } from '@/components/login-form'
 import { useFormState } from 'react-dom'
 import { login } from '@/app/actions/auth'
 import type { LoginResult } from '@/app/actions/auth'
