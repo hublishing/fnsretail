@@ -102,7 +102,7 @@ export function AppSidebar() {
         </SidebarHeader>
         <SidebarContent>
             <SidebarGroup>
-                <SidebarGroupLabel>dashboard</SidebarGroupLabel>
+                <SidebarGroupLabel>Dashboard</SidebarGroupLabel>
                 <SidebarGroupContent>
                     <SidebarMenu>
                     {dashboard.map((item) => (
