@@ -599,20 +599,16 @@ export default function DynamicTable() {
           newSet.delete(product.product_id);
           return newSet;
         });
-
-        console.log('Showing toast for remove from cart');
-        toast({
-          title: "장바구니",
-          description: "장바구니에서 제거되었습니다.",
+ 
+        toast({ 
+          description: "담은 상품에서 제거되었습니다.",
           variant: "destructive"
         });
       }
-    } catch (error) {
-      console.error('장바구니 제거 오류:', error);
-      console.log('Showing error toast for remove from cart');
+    } catch (error) { 
       toast({
         title: "오류",
-        description: "장바구니에서 제거하는 중 오류가 발생했습니다.",
+        description: "담은 상품에서 제거하는 중 오류가 발생했습니다.",
         variant: "destructive"
       });
     }
@@ -621,11 +617,10 @@ export default function DynamicTable() {
   // 선택된 상품 담기 기능
   const handleAddSelectedToCart = async (selectedProducts: Set<string>) => {
     try {
-      if (!user) {
-        console.log('Showing login required toast');
+      if (!user) { 
         toast({
           title: "로그인 필요",
-          description: "장바구니에 담으려면 로그인이 필요합니다.",
+          description: "상품을 담으려면 로그인이 필요합니다.",
           variant: "destructive"
         });
         return;
@@ -645,10 +640,8 @@ export default function DynamicTable() {
         .filter(product => selectedProducts.has(product.product_id))
         .filter(product => !currentProducts.some(p => p.product_id === product.product_id));
 
-      if (newProducts.length === 0) {
-        console.log('Showing already in cart toast');
-        toast({
-          title: "알림",
+      if (newProducts.length === 0) { 
+        toast({ 
           description: "선택한 상품이 모두 이미 장바구니에 있습니다.",
           variant: "destructive"
         });
@@ -667,18 +660,14 @@ export default function DynamicTable() {
       // 로컬 상태 업데이트
       setCartItems(prev => new Set([...prev, ...newProducts.map(p => p.product_id)]));
       setSelectedProducts(new Set()); // 선택 초기화
-
-      console.log('Showing success toast for add to cart');
-      toast({
-        title: "장바구니",
-        description: `${newProducts.length}개의 상품이 장바구니에 담겼습니다.`
+ 
+      toast({ 
+        description: `${newProducts.length}개의 상품을 리스트에 추가 했습니다.`
       });
-    } catch (error) {
-      console.error('선택 상품 담기 오류:', error);
-      console.log('Showing error toast for add to cart');
+    } catch (error) { 
       toast({
         title: "오류",
-        description: "선택한 상품을 장바구니에 담는 중 오류가 발생했습니다.",
+        description: "선택한 상품을 리스트에 담는 중 오류가 발생했습니다.",
         variant: "destructive"
       });
     }
