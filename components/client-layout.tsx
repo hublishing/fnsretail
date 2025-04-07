@@ -29,7 +29,7 @@ export function ClientLayout({ children }: ClientLayoutProps) {
             <SidebarTrigger />
           </div>
         </header>
-        <div className="bg-muted/50"> 
+        <div className="bg-muted/50 min-h-[calc(100vh-var(--header-height))]"> 
             {children} 
         </div>
       </main>

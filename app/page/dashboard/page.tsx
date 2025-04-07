@@ -20,6 +20,16 @@ import {
 import { Button } from "@/components/ui/button"
 import { Calendar } from 'lucide-react'
 import { Input } from "@/components/ui/input"
+import { DateRange } from 'react-day-picker'
+import { format } from 'date-fns'
+import { ko } from 'date-fns/locale'
+import { cn } from "@/lib/utils"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { Calendar as CalendarComponent } from "@/components/ui/calendar"
 
 // 데이터 타입 정의
 interface SalesData {
@@ -325,13 +335,14 @@ export default function DashboardPage() {
     }
   };
 
-  // 날짜 필드 핸들러
-  const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setStartDate(e.target.value);
-  };
-
-  const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setEndDate(e.target.value);
+  // 날짜 선택 핸들러 수정
+  const handleDateSelect = (range: DateRange | undefined) => {
+    if (range?.from) {
+      setStartDate(format(range.from, 'yyyy-MM-dd'));
+    }
+    if (range?.to) {
+      setEndDate(format(range.to, 'yyyy-MM-dd'));
+    }
   };
 
   // 날짜 퀵 선택 버튼 핸들러
@@ -372,19 +383,37 @@ export default function DashboardPage() {
       <div className="mb-6 py-5 px-5 bg-card rounded-lg shadow-sm">
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-2">
-            <Input
-              type="date"
-              value={startDate}
-              onChange={handleStartDateChange}
-              className="w-40 h-8"
-            />
-            <span className="text-gray-500">-</span>
-            <Input
-              type="date"
-              value={endDate}
-              onChange={handleEndDateChange}
-              className="w-40 h-8"
-            />
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={"outline"}
+                  className={cn(
+                    "w-[300px] justify-start text-left font-normal",
+                    !startDate && "text-muted-foreground"
+                  )}
+                >
+                  <Calendar className="mr-2 h-4 w-4" />
+                  {startDate && endDate ? (
+                    <>
+                      {format(new Date(startDate), 'PPP', { locale: ko })} -{" "}
+                      {format(new Date(endDate), 'PPP', { locale: ko })}
+                    </>
+                  ) : (
+                    <span>날짜 선택</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <CalendarComponent
+                  mode="range"
+                  defaultMonth={new Date(startDate)}
+                  selected={{ from: new Date(startDate), to: new Date(endDate) }}
+                  onSelect={handleDateSelect}
+                  locale={ko}
+                  numberOfMonths={2}
+                />
+              </PopoverContent>
+            </Popover>
             <div className="flex gap-1 ml-2">
               <Button 
                 variant="outline" 

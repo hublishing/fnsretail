@@ -61,6 +61,7 @@
   :root {
     --background: 0 0% 100%;
     --foreground: 240 10% 3.9%;
+    --header-height: 57px;
 
     --card: 0 0% 100%;
     --card-foreground: 240 10% 3.9%;
