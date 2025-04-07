@@ -7,7 +7,7 @@ export function ListTopbar() {
   const pathname = usePathname()
 
   return (
-    <div className="container mx-auto pb-5">
+    <div className="mx-auto pb-5">
         <div className=" py-5 px-5 flex bg-card rounded-lg shadow-sm">
             <div
                 onClick={() => router.push('/page/list/create')}
