@@ -1596,7 +1596,7 @@ export default function CartPage() {
                     value={title}
                     onChange={handleTitleChange}
                     placeholder="타이틀을 입력해주세요"
-                    className={`w-[300px] h-8 px-3 border-[0px] border-b-[1px] focus:border-b-[0px] focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
+                    className={`w-[300px] h-10 px-3 border-[0px] border-b-[1px] focus:border-b-[0px] focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
                       title ? 'border-blue-500 focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 bg-muted' : 'border-input bg-background'
                     }`}
                   />
@@ -1621,7 +1621,7 @@ export default function CartPage() {
                       }}
                       onFocus={handleChannelSearchFocus}
                       placeholder="채널명을 입력해주세요"
-                      className={`w-[160px] h-8 px-3 border-[0px] border-b-[1px] focus:border-b-[0px] focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
+                      className={`w-[160px] h-10 px-3 border-[0px] border-b-[1px] focus:border-b-[0px] focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
                         channelSearchTerm && !isValidChannel 
                           ? 'border-red-500 focus:ring-[1px] focus:ring-red-500 focus:border-red-500 bg-destructive/10' 
                           : channelSearchTerm && isValidChannel
@@ -1711,7 +1711,7 @@ export default function CartPage() {
                       value={memo1}
                       onChange={handleMemo1Change}
                       placeholder="메모 1"
-                      className={`w-full h-8 px-3 border-[0px] border-b-[1px] focus:border-b-[0px] focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
+                      className={`w-full h-10 px-3 border-[0px] border-b-[1px] focus:border-b-[0px] focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
                         memo1 ? 'border-blue-500 focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 bg-muted' : 'border-input bg-background'
                       }`}
                       style={{ resize: 'both' }}
@@ -1722,7 +1722,7 @@ export default function CartPage() {
                       value={memo2}
                       onChange={handleMemo2Change}
                       placeholder="메모 2"
-                      className={`w-full h-8 px-3 border-[0px] border-b-[1px] focus:border-b-[0px] focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
+                      className={`w-full h-10 px-3 border-[0px] border-b-[1px] focus:border-b-[0px] focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
                         memo2 ? 'border-blue-500 focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 bg-muted' : 'border-input bg-background'
                       }`}
                       style={{ resize: 'both' }}
@@ -1733,7 +1733,7 @@ export default function CartPage() {
                       value={memo3}
                       onChange={handleMemo3Change}
                       placeholder="메모 3"
-                      className={`w-full h-8 px-3 border-[0px] border-b-[1px] focus:border-b-[0px] focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
+                      className={`w-full h-10 px-3 border-[0px] border-b-[1px] focus:border-b-[0px] focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
                         memo3 ? 'border-blue-500 focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 bg-muted' : 'border-input bg-background'
                       }`}
                       style={{ resize: 'both' }}
@@ -2138,7 +2138,7 @@ export default function CartPage() {
                   ].map((colorOption) => (
                     <div
                       key={colorOption.color}
-                      className={`w-8 h-8 rounded-full cursor-pointer border-2 ${
+                      className={`w-8 h-10 rounded-full cursor-pointer border-2 ${
                         selectedColor === colorOption.color ? 'border-blue-500' : 'border-transparent'
                       }`}
                       style={{ backgroundColor: colorOption.color }}

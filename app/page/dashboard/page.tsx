@@ -419,7 +419,7 @@ export default function DashboardPage() {
                 variant="outline" 
                 size="sm"
                 onClick={() => handleQuickDateSelect('today')}
-                className="px-2 h-8 text-xs"
+                className="px-2 h-10 text-xs"
               >
                 오늘
               </Button>
@@ -427,7 +427,7 @@ export default function DashboardPage() {
                 variant="outline" 
                 size="sm"
                 onClick={() => handleQuickDateSelect('yesterday')}
-                className="px-2 h-8 text-xs"
+                className="px-2 h-10 text-xs"
               >
                 어제
               </Button>
@@ -435,7 +435,7 @@ export default function DashboardPage() {
                 variant="outline" 
                 size="sm"
                 onClick={() => handleQuickDateSelect('week')}
-                className="px-2 h-8 text-xs"
+                className="px-2 h-10 text-xs"
               >
                 일주일
               </Button>
@@ -443,14 +443,14 @@ export default function DashboardPage() {
                 variant="outline" 
                 size="sm"
                 onClick={() => handleQuickDateSelect('month')}
-                className="px-2 h-8 text-xs"
+                className="px-2 h-10 text-xs"
               >
                 한달
               </Button>
             </div>
             <div className="flex gap-2 ml-4">
               <Select value={selectedCountry} onValueChange={handleCountryChange}>
-                <SelectTrigger className={`w-[150px] h-8 ${selectedCountry ? 'border-blue-500 text-blue-700 dark:text-blue-300' : ''}`}>
+                <SelectTrigger className={`w-[150px] ${selectedCountry ? 'border-blue-500 text-blue-700 dark:text-blue-300' : ''}`}>
                   <SelectValue placeholder="국가 선택" />
                 </SelectTrigger>
                 <SelectContent>
@@ -464,7 +464,7 @@ export default function DashboardPage() {
                 </SelectContent>
               </Select>
               <Select value={selectedCategory2} onValueChange={handleCategory2Change}>
-                <SelectTrigger className={`w-[150px] h-8 ${selectedCategory2 ? 'border-blue-500 text-blue-700 dark:text-blue-300' : ''}`}>
+                <SelectTrigger className={`w-[150px] ${selectedCategory2 ? 'border-blue-500 text-blue-700 dark:text-blue-300' : ''}`}>
                   <SelectValue placeholder="구분 선택" />
                 </SelectTrigger>
                 <SelectContent>
@@ -476,7 +476,7 @@ export default function DashboardPage() {
                 </SelectContent>
               </Select>
               <Select value={selectedCategory3} onValueChange={handleCategory3Change}>
-                <SelectTrigger className={`w-[150px] h-8 ${selectedCategory3 ? 'border-blue-500 text-blue-700 dark:text-blue-300' : ''}`}>
+                <SelectTrigger className={`w-[150px] ${selectedCategory3 ? 'border-blue-500 text-blue-700 dark:text-blue-300' : ''}`}>
                   <SelectValue placeholder="분류 선택" />
                 </SelectTrigger>
                 <SelectContent>
@@ -488,7 +488,7 @@ export default function DashboardPage() {
                 </SelectContent>
               </Select>
               <Select value={selectedChannel} onValueChange={handleChannelChange}>
-                <SelectTrigger className={`w-[150px] h-8 ${selectedChannel ? 'border-blue-500 text-blue-700 dark:text-blue-300' : ''}`}>
+                <SelectTrigger className={`w-[150px] ${selectedChannel ? 'border-blue-500 text-blue-700 dark:text-blue-300' : ''}`}>
                   <SelectValue placeholder="채널 선택" />
                 </SelectTrigger>
                 <SelectContent>
@@ -503,7 +503,7 @@ export default function DashboardPage() {
                 variant="outline" 
                 size="sm"
                 onClick={handleReset}
-                className="h-8 px-4 text-sm"
+                className="h-10 px-4 text-sm"
               >
                 초기화
               </Button>

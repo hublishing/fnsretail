@@ -778,7 +778,7 @@ export default function DynamicTable() {
               value={searchType}
               onValueChange={(value: SearchType) => setSearchType(value)}
             >
-              <SelectTrigger className="w-[100px] h-8">
+              <SelectTrigger className="w-[100px]">
                 <SelectValue placeholder="검색 유형 선택" />
               </SelectTrigger>
               <SelectContent className="min-w-[100px]">
@@ -792,7 +792,7 @@ export default function DynamicTable() {
                 placeholder={getPlaceholder()}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 h-8"
+                className="pl-10 h-10"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     handleSearch()
@@ -808,7 +808,7 @@ export default function DynamicTable() {
             value={filters.category_3}
             onValueChange={(value) => handleFilterChange('category_3', value)}
           >
-            <SelectTrigger className={`w-[100px] ${filters.category_3 !== 'all' ? 'bg-blue-50 border-blue-200' : ''} h-8`}>
+            <SelectTrigger className={`w-[100px] ${filters.category_3 !== 'all' ? 'bg-blue-50 border-blue-200' : ''}`}>
               <SelectValue placeholder="카테고리" />
             </SelectTrigger>
             <SelectContent className="min-w-[100px]">
@@ -823,7 +823,7 @@ export default function DynamicTable() {
             value={filters.extra_column2}
             onValueChange={(value) => handleFilterChange('extra_column2', value)}
           >
-            <SelectTrigger className={`w-[100px] ${filters.extra_column2 !== 'all' ? 'bg-blue-50 border-blue-200' : ''} h-8`}>
+            <SelectTrigger className={`w-[100px] ${filters.extra_column2 !== 'all' ? 'bg-blue-50 border-blue-200' : ''}`}>
               <SelectValue placeholder="출시시즌" />
             </SelectTrigger>
             <SelectContent className="min-w-[100px]">
@@ -841,7 +841,7 @@ export default function DynamicTable() {
             value={filters.drop_yn}
             onValueChange={(value) => handleFilterChange('drop_yn', value)}
           >
-            <SelectTrigger className={`w-[100px] ${filters.drop_yn !== 'all' ? 'bg-blue-50 border-blue-200' : ''} h-8`}>
+            <SelectTrigger className={`w-[100px] ${filters.drop_yn !== 'all' ? 'bg-blue-50 border-blue-200' : ''}`}>
               <SelectValue placeholder="드랍여부" />
             </SelectTrigger>
             <SelectContent className="min-w-[100px]">
@@ -856,7 +856,7 @@ export default function DynamicTable() {
             value={filters.supply_name}
             onValueChange={(value) => handleFilterChange('supply_name', value)}
           >
-            <SelectTrigger className={`w-[100px] ${filters.supply_name !== 'all' ? 'bg-blue-50 border-blue-200' : ''} h-8`}>
+            <SelectTrigger className={`w-[100px] ${filters.supply_name !== 'all' ? 'bg-blue-50 border-blue-200' : ''}`}>
               <SelectValue placeholder="공급처명" />
             </SelectTrigger>
             <SelectContent className="min-w-[100px]">
@@ -871,7 +871,7 @@ export default function DynamicTable() {
             value={filters.exclusive2}
             onValueChange={(value) => handleFilterChange('exclusive2', value)}
           >
-            <SelectTrigger className={`w-[100px] ${filters.exclusive2 !== 'all' ? 'bg-blue-50 border-blue-200' : ''} h-8`}>
+            <SelectTrigger className={`w-[100px] ${filters.exclusive2 !== 'all' ? 'bg-blue-50 border-blue-200' : ''}`}>
               <SelectValue placeholder="단독여부" />
             </SelectTrigger>
             <SelectContent className="min-w-[100px]">
@@ -894,7 +894,7 @@ export default function DynamicTable() {
               value={filters.code30}
               onValueChange={(value) => handleFilterChange('code30', value)}
             >
-              <SelectTrigger className={`w-[100px] ${filters.code30 !== 'all' ? 'bg-blue-50 border-blue-200' : ''} h-8`}>
+              <SelectTrigger className={`w-[100px] ${filters.code30 !== 'all' ? 'bg-blue-50 border-blue-200' : ''} `}>
                 <SelectValue placeholder="주문국가" />
               </SelectTrigger>
               <SelectContent className="min-w-[100px]">
@@ -909,7 +909,7 @@ export default function DynamicTable() {
               value={filters.channel_category_2}
               onValueChange={(value) => handleFilterChange('channel_category_2', value)}
             >
-              <SelectTrigger className={`w-[100px] ${filters.channel_category_2 !== 'all' ? 'bg-blue-50 border-blue-200' : ''} h-8`}>
+              <SelectTrigger className={`w-[100px] ${filters.channel_category_2 !== 'all' ? 'bg-blue-50 border-blue-200' : ''} `}>
                 <SelectValue placeholder="구분" />
               </SelectTrigger>
               <SelectContent className="min-w-[100px]">
@@ -923,7 +923,7 @@ export default function DynamicTable() {
               value={filters.channel_category_3}
               onValueChange={(value) => handleFilterChange('channel_category_3', value)}
             >
-              <SelectTrigger className={`w-[100px] ${filters.channel_category_3 !== 'all' ? 'bg-blue-50 border-blue-200' : ''} h-8`}>
+              <SelectTrigger className={`w-[100px] ${filters.channel_category_3 !== 'all' ? 'bg-blue-50 border-blue-200' : ''} `}>
                 <SelectValue placeholder="분류" />
               </SelectTrigger>
               <SelectContent className="min-w-[100px]">
@@ -938,7 +938,7 @@ export default function DynamicTable() {
               value={filters.channel_name}
               onValueChange={(value) => handleFilterChange('channel_name', value)}
             >
-              <SelectTrigger className={`w-[100px] ${filters.channel_name !== 'all' ? 'bg-blue-50 border-blue-200' : ''} h-8`}>
+              <SelectTrigger className={`w-[100px] ${filters.channel_name !== 'all' ? 'bg-blue-50 border-blue-200' : ''} `}>
                 <SelectValue placeholder="채널명" />
               </SelectTrigger>
               <SelectContent className="min-w-[100px]">
@@ -991,7 +991,7 @@ export default function DynamicTable() {
                   variant="outline" 
                   size="sm"
                   onClick={() => handleQuickDateSelect('week')}
-                  className="px-2 h-8 text-xs"
+                  className="px-2 h-10 text-xs"
                 >
                   일주일
                 </Button>
@@ -999,7 +999,7 @@ export default function DynamicTable() {
                   variant="outline" 
                   size="sm"
                   onClick={() => handleQuickDateSelect('month')}
-                  className="px-2 h-8 text-xs"
+                  className="px-2 h-10 text-xs"
                 >
                   한달
                 </Button>
@@ -1007,7 +1007,7 @@ export default function DynamicTable() {
                   variant="outline" 
                   size="sm"
                   onClick={() => handleQuickDateSelect('all')}
-                  className="px-2 h-8 text-xs"
+                  className="px-2 h-10 text-xs"
                 >
                   전체
                 </Button>
@@ -1084,7 +1084,7 @@ export default function DynamicTable() {
               value={filters.sort_by_qty}
               onValueChange={handleSortChange}
             >
-              <SelectTrigger className="w-[140px] border-none focus:ring-0 focus:ring-offset-0 shadow-none h-8">
+              <SelectTrigger className="w-[140px] border-none focus:ring-0 focus:ring-offset-0 shadow-none h-10">
                 <SelectValue placeholder="정렬 기준" />
               </SelectTrigger>
               <SelectContent className="min-w-[140px]">
