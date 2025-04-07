@@ -24,7 +24,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { v4 as uuidv4 } from 'uuid';
-import { Search, FileDown, Settings, Save, Download, RotateCcw } from "lucide-react"
+import { Search, FileDown, Settings, Save, Download, RotateCcw, Calendar } from "lucide-react"
 import * as XLSX from 'xlsx';
 import { ExcelSettingsModal } from "@/components/excel-settings-modal"
 import {
@@ -97,6 +97,16 @@ import { parseChannelBasicInfo } from '@/app/utils/calculations/common';
 import { useToast } from "@/components/ui/use-toast"
 import { Toast } from "@/components/ui/toast"
 import { ToastProvider } from "@/components/ui/toaster"
+import { Calendar as CalendarComponent } from "@/components/ui/calendar"
+import { DateRange } from 'react-day-picker'
+import { format } from 'date-fns'
+import { ko } from 'date-fns/locale'
+import { cn } from "@/lib/utils"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 
 // 정렬 가능한 행 컴포넌트
 function SortableTableRow({ product, children, ...props }: { 
@@ -833,14 +843,44 @@ export default function CartPage() {
     // await saveCartInfo(); 제거
   };
 
-  // 날짜 변경 핸들러 수정
-  const handleDateChange = async (e: React.ChangeEvent<HTMLInputElement>, type: 'start' | 'end') => {
-    const value = e.target.value;
-    if (type === 'start') {
-      setStartDate(value);
-    } else {
-      setEndDate(value);
+  // 날짜 선택 핸들러 수정
+  const handleDateSelect = (range: DateRange | undefined) => {
+    if (range?.from) {
+      setStartDate(format(range.from, 'yyyy-MM-dd'));
     }
+    if (range?.to) {
+      setEndDate(format(range.to, 'yyyy-MM-dd'));
+    }
+  };
+
+  // 날짜 퀵 선택 버튼 핸들러
+  const handleQuickDateSelect = (period: 'today' | 'yesterday' | 'week' | 'month') => {
+    const today = new Date();
+    let targetStartDate = '';
+    let targetEndDate = '';
+
+    if (period === 'today') {
+      targetStartDate = today.toISOString().split('T')[0];
+      targetEndDate = targetStartDate;
+    } else if (period === 'yesterday') {
+      const yesterday = new Date(today);
+      yesterday.setDate(today.getDate() - 1);
+      targetStartDate = yesterday.toISOString().split('T')[0];
+      targetEndDate = targetStartDate;
+    } else if (period === 'week') {
+      const weekAgo = new Date(today);
+      weekAgo.setDate(today.getDate() - 7);
+      targetStartDate = weekAgo.toISOString().split('T')[0];
+      targetEndDate = today.toISOString().split('T')[0];
+    } else if (period === 'month') {
+      const monthAgo = new Date(today);
+      monthAgo.setMonth(today.getMonth() - 1);
+      targetStartDate = monthAgo.toISOString().split('T')[0];
+      targetEndDate = today.toISOString().split('T')[0];
+    }
+    
+    setStartDate(targetStartDate);
+    setEndDate(targetEndDate);
   };
 
   // 메모 변경 핸들러들
@@ -1602,7 +1642,7 @@ export default function CartPage() {
                     value={deliveryType} 
                     onValueChange={handleDeliveryTypeChange}
                   >
-                    <SelectTrigger className={`w-[120px] h-8 ${
+                    <SelectTrigger className={`w-[120px] ${
                       deliveryType ? 'border-blue-500 focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 bg-blue-50' : ''
                     }`}>
                       <SelectValue placeholder="배송조건" />
@@ -1615,23 +1655,38 @@ export default function CartPage() {
 
                   <div className="flex items-center gap-2">
                     <div className="text-sm text-muted-foreground">기간</div>
-                    <input
-                      type="date"
-                      value={startDate}
-                      onChange={(e) => handleDateChange(e, 'start')}
-                      className={`w-[150px] h-8 px-3 border-[1px] rounded-md shadow-sm focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
-                        startDate ? 'border-blue-500 focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 bg-muted' : 'border-input bg-background'
-                      }`}
-                    />
-                    <span className="text-muted-foreground">~</span>
-                    <input
-                      type="date"
-                      value={endDate}
-                      onChange={(e) => handleDateChange(e, 'end')}
-                      className={`w-[150px] h-8 px-3 border-[1px] rounded-md shadow-sm focus:outline-none focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 text-sm ${
-                        endDate ? 'border-blue-500 focus:ring-[1px] focus:ring-blue-500 focus:border-blue-500 bg-muted' : 'border-input bg-background'
-                      }`}
-                    />
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "w-[300px] justify-start text-left font-normal",
+                            !startDate && "text-muted-foreground"
+                          )}
+                        >
+                          <Calendar className="mr-2 h-4 w-4" />
+                          {startDate && endDate ? (
+                            <>
+                              {format(new Date(startDate), 'PPP', { locale: ko })} -{" "}
+                              {format(new Date(endDate), 'PPP', { locale: ko })}
+                            </>
+                          ) : (
+                            <span>날짜 선택</span>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0 z-50" align="start">
+                        <CalendarComponent
+                          mode="range"
+                          defaultMonth={new Date(startDate || new Date())}
+                          selected={{ from: startDate ? new Date(startDate) : undefined, to: endDate ? new Date(endDate) : undefined }}
+                          onSelect={handleDateSelect}
+                          locale={ko}
+                          numberOfMonths={2}
+                          className="border-0"
+                        />
+                      </PopoverContent>
+                    </Popover>
                   </div>
                 </div>
 

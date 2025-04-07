@@ -49,7 +49,6 @@ export async function GET() {
       ORDER BY channel_name_2
     `;
 
-    console.log('BigQuery 쿼리 실행:', query);
 
     // JWT 토큰 생성
     const now = Math.floor(Date.now() / 1000);
