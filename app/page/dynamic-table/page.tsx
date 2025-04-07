@@ -38,6 +38,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { Calendar as CalendarComponent } from "@/components/ui/calendar"
+import { useToast } from "@/components/ui/use-toast"
 
 // 고정 필터 옵션
 const STATIC_FILTER_OPTIONS = {
@@ -201,6 +202,7 @@ export default function DynamicTable() {
 
   const router = useRouter()
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const { toast } = useToast();
 
   // 컬럼 정의를 상수로 분리
   const columns: Column[] = [
@@ -598,11 +600,21 @@ export default function DynamicTable() {
           return newSet;
         });
 
-        alert('장바구니에서 제거되었습니다.');
+        console.log('Showing toast for remove from cart');
+        toast({
+          title: "장바구니",
+          description: "장바구니에서 제거되었습니다.",
+          variant: "destructive"
+        });
       }
     } catch (error) {
       console.error('장바구니 제거 오류:', error);
-      alert('장바구니에서 제거하는 중 오류가 발생했습니다.');
+      console.log('Showing error toast for remove from cart');
+      toast({
+        title: "오류",
+        description: "장바구니에서 제거하는 중 오류가 발생했습니다.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -610,7 +622,12 @@ export default function DynamicTable() {
   const handleAddSelectedToCart = async (selectedProducts: Set<string>) => {
     try {
       if (!user) {
-        alert('장바구니에 담으려면 로그인이 필요합니다.');
+        console.log('Showing login required toast');
+        toast({
+          title: "로그인 필요",
+          description: "장바구니에 담으려면 로그인이 필요합니다.",
+          variant: "destructive"
+        });
         return;
       }
 
@@ -629,7 +646,12 @@ export default function DynamicTable() {
         .filter(product => !currentProducts.some(p => p.product_id === product.product_id));
 
       if (newProducts.length === 0) {
-        alert('선택한 상품이 모두 이미 장바구니에 있습니다.');
+        console.log('Showing already in cart toast');
+        toast({
+          title: "알림",
+          description: "선택한 상품이 모두 이미 장바구니에 있습니다.",
+          variant: "destructive"
+        });
         return;
       }
 
@@ -646,10 +668,19 @@ export default function DynamicTable() {
       setCartItems(prev => new Set([...prev, ...newProducts.map(p => p.product_id)]));
       setSelectedProducts(new Set()); // 선택 초기화
 
-      alert(`${newProducts.length}개의 상품이 장바구니에 담겼습니다.`);
+      console.log('Showing success toast for add to cart');
+      toast({
+        title: "장바구니",
+        description: `${newProducts.length}개의 상품이 장바구니에 담겼습니다.`
+      });
     } catch (error) {
       console.error('선택 상품 담기 오류:', error);
-      alert('선택한 상품을 장바구니에 담는 중 오류가 발생했습니다.');
+      console.log('Showing error toast for add to cart');
+      toast({
+        title: "오류",
+        description: "선택한 상품을 장바구니에 담는 중 오류가 발생했습니다.",
+        variant: "destructive"
+      });
     }
   };
 
