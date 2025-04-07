@@ -31,7 +31,9 @@ export default function RootLayout({
       </head>
       <body className={cn("h-screen")}>
         <ClientLayout>
-          {children}
+            <div className="grid flex-1 gap-4 p-4 w-full mx-auto">
+              {children}
+            </div>
         </ClientLayout>
       </body>
     </html>

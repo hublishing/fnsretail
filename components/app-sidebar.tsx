@@ -1,11 +1,15 @@
+import * as React from "react"
 import { Calendar, Home, Inbox, Settings } from "lucide-react"
-import { Menu, LogOut, History, LayoutDashboard, ShoppingCart, Search, FileText, PlusCircle, NotebookText, List, ChevronDown } from "lucide-react"
+import { Menu, LogOut, History, LayoutDashboard, ShoppingCart, Search, FileText, PlusCircle, NotebookText, List, ChevronDown, ChevronUp } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+
+import { signOut, getSession } from "@/app/actions/auth"
+import { useRouter } from "next/navigation"
 
 import {
   Sidebar,
@@ -45,6 +49,25 @@ const items = [
 ]
 
 export function AppSidebar() {
+    const router = useRouter()
+    const [userEmail, setUserEmail] = React.useState<string | null>(null)
+    React.useEffect(() => {
+        const fetchUserEmail = async () => {
+          const session = await getSession()
+          if (session?.email) {
+            setUserEmail(session.email)
+          }
+        }
+        fetchUserEmail()
+      }, []) 
+      const handleLogout = async () => {
+        try {
+          await signOut()
+          router.push('/page/login')
+        } catch (error) {
+          console.error('로그아웃 오류:', error)
+        }
+      }
   return (
     <Sidebar>
         <SidebarHeader>
@@ -53,7 +76,7 @@ export function AppSidebar() {
                 <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <SidebarMenuButton>
-                    Select Workspace
+                    PROJECT M
                     <ChevronDown className="ml-auto" />
                     </SidebarMenuButton>
                 </DropdownMenuTrigger>
@@ -88,7 +111,32 @@ export function AppSidebar() {
             </SidebarGroupContent>
             </SidebarGroup>
         </SidebarContent>
-        <SidebarFooter />
+        <SidebarFooter>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <SidebarMenuButton>
+                    {userEmail && (
+                        <div className="text-sm text-muted-foreground">
+                        {userEmail}
+                        </div>
+                    )}
+                    <ChevronUp className="ml-auto" />
+                  </SidebarMenuButton>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  side="top"
+                  className="w-[--radix-popper-anchor-width]"
+                >
+                  <DropdownMenuItem>
+                    <span onClick={handleLogout}>Sign out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarFooter>
     </Sidebar>
   )
 }
