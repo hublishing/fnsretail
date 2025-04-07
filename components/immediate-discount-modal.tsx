@@ -18,6 +18,8 @@ import {
 import { useState } from "react"
 import { Product, ChannelInfo } from '@/app/types/cart'
 import { calculateDiscount } from '@/app/utils/calculations/discount'
+import { useToast } from "@/components/ui/use-toast"
+import { CheckCircle } from "lucide-react"
 
 type DiscountType = '즉시할인' | '최저손익'
 
@@ -54,6 +56,7 @@ export function ImmediateDiscountModal({
   selectedChannelInfo,
   currentProducts
 }: ImmediateDiscountModalProps) {
+  const { toast } = useToast();
   const [discountState, setDiscountState] = useState<ImmediateDiscountState>({
     discountType: '즉시할인',
     discountValue: 0,
@@ -122,10 +125,15 @@ export function ImmediateDiscountModal({
       console.log('할인 적용 완료:', updatedProducts);
       
       setShowDiscountModal(false);
-      alert('할인이 적용되었습니다.');
+      toast({
+        description: <div className="flex items-center gap-2"><CheckCircle className="h-5 w-5" /> 할인이 적용되었습니다.</div>,
+      });
     } catch (error) {
       console.error('할인 적용 중 오류:', error);
-      alert('할인 적용 중 오류가 발생했습니다.');
+      toast({
+        variant: "destructive",
+        description: "할인 적용 중 오류가 발생했습니다.",
+      });
     }
   };
 
