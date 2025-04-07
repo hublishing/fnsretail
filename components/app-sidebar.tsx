@@ -25,12 +25,16 @@ import {
 } from "@/components/ui/sidebar"
 
 // Menu items.
-const items = [
-  {
-    title: "대시보드",
-    href: "/page/dashboard",
-    icon: LayoutDashboard,
-  },
+
+const dashboard = [
+    {
+      title: "대시보드",
+      href: "/page/dashboard",
+      icon: LayoutDashboard,
+    },
+]
+
+const list = [
   {
     title: "상품검색",
     href: "/page/dynamic-table",
@@ -41,12 +45,16 @@ const items = [
     href: "/page/list/create",
     icon: List,
   },
-  {
-    title: "패치노트",
-    href: "/page/patch-notes",
-    icon: History,
-  },
 ]
+
+const patch = [
+    {
+        title: "패치노트",
+        href: "/page/patch-notes",
+        icon: History,
+    },
+]
+
 
 export function AppSidebar() {
     const router = useRouter()
@@ -94,21 +102,55 @@ export function AppSidebar() {
         </SidebarHeader>
         <SidebarContent>
             <SidebarGroup>
-            <SidebarGroupLabel>Application</SidebarGroupLabel>
-            <SidebarGroupContent>
-                <SidebarMenu>
-                {items.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild>
-                        <a href={item.href}>
-                        <item.icon />
-                        <span>{item.title}</span>
-                        </a>
-                    </SidebarMenuButton>
-                    </SidebarMenuItem>
-                ))}
-                </SidebarMenu>
-            </SidebarGroupContent>
+                <SidebarGroupLabel>dashboard</SidebarGroupLabel>
+                <SidebarGroupContent>
+                    <SidebarMenu>
+                    {dashboard.map((item) => (
+                        <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton asChild>
+                            <a href={item.href}>
+                            <item.icon />
+                            <span>{item.title}</span>
+                            </a>
+                        </SidebarMenuButton>
+                        </SidebarMenuItem>
+                    ))}
+                    </SidebarMenu>
+                </SidebarGroupContent>
+            </SidebarGroup>
+            <SidebarGroup>
+                <SidebarGroupLabel>Product</SidebarGroupLabel>
+                <SidebarGroupContent>
+                    <SidebarMenu>
+                    {list.map((item) => (
+                        <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton asChild>
+                            <a href={item.href}>
+                            <item.icon />
+                            <span>{item.title}</span>
+                            </a>
+                        </SidebarMenuButton>
+                        </SidebarMenuItem>
+                    ))}
+                    </SidebarMenu>
+                </SidebarGroupContent>
+            </SidebarGroup>
+            <SidebarGroup>
+                <SidebarGroupLabel>Infomation</SidebarGroupLabel>
+                <SidebarGroupContent>
+                    <SidebarMenu>
+                    {patch.map((item) => (
+                        <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton asChild>
+                            <a href={item.href}>
+                            <item.icon />
+                            <span>{item.title}</span>
+                            </a>
+                        </SidebarMenuButton>
+                        </SidebarMenuItem>
+                    ))}
+                    </SidebarMenu>
+                </SidebarGroupContent>
             </SidebarGroup>
         </SidebarContent>
         <SidebarFooter>
