@@ -1,12 +1,13 @@
 "use client"
 
-import { Sidebar } from "@/components/sidebar"
+import { AppSidebar } from "@/components/app-sidebar"
 import { ListTopbar } from "@/components/list-topbar"
 import { Card } from "@/components/ui/card"
 
 export default function ListViewPage() {
   return (
     <div>
+        <AppSidebar/>
         <ListTopbar/>
         <div className="container mx-auto py-5">
             <div className="flex justify-between items-center mb-6">
