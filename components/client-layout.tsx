@@ -1,39 +1,33 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import { Sidebar } from "./sidebar"
-import { cn } from "@/lib/utils"
-import { useEffect, useState } from 'react'
+import { 
+  Sidebar, 
+  SidebarContent,
+  SidebarHeader,
+  SidebarProvider,
+  SidebarInset
+} from "./ui/sidebar"
 
 export function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const isLoginPage = pathname === '/page/login'
-  const [isCollapsed, setIsCollapsed] = useState(false)
 
-  useEffect(() => {
-    const handleResize = () => {
-      setIsCollapsed(window.innerWidth <= 1440)
-    }
-
-    // 초기 상태 설정
-    handleResize()
-
-    // 리사이즈 이벤트 리스너 등록
-    window.addEventListener('resize', handleResize)
-
-    // 클린업 함수
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
+  if (isLoginPage) {
+    return <main className="h-screen">{children}</main>
+  }
 
   return (
-    <div className="h-screen flex">
-      {!isLoginPage && <Sidebar />}
-      <main className={cn(
-        "flex-1 overflow-y-auto bg-muted/50 py-5",
-        isLoginPage ? "w-full" : isCollapsed ? "pl-16" : ""
-      )}>
+    <SidebarProvider>
+      <Sidebar>
+        <SidebarHeader title="Project M" />
+        <SidebarContent>
+          {/* 사이드바 내용 */}
+        </SidebarContent>
+      </Sidebar>
+      <SidebarInset>
         {children}
-      </main>
-    </div>
+      </SidebarInset>
+    </SidebarProvider>
   )
-} 
+}
