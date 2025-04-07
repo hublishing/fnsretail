@@ -1,10 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { cn } from "@/lib/utils";
-{/* import { ClientLayout } from "../components/client-layout"; */}
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
-import { AppSidebar } from "@/components/app-sidebar"
- 
+import { ClientLayout } from "@/components/client-layout"
 
 export const metadata: Metadata = {
   title: "Project M",
@@ -33,13 +30,9 @@ export default function RootLayout({
         <link rel="stylesheet" as="style" crossOrigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
       </head>
       <body className={cn("h-screen")}>
-      <SidebarProvider>
-        <AppSidebar />
-        <main>
-          <SidebarTrigger />
+        <ClientLayout>
           {children}
-        </main>
-      </SidebarProvider>
+        </ClientLayout>
       </body>
     </html>
   );

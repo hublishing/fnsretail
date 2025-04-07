@@ -111,14 +111,6 @@ export default function DashboardPage() {
     setError(null);
     
     try {
-      console.log('대시보드 데이터 로드 시작:', {
-        startDate,
-        endDate,
-        category2: selectedCategory2,
-        category3: selectedCategory3,
-        channel: selectedChannel,
-        country: selectedCountry
-      });
       
       // 판매 데이터 로드
       const params = new URLSearchParams();
@@ -134,18 +126,7 @@ export default function DashboardPage() {
       
       if (data.error) {
         throw new Error(data.error);
-      }
-      
-      console.log('데이터 로드 성공:', {
-        channelCount: data.channelData?.length || 0,
-        categoryCount: data.categoryData?.length || 0,
-        filters: {
-          category2: selectedCategory2,
-          category3: selectedCategory3,
-          channel: selectedChannel,
-          country: selectedCountry
-        }
-      });
+      } 
       
       setChannelData(data.channelData || []);
       setCategoryData(data.categoryData || []);
