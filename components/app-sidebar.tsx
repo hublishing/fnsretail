@@ -1,4 +1,5 @@
-import { Calendar, Home, Inbox, Search, Settings } from "lucide-react"
+import { Calendar, Home, Inbox, Settings } from "lucide-react"
+import { Menu, LogOut, History, LayoutDashboard, ShoppingCart, Search, FileText, PlusCircle, NotebookText, List } from "lucide-react"
 
 import {
   Sidebar,
@@ -14,29 +15,24 @@ import {
 // Menu items.
 const items = [
   {
-    title: "Home",
-    url: "#",
-    icon: Home,
+    title: "대시보드",
+    href: "/page/dashboard",
+    icon: LayoutDashboard,
   },
   {
-    title: "Inbox",
-    url: "#",
-    icon: Inbox,
-  },
-  {
-    title: "Calendar",
-    url: "#",
-    icon: Calendar,
-  },
-  {
-    title: "Search",
-    url: "#",
+    title: "상품검색",
+    href: "/page/dynamic-table",
     icon: Search,
   },
   {
-    title: "Settings",
-    url: "#",
-    icon: Settings,
+    title: "리스트",
+    href: "/page/list/create",
+    icon: List,
+  },
+  {
+    title: "패치노트",
+    href: "/page/patch-notes",
+    icon: History,
   },
 ]
 
@@ -51,7 +47,7 @@ export function AppSidebar() {
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <a href={item.url}>
+                    <a href={item.href}>
                       <item.icon />
                       <span>{item.title}</span>
                     </a>
