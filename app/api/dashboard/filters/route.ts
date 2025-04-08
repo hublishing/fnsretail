@@ -16,94 +16,151 @@ export async function GET(request: NextRequest) {
     const category2 = searchParams.get('category2');
     const category3 = searchParams.get('category3');
     const country = searchParams.get('country');
+    const brand = searchParams.get('brand');
+    const channel = searchParams.get('channel');
+    const manager = searchParams.get('manager');
+    const startDate = searchParams.get('startDate');
+    const endDate = searchParams.get('endDate');
     
     logDebug('요청 파라미터', { 
       category2, 
       category3,
-      country
+      country,
+      brand,
+      channel,
+      manager,
+      startDate,
+      endDate
     });
 
     // 필터 데이터를 가져오는 쿼리
-    const query = `
+    let query = `
       WITH base_data AS (
         SELECT DISTINCT
-          code30,
-          channel_category_2,
-          channel_category_3,
-          channel_name,
-          final_calculated_amount
-        FROM \`third-current-410914.project_m.order_db\`
-        WHERE code30 IS NOT NULL
-        AND code30 != 'nan'
-        AND code30 != ''
-        ${country ? `AND code30 = '${country}'` : ''}
-        ${category2 ? `AND channel_category_2 = '${category2}'` : ''}
-        ${category3 ? `AND channel_category_3 = '${category3}'` : ''}
+          o.order_date,
+          o.channel_name as channel,
+          o.code30 as country,
+          o.manager,
+          o.channel_category_2 as category2,
+          o.channel_category_3 as category3,
+          p.brand,
+          o.final_calculated_amount as amount
+        FROM \`third-current-410914.project_m.order_db\` o
+        JOIN \`third-current-410914.project_m.product_db\` p
+        ON o.options_product_id = p.options_product_id
+        WHERE o.order_date BETWEEN '${startDate}' AND '${endDate}'
+      `;
+
+    // 브랜드 필터링
+    if (brand) {
+      query += `
+        AND p.brand = '${brand}'
+      `;
+    }
+
+    // 국가 필터링
+    if (country) {
+      query += `
+        AND o.code30 = '${country}'
+      `;
+    }
+
+    // 구분 필터링
+    if (category2) {
+      query += `
+        AND o.channel_category_2 = '${category2}'
+      `;
+    }
+
+    // 분류 필터링
+    if (category3) {
+      query += `
+        AND o.channel_category_3 = '${category3}'
+      `;
+    }
+
+    // 채널 필터링
+    if (channel) {
+      query += `
+        AND o.channel_name = '${channel}'
+      `;
+    }
+
+    // 매니저 필터링
+    if (manager) {
+      query += `
+        AND o.manager = '${manager}'
+      `;
+    }
+
+    query += `
       ),
       category2_data AS (
-        SELECT DISTINCT 
-          channel_category_2 as value,
-          SUM(final_calculated_amount) as total_amount
+        SELECT DISTINCT category2, SUM(amount) as total_amount
         FROM base_data
-        WHERE channel_category_2 IS NOT NULL
-        AND channel_category_2 != 'nan'
-        AND channel_category_2 != ''
-        GROUP BY channel_category_2
-        ORDER BY total_amount DESC, value
+        WHERE category2 IS NOT NULL AND category2 != 'nan'
+        GROUP BY category2
+        ORDER BY total_amount DESC
       ),
       category3_data AS (
-        SELECT DISTINCT 
-          channel_category_3 as value,
-          SUM(final_calculated_amount) as total_amount
+        SELECT DISTINCT category3, SUM(amount) as total_amount
         FROM base_data
-        WHERE channel_category_3 IS NOT NULL
-        AND channel_category_3 != 'nan'
-        AND channel_category_3 != ''
-        GROUP BY channel_category_3
-        ORDER BY total_amount DESC, value
+        WHERE category3 IS NOT NULL AND category3 != 'nan'
+        GROUP BY category3
+        ORDER BY total_amount DESC
       ),
       channel_data AS (
-        SELECT DISTINCT 
-          channel_name as value,
-          SUM(final_calculated_amount) as total_amount
+        SELECT DISTINCT channel, SUM(amount) as total_amount
         FROM base_data
-        WHERE channel_name IS NOT NULL
-        AND channel_name != 'nan'
-        AND channel_name != ''
-        GROUP BY channel_name
-        ORDER BY total_amount DESC, value
+        WHERE channel IS NOT NULL AND channel != 'nan'
+        GROUP BY channel
+        ORDER BY total_amount DESC
       ),
       country_data AS (
-        SELECT DISTINCT 
-          code30 as value,
-          SUM(final_calculated_amount) as total_amount
-        FROM \`third-current-410914.project_m.order_db\`
-        WHERE code30 IS NOT NULL
-        AND code30 != 'nan'
-        AND code30 != ''
-        GROUP BY code30
-        ORDER BY total_amount DESC, value
+        SELECT DISTINCT country, SUM(amount) as total_amount
+        FROM base_data
+        WHERE country IS NOT NULL AND country != 'nan'
+        GROUP BY country
+        ORDER BY total_amount DESC
+      ),
+      brand_data AS (
+        SELECT DISTINCT brand, SUM(amount) as total_amount
+        FROM base_data
+        WHERE brand IS NOT NULL AND brand != 'nan'
+        GROUP BY brand
+        ORDER BY total_amount DESC
+      ),
+      manager_data AS (
+        SELECT DISTINCT manager, SUM(amount) as total_amount
+        FROM base_data
+        WHERE manager IS NOT NULL AND manager != 'nan'
+        GROUP BY manager
+        ORDER BY total_amount DESC
       )
       SELECT 
-        'category2' as type,
-        value
+        'category2' as filter_type, category2 as value, total_amount
       FROM category2_data
       UNION ALL
       SELECT 
-        'category3' as type,
-        value
+        'category3' as filter_type, category3 as value, total_amount
       FROM category3_data
       UNION ALL
       SELECT 
-        'channel' as type,
-        value
+        'channel' as filter_type, channel as value, total_amount
       FROM channel_data
       UNION ALL
       SELECT 
-        'country' as type,
-        value
+        'country' as filter_type, country as value, total_amount
       FROM country_data
-      ORDER BY type, value
+      UNION ALL
+      SELECT 
+        'brand' as filter_type, brand as value, total_amount
+      FROM brand_data
+      UNION ALL
+      SELECT 
+        'manager' as filter_type, manager as value, total_amount
+      FROM manager_data
+      ORDER BY filter_type, total_amount DESC
     `;
 
     logDebug('실행할 쿼리:', { 
@@ -111,7 +168,10 @@ export async function GET(request: NextRequest) {
       filters: {
         category2,
         category3,
-        country
+        country,
+        brand,
+        channel,
+        manager
       }
     });
 
@@ -198,7 +258,9 @@ export async function GET(request: NextRequest) {
       category2: results.filter((item: { type: string; value: string }) => item.type === 'category2').map((item: { type: string; value: string }) => item.value),
       category3: results.filter((item: { type: string; value: string }) => item.type === 'category3').map((item: { type: string; value: string }) => item.value),
       channel: results.filter((item: { type: string; value: string }) => item.type === 'channel').map((item: { type: string; value: string }) => item.value),
-      country: results.filter((item: { type: string; value: string }) => item.type === 'country').map((item: { type: string; value: string }) => item.value)
+      country: results.filter((item: { type: string; value: string }) => item.type === 'country').map((item: { type: string; value: string }) => item.value),
+      brand: results.filter((item: { type: string; value: string }) => item.type === 'brand').map((item: { type: string; value: string }) => item.value),
+      manager: results.filter((item: { type: string; value: string }) => item.type === 'manager').map((item: { type: string; value: string }) => item.value)
     };
 
     return NextResponse.json(filters, { status: 200 });

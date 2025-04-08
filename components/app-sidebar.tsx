@@ -55,9 +55,16 @@ const dashboard = [
 
 const list = [
   {
-    title: "상품검색",
-    href: "/page/dynamic-table",
+    title: "상품",
+    href: "#",
     icon: Search,
+    isActive: false,
+    items: [
+      {
+        title: "검색",
+        url: "/page/dynamic-table",
+      },
+    ],
   },
   {
     title: "리스트",

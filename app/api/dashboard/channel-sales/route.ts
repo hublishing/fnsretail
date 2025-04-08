@@ -29,6 +29,8 @@ export async function GET(request: NextRequest) {
     const category3 = searchParams.get('category3');
     const channel = searchParams.get('channel');
     const country = searchParams.get('country');
+    const brand = searchParams.get('brand');
+    const manager = searchParams.get('manager');
     
     // 날짜가 없으면 어제 날짜 사용
     const targetStartDate = startDate || new Date(new Date().setDate(new Date().getDate() - 1)).toISOString().split('T')[0];
@@ -41,6 +43,8 @@ export async function GET(request: NextRequest) {
       category3, 
       channel,
       country,
+      brand,
+      manager,
       targetStartDate,
       targetEndDate
     });
@@ -53,15 +57,21 @@ export async function GET(request: NextRequest) {
           SUM(qty) AS quantity,
           SUM(final_calculated_amount) AS revenue
         FROM 
-          \`third-current-410914.project_m.order_db\`
+          \`third-current-410914.project_m.order_db\` o
+        JOIN 
+          \`third-current-410914.project_m.product_db\` p
+        ON 
+          o.options_product_id = p.options_product_id
         WHERE 
           channel_name IS NOT NULL
           AND CAST(order_date AS STRING) >= '${targetStartDate}'
           AND CAST(order_date AS STRING) <= '${targetEndDate}'
-          ${category2 ? `AND channel_category_2 = '${category2}'` : ''}
-          ${category3 ? `AND channel_category_3 = '${category3}'` : ''}
-          ${channel ? `AND channel_name = '${channel}'` : ''}
-          ${country ? `AND code30 = '${country}'` : ''}
+          ${category2 ? `AND o.channel_category_2 = '${category2}'` : ''}
+          ${category3 ? `AND o.channel_category_3 = '${category3}'` : ''}
+          ${channel ? `AND o.channel_name = '${channel}'` : ''}
+          ${country ? `AND o.code30 = '${country}'` : ''}
+          ${brand ? `AND p.brand = '${brand}'` : ''}
+          ${manager ? `AND o.manager = '${manager}'` : ''}
         GROUP BY 
           channel_name
       ),
@@ -110,7 +120,9 @@ export async function GET(request: NextRequest) {
         category2,
         category3,
         channel,
-        country
+        country,
+        brand,
+        manager
       }
     });
 
@@ -248,7 +260,9 @@ export async function GET(request: NextRequest) {
         category2,
         category3,
         channel,
-        country
+        country,
+        brand,
+        manager
       }
     });
 
