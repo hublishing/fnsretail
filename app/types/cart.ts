@@ -106,8 +106,12 @@ export interface ChannelInfo {
   free_shipping: number;
   conditional_shipping: number;
   amazon_shipping_cost?: number;
+  min_price?: number;
+  commission_rate?: number;
+  delivery_fee?: number;
   writer?: string;
   uuid?: string;
+  [key: string]: any;
 }
 
 export interface CartItem {

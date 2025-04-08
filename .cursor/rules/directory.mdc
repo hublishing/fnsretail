@@ -1,0 +1,55 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Directory Rules
+
+When you create a page, you don't leave the designated directory
+
+If you need to create a directory, ask first and proceed.
+
+
+Follow the directory structure below without exceptions:
+
+fnsretail/
+├── .cursor/
+│   └── rules/
+│
+├── app/
+│   ├── api/ *BigQuery
+│   │   ├── channels/
+│   │   ├── dashboard/
+│   │   │   ├── channel-sales/
+│   │   │   └── filters/
+│   │   ├── filter-options/
+│   │   ├── patch-notes/
+│   │   ├── products/
+│   │   └── shop-product-ids/
+│   ├── types/
+│   └── utils/
+│       └── calculations/
+│
+├── components/ *ShadCN/UI
+│   └── ui/ 
+│
+├── hooks/
+├── lib/ *firebase
+├── public/
+└── src/
+Do not create files or folders outside of the defined directory structure.
+
+Do not delete or overwrite any of the following inside existing files:
+
+Defined functions
+
+Written calculations
+
+Implemented features
+
+This policy ensures the stability and consistency of the existing structure and codebase.
+
+
+When working with Firebase or Firestore, always refer to the lib > firebase file.
+When you work with BigQuery, Always refer to the app > api file.
+

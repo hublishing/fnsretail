@@ -20,6 +20,24 @@ import { Product, ChannelInfo } from '@/app/types/cart'
 import { calculateDiscount } from '@/app/utils/calculations/discount'
 import { useToast } from "@/components/ui/use-toast"
 import { CheckCircle2 } from "lucide-react"
+import { doc, setDoc, getDoc } from 'firebase/firestore'
+import { db } from '@/lib/firebase'
+
+// undefined 값을 제거하는 함수 추가
+const removeUndefined = (obj: any): any => {
+  if (Array.isArray(obj)) {
+    return obj.map(item => removeUndefined(item));
+  } else if (obj !== null && typeof obj === 'object') {
+    const result: any = {};
+    for (const key in obj) {
+      if (obj[key] !== undefined) {
+        result[key] = removeUndefined(obj[key]);
+      }
+    }
+    return result;
+  }
+  return obj;
+};
 
 type DiscountType = '즉시할인' | '최저손익'
 
@@ -41,6 +59,7 @@ interface ImmediateDiscountModalProps {
   calculateExpectedCommissionFee: (product: Product, adjustByDiscount?: boolean) => number
   selectedChannelInfo: ChannelInfo | null
   currentProducts: Product[]
+  userId?: string
 }
 
 export function ImmediateDiscountModal({ 
@@ -54,7 +73,8 @@ export function ImmediateDiscountModal({
   calculateExpectedNetProfit,
   calculateExpectedCommissionFee,
   selectedChannelInfo,
-  currentProducts
+  currentProducts,
+  userId
 }: ImmediateDiscountModalProps) {
   const { toast } = useToast();
   const [discountState, setDiscountState] = useState<ImmediateDiscountState>({
@@ -92,7 +112,14 @@ export function ImmediateDiscountModal({
           let newPrice;
           
           if (discountState.discountType === '즉시할인') {
-            newPrice = calculateDiscount(basePrice, discountState.discountValue, 'round', '0.01', selectedChannelInfo);
+            if (discountState.unitType === '%') {
+              newPrice = calculateDiscount(basePrice, discountState.discountValue, 'round', '0.01', selectedChannelInfo);
+            } else {
+              // 원 단위일 때는 직접 금액 차감
+              newPrice = basePrice - discountState.discountValue;
+              // 10원 단위로 내림
+              newPrice = Math.ceil(newPrice / 10) * 10;
+            }
           } else {
             // 최저손익 로직 - 단위에 따라 다르게 처리
             if (discountState.unitType === '%') {
@@ -105,6 +132,9 @@ export function ImmediateDiscountModal({
             }
           }
           
+          // 음수 가격 방지
+          newPrice = Math.max(0, newPrice);
+          
           const updatedProduct = { ...product };
           updatedProduct.discount_price = newPrice;
           updatedProduct.discount = Number(product.pricing_price) - newPrice;
@@ -116,10 +146,70 @@ export function ImmediateDiscountModal({
           updatedProduct.expected_net_profit = calculateExpectedNetProfit(updatedProduct);
           updatedProduct.expected_commission_fee = calculateExpectedCommissionFee(updatedProduct);
 
-          return updatedProduct;
+          return updatedProduct; 
         }
         return product;
       });
+
+      // 파이어베이스에 할인 정보 저장
+      if (userId) {
+        try {
+          const docRef = doc(db, 'userCarts', userId);
+          
+          // 변경된 상품만 추출
+          const changedProducts = updatedProducts.filter(product => 
+            selectedProducts.includes(product.product_id)
+          );
+          
+          // 저장할 데이터 준비
+          const saveData = {
+            immediateDiscount: {
+              discountType: discountState.discountType,
+              discountValue: discountState.discountValue,
+              unitType: discountState.unitType,
+              appliedProducts: selectedProducts,
+              updatedAt: new Date().toISOString()
+            },
+            updatedAt: new Date().toISOString()
+          };
+          
+          // undefined 값 제거
+          const cleanData = removeUndefined(saveData);
+          
+          // 기존 데이터 가져오기
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            const existingData = docSnap.data();
+            
+            // 기존 products 배열이 있으면 가져오기
+            let existingProducts = existingData.products || [];
+            
+            // 변경된 상품만 업데이트
+            const updatedExistingProducts = existingProducts.map((existingProduct: Product) => {
+              const changedProduct = changedProducts.find(p => p.product_id === existingProduct.product_id);
+              return changedProduct || existingProduct;
+            });
+            
+            // 새로 추가된 상품이 있다면 추가
+            changedProducts.forEach(changedProduct => {
+              if (!existingProducts.some((p: Product) => p.product_id === changedProduct.product_id)) {
+                updatedExistingProducts.push(changedProduct);
+              }
+            });
+            
+            // 최종 저장 데이터에 업데이트된 products 배열 추가
+            cleanData.products = updatedExistingProducts;
+          } else {
+            // 문서가 없는 경우 새로 생성
+            cleanData.products = changedProducts;
+          }
+          
+          await setDoc(docRef, cleanData, { merge: true });
+          console.log('할인 정보 파이어베이스 저장 완료');
+        } catch (error) {
+          console.error('할인 정보 파이어베이스 저장 실패:', error);
+        }
+      }
 
       onApplyDiscount(updatedProducts);
       console.log('할인 적용 완료:', updatedProducts);

@@ -420,8 +420,8 @@ export default function DynamicTable() {
         
         if (docSnap.exists()) {
           const data = docSnap.data();
-          const products = data.products || [];
-          setCartItems(new Set(products.map((p: Product) => p.product_id)));
+          const productIds = data.productIds || [];
+          setCartItems(new Set(productIds));
         }
       } catch (error) {
         console.error('장바구니 데이터 로드 오류:', error);
@@ -588,14 +588,18 @@ export default function DynamicTable() {
       
       if (docSnap.exists()) {
         const data = docSnap.data();
-        const products = data.products || [];
-        const updatedProducts = products.filter((p: Product) => p.product_id !== product.product_id);
+        const currentProductIds = data.productIds || [];
         
+        // 해당 상품 ID 제거
+        const updatedProductIds = currentProductIds.filter((id: string) => id !== product.product_id);
+        
+        // Firestore 업데이트
         await setDoc(docRef, {
-          products: updatedProducts,
+          productIds: updatedProductIds,
           updatedAt: new Date().toISOString()
         });
 
+        // 로컬 상태 업데이트
         setCartItems(prev => {
           const newSet = new Set(prev);
           newSet.delete(product.product_id);
@@ -631,16 +635,19 @@ export default function DynamicTable() {
       const docRef = doc(db, 'userCarts', user.uid);
       const docSnap = await getDoc(docRef);
       
-      let currentProducts: Product[] = [];
+      let currentProductIds: string[] = [];
+      let currentProducts: any[] = [];
       if (docSnap.exists()) {
         const data = docSnap.data();
+        currentProductIds = data.productIds || [];
         currentProducts = data.products || [];
       }
 
       // 선택된 상품들 중 이미 장바구니에 있는 상품 제외
-      const newProducts = data
-        .filter(product => selectedProducts.has(product.product_id))
-        .filter(product => !currentProducts.some(p => p.product_id === product.product_id));
+      const newProducts = data.filter(item => 
+        selectedProducts.has(item.product_id) && 
+        !currentProductIds.includes(item.product_id)
+      );
 
       if (newProducts.length === 0) { 
         toast({ 
@@ -650,12 +657,24 @@ export default function DynamicTable() {
         return;
       }
 
-      // 상품 추가
-      currentProducts.push(...newProducts);
-      
+      // 필요한 필드만 추출
+      const simplifiedProducts = newProducts.map(product => ({
+        product_id: product.product_id,
+        name: product.name,
+        org_price: product.org_price,
+        shop_price: product.shop_price,
+        cost_ratio: product.cost_ratio,
+        total_stock: product.total_stock,
+        total_order_qty: product.total_order_qty,
+        img_desc1: product.img_desc1,
+        category_3: product.category_3,
+        brand: product.brand
+      }));
+
       // Firestore 업데이트
       await setDoc(docRef, {
-        products: currentProducts,
+        productIds: [...currentProductIds, ...newProducts.map(p => p.product_id)],
+        products: [...currentProducts, ...simplifiedProducts],
         updatedAt: new Date().toISOString()
       });
 

@@ -1,0 +1,13 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+The DB is always based on tables in the Big Query
+
+Big Query Table List
+- third-current-410914.project_m.channel_db
+- third-current-410914.project_m.product_db
+- third-current-410914.project_m.order_db
+- third-current-410914.project_m.project_db
+- third-current-410914.project_m.admin_db

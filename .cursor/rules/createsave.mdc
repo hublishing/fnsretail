@@ -1,0 +1,65 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Create Page - Auto-Save & Data Handling Guidelines
+Goal
+Automatically save user inputs to Firestore whenever changes are made, so that all data is consistently restored after a page refresh or navigation.
+No manual save button is required.
+
+Key Requirements
+Auto-Save Behavior
+✅ All user inputs and changes must be automatically saved to Firestore in real time.
+✅ No manual save button is needed.
+✅ Use Firestore for persistent storage of user inputs.
+✅ Apply debounce when saving to Firestore to prevent excessive write operations.
+
+Page Reload & Navigation Behavior
+When the user reloads or returns to the page:
+✅ All previously saved data must be restored from Firestore.
+✅ Calculations must be re-applied based on the saved inputs and original data, ensuring consistency and preventing errors.
+✅ Original data (e.g., from BigQuery) must remain unchanged to maintain calculation accuracy.
+✅ Ensure reactive updates: after Firestore data is loaded and state is restored, trigger recalculation of all dependent values.
+
+🧩 Important Notes
+❌ Do not save final calculated results in Firestore.
+✅ Only save the user input values that influence calculations.
+✅ On page load, retrieve saved user inputs from Firestore and re-run calculations using the latest original data.
+✅ Maintain accuracy by always fetching the latest base data from BigQuery (or the original source).
+✅ To optimize performance and reduce Firestore costs, apply debounce to all Firestore write operations.
+
+💾 Data Storage Policy
+Category	Storage Method	Notes
+Channel Selection	✅ Store selected channel name/ID in Firestore	Firestore storage
+Product Base Data	❌ Do not store	Always fetched from original source (BigQuery, etc.)
+Discount Amount	✅ Store in Firestore	User input value
+Calculation Results	❌ Do not store	Calculated dynamically on the fly
+Commission Switch Status	✅ Store in Firestore	User-selected switch state
+Shipping Condition Selection	✅ Store in Firestore	Dropdown selected value
+Date Selection	✅ Store in Firestore	User-selected date
+Memo 1 / 2 / 3	✅ Store in Firestore	User input values
+Title	✅ Store in Firestore	User input value
+🛠️ Development Notes
+For all Firestore operations, always refer to:
+lib > firebase folder (project standard location for Firestore utilities).
+
+Structure code to:
+
+Watch for user input changes.
+
+Trigger Firestore updates immediately on change, with debounce applied.
+
+Ensure calculations run after Firestore data is loaded.
+
+✅ Summary
+Save user actions (inputs, selections, switches) as input values, not final computed results.
+
+On page load, fetch original data and saved user inputs, and run calculations dynamically.
+
+For Firestore operations, always use the designated firebase utilities folder (lib > firebase).
+
+Always apply debounce to Firestore writes to optimize performance and reduce unnecessary writes.
+
+
+
