@@ -554,6 +554,8 @@ export default function DashboardPage() {
                 한달
               </Button>
             </div>
+            </div>
+            <div className="flex gap-2">
             <Select value={selectedBrand} onValueChange={handleBrandChange}>
                 <SelectTrigger className={`w-[150px] ${selectedBrand ? 'border-blue-500 text-blue-700 dark:text-blue-300' : ''}`}>
                   <SelectValue placeholder="브랜드 선택" />
