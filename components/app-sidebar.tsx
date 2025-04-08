@@ -1,12 +1,17 @@
 import * as React from "react"
 import { Calendar, Home, Inbox, Settings } from "lucide-react"
-import { Menu, LogOut, History, LayoutDashboard, ShoppingCart, Search, FileText, PlusCircle, NotebookText, List, ChevronDown, ChevronUp } from "lucide-react"
+import { Menu, LogOut, History, LayoutDashboard, ShoppingCart, Search, FileText, PlusCircle, NotebookText, List, ChevronDown, ChevronUp, ChevronRight as ChevronRightIcon } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@radix-ui/react-collapsible"
 
 import { signOut, getSession } from "@/app/actions/auth"
 import { useRouter } from "next/navigation"
@@ -29,8 +34,22 @@ import {
 const dashboard = [
     {
       title: "대시보드",
-      href: "/page/dashboard",
       icon: LayoutDashboard,
+      isActive: false,
+      items: [
+        {
+          title: "판매현황",
+          url: "/page/dashboard",
+        },
+        {
+          title: "매출현황",
+          url: "#",
+        },
+        {
+          title: "트렌드현황",
+          url: "#",
+        },
+      ],
     },
 ]
 
@@ -42,8 +61,23 @@ const list = [
   },
   {
     title: "리스트",
-    href: "/page/list/create",
+    href: "#",
     icon: List,
+    isActive: false,
+    items: [
+      {
+        title: "작성",
+        url: "/page/list/create",
+      },
+      {
+        title: "조회",
+        url: "#",
+      },
+      {
+        title: "편집",
+        url: "#",
+      },
+    ],
   },
 ]
 
@@ -106,15 +140,38 @@ export function AppSidebar() {
                 <SidebarGroupContent>
                     <SidebarMenu>
                     {dashboard.map((item) => (
-                        <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton asChild>
-                            <a href={item.href}>
-                            <item.icon />
-                            <span>{item.title}</span>
-                            </a>
-                        </SidebarMenuButton>
-                        </SidebarMenuItem>
-                    ))}
+                        <Collapsible
+                          key={item.title}
+                          asChild
+                          defaultOpen={item.isActive}
+                          className="group/collapsible"
+                        >
+                          <SidebarMenuItem>
+                            <CollapsibleTrigger asChild>
+                              <SidebarMenuButton tooltip={item.title}>
+                                {item.icon && <item.icon />}
+                                <span>{item.title}</span>
+                                {item.items && (
+                                  <ChevronRightIcon className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                                )}
+                              </SidebarMenuButton>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent>
+                              <SidebarMenu className="border-sidebar-border mx-3.5 flex min-w-0 translate-x-px flex-col gap-1 border-l px-2.5 py-0.5 group-data-[collapsible=icon]:hidden">
+                                {item.items?.map((subItem) => (
+                                  <SidebarMenuItem key={subItem.title}>
+                                    <SidebarMenuButton asChild>
+                                      <a href={subItem.url}>
+                                        <span>{subItem.title}</span>
+                                      </a>
+                                    </SidebarMenuButton>
+                                  </SidebarMenuItem>
+                                ))}
+                              </SidebarMenu>
+                            </CollapsibleContent>
+                          </SidebarMenuItem>
+                        </Collapsible>
+                      ))}
                     </SidebarMenu>
                 </SidebarGroupContent>
             </SidebarGroup>
@@ -123,15 +180,38 @@ export function AppSidebar() {
                 <SidebarGroupContent>
                     <SidebarMenu>
                     {list.map((item) => (
-                        <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton asChild>
-                            <a href={item.href}>
-                            <item.icon />
-                            <span>{item.title}</span>
-                            </a>
-                        </SidebarMenuButton>
-                        </SidebarMenuItem>
-                    ))}
+                        <Collapsible
+                          key={item.title}
+                          asChild
+                          defaultOpen={item.isActive}
+                          className="group/collapsible"
+                        >
+                          <SidebarMenuItem>
+                            <CollapsibleTrigger asChild>
+                              <SidebarMenuButton tooltip={item.title}>
+                                {item.icon && <item.icon />}
+                                <span>{item.title}</span>
+                                {item.items && (
+                                  <ChevronRightIcon className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                                )}
+                              </SidebarMenuButton>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent>
+                              <SidebarMenu className="border-sidebar-border mx-3.5 flex min-w-0 translate-x-px flex-col gap-1 border-l px-2.5 py-0.5 group-data-[collapsible=icon]:hidden">
+                                {item.items?.map((subItem) => (
+                                  <SidebarMenuItem key={subItem.title}>
+                                    <SidebarMenuButton asChild>
+                                      <a href={subItem.url}>
+                                        <span>{subItem.title}</span>
+                                      </a>
+                                    </SidebarMenuButton>
+                                  </SidebarMenuItem>
+                                ))}
+                              </SidebarMenu>
+                            </CollapsibleContent>
+                          </SidebarMenuItem>
+                        </Collapsible>
+                      ))}
                     </SidebarMenu>
                 </SidebarGroupContent>
             </SidebarGroup>
