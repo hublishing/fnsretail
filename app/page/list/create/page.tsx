@@ -870,9 +870,15 @@ export default function CartPage() {
       // undefined 값 정리
       const cleanedProducts = products.map(product => {
         const cleanedProduct = { ...product };
+        // shop_product_id가 undefined인 경우 빈 문자열로 설정
         if (cleanedProduct.shop_product_id === undefined) {
           cleanedProduct.shop_product_id = '';
         }
+        // global_price가 undefined인 경우 0으로 설정
+        if (cleanedProduct.global_price === undefined) {
+          cleanedProduct.global_price = 0;
+        }
+        // 다른 undefined 값들도 처리
         Object.keys(cleanedProduct).forEach(key => {
           if (cleanedProduct[key] === undefined) {
             cleanedProduct[key] = null;
