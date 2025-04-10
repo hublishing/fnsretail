@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { ChannelInfo } from '@/app/types/cart';
-import { debounce } from 'lodash';
+import { debounce } from 'lodash-es';
 
 interface AutoSaveData {
   title: string;
@@ -76,8 +76,17 @@ export const useAutoSave = (data: AutoSaveData, currentUser: User | null) => {
     try {
       setIsSaving(true);
       const cartRef = doc(db, 'userCarts', currentUser.uid);
+      
+      // undefined 값을 가진 필드 제거
+      const cleanData = Object.entries(data).reduce((acc, [key, value]) => {
+        if (value !== undefined) {
+          acc[key] = value;
+        }
+        return acc;
+      }, {} as Record<string, any>);
+
       await setDoc(cartRef, {
-        ...data,
+        ...cleanData,
         updatedAt: new Date().toISOString(),
       }, { merge: true });
       setLastSaved(new Date());
@@ -109,4 +118,22 @@ export const useAutoSave = (data: AutoSaveData, currentUser: User | null) => {
     lastSaved,
     saveToFirestore, // 수동 저장이 필요한 경우를 위한 함수
   };
+};
+
+const saveToFirebase = async (data: AutoSaveData, user: User | null) => {
+  if (!user) return;
+
+  try {
+    // undefined 값을 가진 필드 제거
+    const cleanData = Object.entries(data).reduce((acc, [key, value]) => {
+      if (value !== undefined) {
+        acc[key] = value;
+      }
+      return acc;
+    }, {} as Record<string, any>);
+
+    await setDoc(doc(db, 'userCarts', user.uid), cleanData, { merge: true });
+  } catch (error) {
+    console.error('할인 정보 파이어베이스 저장 실패:', error);
+  }
 }; 
