@@ -252,7 +252,7 @@ interface AutoSaveData {
 export default function CartPage() {
   const { toast } = useToast();
   const [products, setProducts] = useState<Product[]>([])
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [sortOption, setSortOption] = useState<'default' | 'qty_desc' | 'qty_asc' | 'stock_desc' | 'stock_asc'>('qty_desc');
@@ -496,34 +496,24 @@ export default function CartPage() {
     console.log('=== handleApplyDiscount 시작 ===');
     console.log('입력된 상품 목록:', JSON.stringify(products, null, 2));
 
-    // undefined 값이 있는지 확인
-    const hasUndefined = products.some(product => {
-      return Object.entries(product).some(([key, value]) => {
-        if (value === undefined) {
-          console.error(`상품 ${product.product_id}의 ${key} 필드에 undefined 값 발견`);
-          return true;
+    // undefined 값이 있는지 확인하고 정리
+    const cleanedProducts = products.map(product => {
+      const cleanedProduct = { ...product };
+      // shop_product_id가 undefined인 경우 빈 문자열로 설정
+      if (cleanedProduct.shop_product_id === undefined) {
+        cleanedProduct.shop_product_id = '';
+      }
+      // 다른 undefined 값들도 처리
+      Object.keys(cleanedProduct).forEach(key => {
+        if (cleanedProduct[key] === undefined) {
+          cleanedProduct[key] = null;
         }
-        if (typeof value === 'object' && value !== null) {
-          const hasNestedUndefined = Object.entries(value).some(([nestedKey, nestedValue]) => {
-            if (nestedValue === undefined) {
-              console.error(`상품 ${product.product_id}의 ${key}.${nestedKey} 필드에 undefined 값 발견`);
-              return true;
-            }
-            return false;
-          });
-          if (hasNestedUndefined) return true;
-        }
-        return false;
       });
+      return cleanedProduct;
     });
 
-    if (hasUndefined) {
-      console.error('undefined 값이 포함된 상품 데이터가 있습니다.');
-      return;
-    }
-
     // 상품 목록 업데이트
-    setProducts(products);
+    setProducts(cleanedProducts);
 
     console.log('=== handleApplyDiscount 완료 ===');
   }, [setProducts]);
@@ -873,45 +863,38 @@ export default function CartPage() {
   };
 
   // 즉시할인 적용 핸들러
-  const handleImmediateDiscountApply = async (discountData: {
-    discountType: string;
-    discountValue: number;
-    unitType: string;
-    appliedProducts: string[];
-  }) => {
+  const handleImmediateDiscountApply = async (products: Product[]) => {
     if (!user) return;
     
     try {
+      // undefined 값 정리
+      const cleanedProducts = products.map(product => {
+        const cleanedProduct = { ...product };
+        if (cleanedProduct.shop_product_id === undefined) {
+          cleanedProduct.shop_product_id = '';
+        }
+        Object.keys(cleanedProduct).forEach(key => {
+          if (cleanedProduct[key] === undefined) {
+            cleanedProduct[key] = null;
+          }
+        });
+        return cleanedProduct;
+      });
+
       const docRef = doc(db, 'userCarts', user.uid);
       await setDoc(docRef, {
         immediateDiscount: {
-          ...discountData,
+          discountType: discountType || 'amount',
+          discountValue: discountValue || 0,
+          unitType: discountUnit || '%',
+          appliedProducts: selectedProducts,
           updatedAt: new Date().toISOString()
         },
+        products: cleanedProducts,
         updatedAt: new Date().toISOString()
       }, { merge: true });
       
-      // 할인 적용 및 재계산
-      const updatedProducts = products.map(product => {
-        if (!discountData.appliedProducts.includes(product.product_id)) return product;
-        
-        const basePrice = product.pricing_price || 0;
-        const discountAmount = discountData.unitType === '%' 
-          ? basePrice * (discountData.discountValue / 100)
-          : discountData.discountValue;
-        
-        const newPrice = basePrice - discountAmount;
-        
-        return {
-          ...product,
-          discount_price: newPrice,
-          discount: discountAmount,
-          discount_rate: discountData.unitType === '%' ? discountData.discountValue : (discountAmount / basePrice) * 100,
-          discount_unit: discountData.unitType
-        };
-      });
-      
-      setProducts(updatedProducts);
+      setProducts(cleanedProducts);
     } catch (error) {
       console.error('즉시할인 저장 실패:', error);
       toast({
@@ -1215,111 +1198,6 @@ export default function CartPage() {
     }
   };
 
-  // 할인 초기화 핸들러 추가
-  const handleResetDiscount = async () => {
-    if (!confirm('모든 할인을 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
-      return;
-    }
-
-    try {
-      const updatedProducts = products.map(product => {
-        const newProduct = { ...product };
-        // 할인 관련 필드 초기화
-        newProduct.discount_price = null as any;
-        newProduct.discount = null as any;
-        newProduct.discount_rate = null as any;
-        newProduct.discount_unit = null as any;
-        newProduct.coupon_price_1 = null as any;
-        newProduct.coupon_price_2 = null as any;
-        newProduct.coupon_price_3 = null as any;
-        newProduct.self_ratio = null as any;
-        newProduct.discount_burden_amount = null as any;
-        
-        // 수수료 및 정산 관련 필드 초기화
-        newProduct.expected_commission_fee = null as any;
-        newProduct.expected_net_profit = null as any;
-        newProduct.expected_net_profit_margin = null as any;
-        newProduct.expected_settlement_amount = null as any;
-        
-        // 원가 관련 필드 초기화
-        newProduct.adjusted_cost = null as any;
-        newProduct.logistics_cost = null as any;
-        
-        return newProduct;
-      });
-
-      setProducts(updatedProducts);
-      
-      // 채널 상태 초기화
-      setChannelSearchTerm('');
-      setSelectedChannelInfo(null);
-      setFilters(prev => ({
-        ...prev,
-        channel_name_2: ''
-      }));
-      
-      // 할인 모달 상태 초기화
-      setTabStates({
-        tab1: {
-          hurdleTarget: 'pricing_price',
-          hurdleAmount: 0,
-          discountBase: 'pricing_price',
-          discountType: 'amount',
-          discountValue: 0,
-          roundUnit: 'none',
-          roundType: 'floor',
-          discountCap: 0,
-          selfRatio: 0
-        },
-        tab2: {
-          hurdleTarget: 'pricing_price',
-          hurdleAmount: 0,
-          discountBase: 'pricing_price',
-          discountType: 'amount',
-          discountValue: 0,
-          roundUnit: 'none',
-          roundType: 'floor',
-          discountCap: 0,
-          selfRatio: 0
-        },
-        tab3: {
-          hurdleTarget: 'pricing_price',
-          hurdleAmount: 0,
-          discountBase: 'pricing_price',
-          discountType: 'amount',
-          discountValue: 0,
-          roundUnit: 'none',
-          roundType: 'floor',
-          discountCap: 0,
-          selfRatio: 0
-        },
-        tab4: {
-          hurdleTarget: 'pricing_price',
-          hurdleAmount: 0,
-          discountBase: 'pricing_price',
-          discountType: 'amount',
-          discountValue: 0,
-          roundUnit: 'none',
-          roundType: 'floor',
-          discountCap: 0,
-          selfRatio: 0
-        }
-      });
-      
-      if (user) {
-        const docRef = doc(db, 'userCarts', user.uid);
-        await setDoc(docRef, {
-          products: updatedProducts,
-          updatedAt: new Date().toISOString()
-        });
-      }
-
-      alert('할인이 초기화되었습니다.');
-    } catch (error) {
-      console.error('할인 초기화 중 오류 발생:', error);
-      alert('할인 초기화 중 오류가 발생했습니다.');
-    }
-  };
 
   const columns: Column[] = [
     { key: 'actions', label: '삭제' },
@@ -1518,10 +1396,6 @@ export default function CartPage() {
     }
   };
 
-  const handleChannelSearchFocus = () => {
-    setIsChannelSearchFocused(true);
-  };
-
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -1667,7 +1541,7 @@ export default function CartPage() {
   };
 
   // useAutoSave 훅 사용 부분 수정 (1644줄 근처)
-  const { isSaving, lastSaved } = useAutoSave({
+  useAutoSave({
     title,
     channel_name_2: selectedChannelInfo?.channel_name_2 || '',
     delivery_type: deliveryType,
