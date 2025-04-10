@@ -10,6 +10,145 @@ alwaysApply: true
 -모든 계산 로직을 중앙 집중화하여 일관된 계산 처리 및 유지보수성 향상
 
 ## Key Requirements
+**(important UI 마크업 영역 수정금지)**
+
+1.초기 프로세스:
+크리에이트페이지 진입
+Firebase의 cart 콜렉션 데이터 불러오기
+2. 사용자 액션 플로우:
+채널선택 드롭박스 (사용자 채널 선택)
+  파이어베이스에 selectedChannelInfo 필드 생성 후 값 저장(값은 채널db에 있음)
+  필드항목 {
+    amazon_shipping_cost
+    amount
+    applied_exchange_rate
+    average_fee_rate
+    channel_category_2
+    channel_category_3
+    channel_name
+    channel_name_2
+    comment
+    commission_rate
+    conditional_shipping
+    correction_rate
+    currency
+    currency_2
+    customs_fee
+    declaration_fee
+    delivery_fee
+    digit_adjustment
+    domestic_delivery_fee
+    free_shipping
+    innerbox_fee
+    manager
+    markup_ratio
+    min_price
+    outerbox_fee
+    packingbox_fee
+    price_formula
+    rounddown
+    shipping_condition
+    shipping_fee
+    shipping_formula
+    shop_id
+    shop_name
+    team
+    type
+    use_yn
+    used}
+
+배송조건 드롭박스 (사용자 선택값)
+  파이어베이스에 deliveryType 필드 생성
+  필드항목 {deliveryType}
+
+즉시할인 모달 (사용자 입력값)
+  파이어베이스에 immediate-discount 배열 필드 생성 (선택한 상품)
+  필드항목 {
+    product_id
+    할인값
+    할인단위
+    }
+
+쿠폰 모달 (사용자 입력값)
+  파이어베이스에 coupon1-discount 배열 필드 생성 (선택한 상품)
+  파이어베이스에 coupon2-discount 배열 필드 생성 (선택한 상품)
+  파이어베이스에 coupon3-discount 배열 필드 생성 (선택한 상품)
+  필드항목 {
+    product_id
+    사용가능 기준금액 (드롭박스 선택 값)
+    기준금액
+    할인적용 기준금액 (드롭박스 선택 값)
+    할인구분 (드롭박스 선택 값)
+    할인금액 (할인구분이 할인금액일때 값)
+    할인율 (할인구분이 할인율일때 값)
+    소수점 (할인구분이 할인율일때 드롭박스 선택 값))
+    절사 (할인구분이 할인율일때 드롭박스 선택 값))
+    최대할인금액 (할인구분이 할인율일때 값)
+    자사부담액
+  }
+
+3. 계산에 필요한 함수,변수:
+// 변수
+selectedChannelInfo
+deliveryType
+isAdjustFeeEnabled
+
+// 함수
+formatNumber(value, selectedChannelInfo)
+calculateBaseCost(product, selectedChannelInfo)
+calculateImmediateDiscountRate(product)
+calculateCoupon1DiscountRate(product)
+calculateCoupon2DiscountRate(product)
+calculateCoupon3DiscountRate(product)
+calculateFinalDiscountRate(product)
+calculateAdjustedCost(product)
+calculateCommissionFee(product, selectedChannelInfo, isAdjustFeeEnabled)
+calculateAdjustedFeeRate(product, selectedChannelInfo, isAdjustFeeEnabled)
+calculateLogisticsCost(selectedChannelInfo, deliveryType, selectedChannelInfo.amazon_shipping_cost)
+calculateNetProfit(product, selectedChannelInfo)
+calculateProfitMargin(product, selectedChannelInfo)
+calculateSettlementAmount(product)
+calculateCostRatio(product, selectedChannelInfo)
+
+4. 데이터 저장:
+각 단계별 Firebase 데이터 확인
+계산 트리거 여부에 따른 재계산 설정
+
+| 항목 | 계산 트리거 여부 | 주요 데이터 |
+|------|-----------------|------------|
+| 선택 체크박스 | - | selectedProducts, product.product_id |
+| 번호 | - | index |
+| 이지어드민 상품 코드 | - | product.product_id |
+| 쇼핑몰 상품 코드 | - | product.shop_product_id \|\| '-' |
+| 이미지 | - | product.img_desc1 |
+| 상품명 | - | product.name |
+| 상품 부가 정보 | - | product.brand, product.category_1, product.extra_column2, product.category_3 |
+| 판매가 | 채널선택, 판매가 변경 시 | formatNumber(product.pricing_price, selectedChannelInfo) |
+| 원가 | 채널선택 시 | formatNumber(calculateBaseCost(product, selectedChannelInfo), selectedChannelInfo) |
+| 즉시할인 | 즉시할인 변경 시 | product.discount_price?.toLocaleString() |
+| 즉시할인율 | 즉시할인 변경 시 | calculateImmediateDiscountRate(product) |
+| 쿠폰1 가격 | 쿠폰1 변경 시 | product.coupon_price_1?.toLocaleString() |
+| 쿠폰1 할인율 | 쿠폰1, 즉시할인 변경 시 | calculateCoupon1DiscountRate(product) |
+| 쿠폰2 가격 | 쿠폰2 변경 시 | product.coupon_price_2?.toLocaleString() |
+| 쿠폰2 할인율 | 쿠폰2, 쿠폰1 변경 시 | calculateCoupon2DiscountRate(product) |
+| 쿠폰3 가격 | 쿠폰3 변경 시 | product.coupon_price_3?.toLocaleString() |
+| 쿠폰3 할인율 | 쿠폰3, 쿠폰2 변경 시 | calculateCoupon3DiscountRate(product) |
+| 최종할인 가격 | 즉시할인, 쿠폰1/2/3 변경 시 | 쿠폰3 > 쿠폰2 > 쿠폰1 > 즉시할인 순으로 적용 |
+| 최종 할인율 | 판매가, 즉시할인, 쿠폰 변경 시 | calculateFinalDiscountRate(product) |
+| 할인부담액 | 할인부담액 변경 시 | formatNumber(product.discount_burden_amount, selectedChannelInfo) |
+| 조정원가 | 할인부담액, org_price 변경 시 | formatNumber(calculateAdjustedCost(product), selectedChannelInfo) |
+| 예상수수료 | 판매가, 채널선택, 수수료 정책 변경 시 | formatNumber(calculateCommissionFee(product, selectedChannelInfo, isAdjustFeeEnabled), selectedChannelInfo) |
+| 예상수수료율 | 판매가, 채널선택, 수수료 정책 변경 시 | calculateAdjustedFeeRate(product, selectedChannelInfo, isAdjustFeeEnabled) |
+| 물류비 | 배송조건, 채널선택 변경 시 | formatNumber(calculateLogisticsCost(selectedChannelInfo, deliveryType, selectedChannelInfo.amazon_shipping_cost)) |
+| 예상순이익 | 판매가, 할인, 수수료, 물류비 변경 시 | formatNumber(calculateNetProfit(product, selectedChannelInfo), selectedChannelInfo) |
+| 예상순이익률 | 순이익, 판매가 변경 시 | calculateProfitMargin(product, selectedChannelInfo) * 100 |
+| 정산예정금 | 판매가, 수수료, 물류비 변경 시 | formatNumber(calculateSettlementAmount(product), selectedChannelInfo) |
+| 원가율 | 판매가, 원가 변경 시 | calculateCostRatio(product, selectedChannelInfo) |
+| 재고 | - | product.total_stock 또는 product.main_wh_available_stock_excl_production_stock |
+| 품절률 | - | product.soldout_rate |
+| 드랍 여부 | - | product.drop_yn |
+| 공급처명 | - | product.supply_name |
+| 단독 여부 | - | product.exclusive2 |
 
 ### Calculation Logic Centralization Guidelines
 - 단일 계산 클래스에서 모든 계산 로직 관리

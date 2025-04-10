@@ -11,7 +11,7 @@ COPY package*.json ./
 RUN npm ci
 
 # @radix-ui/react-slider 패키지 명시적 설치
-RUN npm install @radix-ui/react-slider
+RUN npm install lodash
 
 # 소스 코드 복사
 COPY . .

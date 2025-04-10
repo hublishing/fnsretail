@@ -111,7 +111,16 @@ import {
 import { CheckCircle2 } from "lucide-react"
 import { CircleAlert  } from "lucide-react"
 import { auth } from '@/lib/firebase';
+import { useAutoSave } from '@/hooks/useAutoSave';
 
+type CouponDiscount = {
+  product_id: string;
+  discountType: string;
+  discountValue: number;
+  unitType: string;
+  appliedProducts: string[];
+  updatedAt: string;
+};
 
 // 정렬 가능한 행 컴포넌트
 function SortableTableRow({ product, children, ...props }: { 
@@ -417,88 +426,6 @@ export default function CartPage() {
     uid: string;
     email?: string;
   }
-  
-  // 자동 저장 훅
-  const useAutoSave = (data: AutoSaveData, currentUser: User | null) => {
-    const prevDataRef = useRef<AutoSaveData | null>(null);
-
-    useEffect(() => {
-      const saveToFirestore = async () => {
-        if (!currentUser) {
-          console.log('자동 저장 대기: 사용자 정보 로딩 중');
-          return;
-        }
-
-        // 이전 데이터와 현재 데이터 비교
-        if (prevDataRef.current) {
-          const hasChanges = Object.keys(data).some(key => {
-            const currentValue = data[key as keyof AutoSaveData];
-            const prevValue = prevDataRef.current![key as keyof AutoSaveData];
-            
-            if (Array.isArray(currentValue) && Array.isArray(prevValue)) {
-              return currentValue.length !== prevValue.length || 
-                     currentValue.some((item, index) => item !== prevValue[index]);
-            }
-            
-            return currentValue !== prevValue;
-          });
-
-          if (!hasChanges) {
-            console.log('변경사항 없음, 저장 건너뜀');
-            return;
-          }
-        }
-        
-        try {
-          console.log('자동 저장 시작:', {
-            userId: currentUser.uid,
-            productCount: data.productIds.length
-          });
-  
-          const docRef = doc(db, 'userCarts', currentUser.uid);
-          
-          // 저장할 데이터 객체 생성
-          const saveData: any = {
-            title: data.title,
-            channel_name_2: data.channel_name_2,
-            delivery_type: data.delivery_type,
-            start_date: data.start_date,
-            end_date: data.end_date,
-            memo1: data.memo1,
-            memo2: data.memo2,
-            memo3: data.memo3,
-            fee_discount: data.fee_discount,
-            productIds: data.productIds,
-            selectedChannelInfo: data.selectedChannelInfo,
-            updatedAt: new Date().toISOString()
-          };
-
-          // immediateDiscount가 존재할 때만 추가
-          if (data.immediateDiscount) {
-            saveData.immediateDiscount = data.immediateDiscount;
-          }
-
-          await setDoc(docRef, saveData, { merge: true });
-  
-          console.log('자동 저장 완료');
-          prevDataRef.current = { ...data };
-        } catch (error) {
-          console.error('자동 저장 실패:', error);
-          toast({
-            description: <div className="flex items-center gap-2"><CircleAlert className="h-5 w-5" /> 데이터 저장에 실패했습니다.</div>,
-            variant: "destructive"
-          });
-        }
-      };
-  
-      // 디바운스 적용
-      const timeoutId = setTimeout(() => {
-        saveToFirestore();
-      }, 1000);
-  
-      return () => clearTimeout(timeoutId);
-    }, [data, currentUser]);
-  };
   
   // 상태 변경 기록 함수
   const recordStateChange = useCallback((
@@ -845,117 +772,183 @@ export default function CartPage() {
     console.log('handleChannelSearchComplete 종료');
   };
       
-  // 채널 선택 핸들러 수정
-  const handleChannelSelect = async (channelName: string) => {
-    const channelData = channels.find(c => c.channel_name_2 === channelName);
-    if (!channelData) return;
-
-    // 필요한 필드를 추가하여 ChannelInfo 타입에 맞게 변환
-    const selectedChannelInfo: ChannelInfo = {
-      ...channelData,
-      commission_rate: Number(channelData.average_fee_rate) || 0,
-      delivery_fee: Number(channelData.shipping_fee) || 0,
-      min_price: Number(channelData.min_price) || 0,
-      amazon_shipping_cost: Number(channelData.amazon_shipping_cost) || 0
-    };
-
-    setSelectedChannel(channelName);
-    setSelectedChannelInfo(selectedChannelInfo);
-    setFilters(prev => ({
-      ...prev,
-      channel_name_2: channelName
-    }));
-
-    // 파이어베이스에 channel_name_2 저장
-    if (user) {
-      try {
-        const docRef = doc(db, 'userCarts', user.uid);
-        await setDoc(docRef, {
-          channel_name_2: channelName,
-          selectedChannelInfo,
-          updatedAt: new Date().toISOString()
-        }, { merge: true });
-        console.log('채널 정보 저장 완료');
-      } catch (error) {
-        console.error('채널 정보 저장 실패:', error);
-      }
-    }
-
-    // shop_product_id 가져오기
+  // 채널 선택 핸들러
+  const handleChannelSelection = async (channelInfo: ChannelInfo) => {
+    if (!user) return;
+    
     try {
-      const response = await fetch(`/api/shop-product-ids?channel=${encodeURIComponent(channelName)}`);
-      if (!response.ok) {
-        throw new Error(`API 요청 실패: ${response.status}`);
-      }
+      const docRef = doc(db, 'userCarts', user.uid);
+      await setDoc(docRef, {
+        selectedChannelInfo: channelInfo,
+        channel_name_2: channelInfo.channel_name_2,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
       
-      const data = await response.json() as { 
-        success: boolean; 
-        shopProductIds?: Record<string, string>;
-        error?: string;
-      };
+      setSelectedChannel(channelInfo.channel_name_2);
+      setSelectedChannelInfo(channelInfo);
+      setFilters(prev => ({
+        ...prev,
+        channel_name_2: channelInfo.channel_name_2
+      }));
+
+      // 계산 실행
+      const updatedProducts = products.map(product => ({
+        ...product,
+        pricing_price: calculateChannelPrice(product, channelInfo),
+        logistics_cost: calculateLogisticsCost(channelInfo, deliveryType || 'conditional', Number(channelInfo.amazon_shipping_cost)),
+        expected_commission_fee: calculateCommissionFee(product, channelInfo, isAdjustFeeEnabled),
+        expected_net_profit: calculateNetProfit(product, channelInfo),
+        expected_settlement_amount: calculateSettlementAmount(product),
+        cost_ratio: calculateCostRatio(product, channelInfo)
+      }));
       
-      const shopProductIds = new Map<string, string>();
-      
-      if (data.success && data.shopProductIds) {
-        Object.entries(data.shopProductIds).forEach(([productId, shopProductId]) => {
-          shopProductIds.set(productId, shopProductId as string);
-        });
-      }
-
-      // 제품 가격 계산 및 업데이트
-      const updatedProducts = products.map(product => {
-        const pricing_price = calculateChannelPrice(product, selectedChannelInfo);
-        const logistics_cost = calculateLogisticsCost(selectedChannelInfo, deliveryType || 'conditional', Number(selectedChannelInfo.amazon_shipping_cost));
-        const expected_commission_fee = calculateCommissionFee(product, selectedChannelInfo, isAdjustFeeEnabled);
-        const expected_commission_fee_rate = calculateAdjustedFeeRate(product, selectedChannelInfo, isAdjustFeeEnabled);
-        const expected_net_profit = calculateNetProfit(product, selectedChannelInfo);
-        const expected_net_profit_margin = calculateProfitMargin(product, selectedChannelInfo);
-        const expected_settlement_amount = calculateSettlementAmount(product);
-        const cost_ratio = calculateCostRatio(product, selectedChannelInfo);
-        const shop_product_id = shopProductIds.get(product.product_id);
-
-        return {
-          ...product,
-          pricing_price,
-          logistics_cost,
-          expected_commission_fee,
-          expected_commission_fee_rate,
-          expected_net_profit,
-          expected_net_profit_margin,
-          expected_settlement_amount,
-          cost_ratio,
-          shop_product_id
-        };
-      });
-
       setProducts(updatedProducts);
     } catch (error) {
-      console.error('채널 선택 처리 중 오류:', error);
+      console.error('채널 정보 저장 실패:', error);
       toast({
-        description: <div className="flex items-center gap-2"><CircleAlert className="h-5 w-5" /> 채널 정보를 처리하는데 실패했습니다.</div>,
+        description: <div className="flex items-center gap-2"><CircleAlert className="h-5 w-5" /> 채널 정보 저장에 실패했습니다.</div>,
         variant: "destructive"
       });
     }
   };
 
-  // handleDeliveryTypeChange 함수 수정
+  // 배송조건 변경 핸들러
   const handleDeliveryTypeChange = async (value: string) => {
-    setDeliveryType(value);
-    setIsValidDeliveryType(true);
-    setFilters(prev => ({
-      ...prev,
-      delivery_type: value
-    }));
-
-    // 선택된 채널이 있고, 채널 정보가 있는 경우에만 물류비 재계산
-    if (selectedChannelInfo) {
-      const updatedProducts = products.map(product => ({
-        ...product,
-        logistics_cost: value ? calculateLogisticsCost(selectedChannelInfo, value, Number(selectedChannelInfo.amazon_shipping_cost)) : 0
+    if (!user) return;
+    
+    try {
+      const docRef = doc(db, 'userCarts', user.uid);
+      await setDoc(docRef, {
+        delivery_type: value,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+      
+      setDeliveryType(value);
+      setIsValidDeliveryType(true);
+      setFilters(prev => ({
+        ...prev,
+        delivery_type: value
       }));
-      setProducts(updatedProducts);
+      
+      // 물류비 재계산
+      if (selectedChannelInfo) {
+        const updatedProducts = products.map(product => ({
+          ...product,
+          logistics_cost: calculateLogisticsCost(selectedChannelInfo, value, Number(selectedChannelInfo.amazon_shipping_cost))
+        }));
+        setProducts(updatedProducts);
+      }
+    } catch (error) {
+      console.error('배송조건 저장 실패:', error);
+      toast({
+        description: <div className="flex items-center gap-2"><CircleAlert className="h-5 w-5" /> 배송조건 저장에 실패했습니다.</div>,
+        variant: "destructive"
+      });
     }
-    // await saveCartInfo(); 제거
+  };
+
+  // 즉시할인 적용 핸들러
+  const handleImmediateDiscountApply = async (discountData: {
+    discountType: string;
+    discountValue: number;
+    unitType: string;
+    appliedProducts: string[];
+  }) => {
+    if (!user) return;
+    
+    try {
+      const docRef = doc(db, 'userCarts', user.uid);
+      await setDoc(docRef, {
+        immediateDiscount: {
+          ...discountData,
+          updatedAt: new Date().toISOString()
+        },
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+      
+      // 할인 적용 및 재계산
+      const updatedProducts = products.map(product => {
+        if (!discountData.appliedProducts.includes(product.product_id)) return product;
+        
+        const basePrice = product.pricing_price || 0;
+        const discountAmount = discountData.unitType === '%' 
+          ? basePrice * (discountData.discountValue / 100)
+          : discountData.discountValue;
+        
+        const newPrice = basePrice - discountAmount;
+        
+        return {
+          ...product,
+          discount_price: newPrice,
+          discount: discountAmount,
+          discount_rate: discountData.unitType === '%' ? discountData.discountValue : (discountAmount / basePrice) * 100,
+          discount_unit: discountData.unitType
+        };
+      });
+      
+      setProducts(updatedProducts);
+    } catch (error) {
+      console.error('즉시할인 저장 실패:', error);
+      toast({
+        description: <div className="flex items-center gap-2"><CircleAlert className="h-5 w-5" /> 즉시할인 저장에 실패했습니다.</div>,
+        variant: "destructive"
+      });
+    }
+  };
+
+  // 쿠폰 적용 핸들러
+  const handleCouponApply = async (
+    couponType: '1' | '2' | '3',
+    couponData: {
+      product_id: string;
+      hurdleTarget: string;
+      hurdleAmount: number;
+      discountBase: string;
+      discountType: string;
+      discountValue: number;
+      roundUnit: string;
+      roundType: string;
+      discountCap: number;
+      selfRatio: number;
+    }[]
+  ) => {
+    if (!user) return;
+    
+    try {
+      const docRef = doc(db, 'userCarts', user.uid);
+      await setDoc(docRef, {
+        [`coupon${couponType}Discount`]: couponData,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+      
+      // 쿠폰 적용 및 재계산
+      const updatedProducts = products.map(product => {
+        const couponInfo = couponData.find(c => c.product_id === product.product_id);
+        if (!couponInfo) return product;
+        
+        const basePrice = product[couponInfo.discountBase as keyof Product] as number || 0;
+        const discountAmount = couponInfo.discountType === '%'
+          ? basePrice * (couponInfo.discountValue / 100)
+          : couponInfo.discountValue;
+        
+        const newPrice = basePrice - discountAmount;
+        
+        return {
+          ...product,
+          [`coupon_price_${couponType}`]: newPrice,
+          [`coupon_discount_${couponType}`]: discountAmount,
+          [`coupon_rate_${couponType}`]: couponInfo.discountType === '%' ? couponInfo.discountValue : (discountAmount / basePrice) * 100
+        };
+      });
+      
+      setProducts(updatedProducts);
+    } catch (error) {
+      console.error('쿠폰 저장 실패:', error);
+      toast({
+        description: <div className="flex items-center gap-2"><CircleAlert className="h-5 w-5" /> 쿠폰 저장에 실패했습니다.</div>,
+        variant: "destructive"
+      });
+    }
   };
 
   // 날짜 선택 핸들러 수정
@@ -1493,6 +1486,13 @@ export default function CartPage() {
     setTitle(e.target.value);
   };
 
+  const handleChannelSelect = (value: string) => {
+    const selectedChannelInfo = channels.find(channel => channel.channel_name_2 === value);
+    if (selectedChannelInfo) {
+      handleChannelSelection(selectedChannelInfo);
+    }
+  };
+
   const handleChannelSearchFocus = () => {
     setIsChannelSearchFocused(true);
   };
@@ -1641,19 +1641,26 @@ export default function CartPage() {
     return Math.round(value).toLocaleString();
   };
 
-  // 컴포넌트 내부에서 사용
-  useAutoSave({
+  // useAutoSave 훅 사용 부분 수정 (1644줄 근처)
+  const { isSaving, lastSaved } = useAutoSave({
     title,
-    channel_name_2: selectedChannel,  // channelSearchTerm 대신 selectedChannel 사용
+    channel_name_2: selectedChannelInfo?.channel_name_2 || '',
     delivery_type: deliveryType,
     start_date: startDate,
     end_date: endDate,
     memo1,
     memo2,
     memo3,
-    fee_discount: isFeeDiscountEnabled,
+    fee_discount: isAdjustFeeEnabled,
     productIds: products.map(p => p.product_id),
-    selectedChannelInfo: selectedChannelInfo
+    selectedChannelInfo,
+    immediateDiscount: {
+      discountType,
+      discountValue,
+      unitType: discountUnit,
+      appliedProducts: selectedProducts,
+      updatedAt: new Date().toISOString()
+    }
   }, user);
 
   // 상품 데이터가 로드된 후 계산을 실행하는 useEffect 추가
@@ -1772,108 +1779,152 @@ export default function CartPage() {
         if (docSnap.exists()) {
           const data = docSnap.data();
           
-          // 1. 입력값 복원
-          if (data.title) setTitle(data.title);
-          if (data.delivery_type) setDeliveryType(data.delivery_type);
-          if (data.memo1) setMemo1(data.memo1);
-          if (data.memo2) setMemo2(data.memo2);
-          if (data.memo3) setMemo3(data.memo3);
-          
-          // 2. 채널 정보 먼저 복원
+          // 1. 채널 선택 데이터 복원
           if (data.selectedChannelInfo) {
             console.log('채널 정보 복원:', data.selectedChannelInfo);
             setSelectedChannelInfo(data.selectedChannelInfo);
-          }
-          
-          if (typeof data.channel_name_2 === 'string') {
-            console.log('채널명 복원:', data.channel_name_2);
-            setSelectedChannel(data.channel_name_2);
-            setChannelSearchTerm(data.channel_name_2);
-            setFilters(prev => ({ ...prev, channel_name_2: data.channel_name_2 }));
-          }
-          
-          // 3. 상품 데이터 복원 (채널 정보 로드 후)
-          if (data.products) {
-            console.log('상품 데이터 복원 시작:', data.products.length);
+            setSelectedChannel(data.selectedChannelInfo.channel_name_2);
+            setChannelSearchTerm(data.selectedChannelInfo.channel_name_2);
+            setFilters(prev => ({ ...prev, channel_name_2: data.selectedChannelInfo.channel_name_2 }));
             
-            // 할인 정보가 있는 경우 재계산
+            // 채널 정보 기반 계산 실행
+            if (data.products) {
+              const updatedProducts = data.products.map((product: Product) => ({
+                ...product,
+                pricing_price: calculateChannelPrice(product, data.selectedChannelInfo),
+                logistics_cost: calculateLogisticsCost(data.selectedChannelInfo, data.delivery_type || 'conditional', Number(data.selectedChannelInfo.amazon_shipping_cost)),
+                expected_commission_fee: calculateCommissionFee(product, data.selectedChannelInfo, data.fee_discount || false),
+                expected_net_profit: calculateNetProfit(product, data.selectedChannelInfo),
+                expected_settlement_amount: calculateSettlementAmount(product),
+                cost_ratio: calculateCostRatio(product, data.selectedChannelInfo)
+              }));
+              setProducts(updatedProducts);
+            }
+          }
+          
+          // 2. 배송조건 데이터 복원
+          if (data.delivery_type) {
+            setDeliveryType(data.delivery_type);
+            setFilters(prev => ({ ...prev, delivery_type: data.delivery_type }));
+            
+            // 물류비 재계산
+            if (data.selectedChannelInfo && data.products) {
+              const updatedProducts = data.products.map((product: Product) => ({
+                ...product,
+                logistics_cost: calculateLogisticsCost(data.selectedChannelInfo, data.delivery_type, Number(data.selectedChannelInfo.amazon_shipping_cost))
+              }));
+              setProducts(updatedProducts);
+            }
+          }
+          
+          // 3. 즉시할인 데이터 복원
+          if (data.immediateDiscount && data.products) {
+            const { discountType, discountValue, unitType, appliedProducts } = data.immediateDiscount;
             const updatedProducts = data.products.map((product: Product) => {
-              console.log('상품 처리 중:', product.product_id, {
-                discount_rate: product.discount_rate,
-                discount_unit: product.discount_unit,
-                pricing_price: product.pricing_price,
-                discount_price: product.discount_price,
-                discount: product.discount
-              });
+              if (!appliedProducts.includes(product.product_id)) return product;
               
-              if (product.discount_rate && product.discount_unit) {
-                const basePrice = Number(product.pricing_price) || 0;
-                const discountRate = Number(product.discount_rate);
-                const discountUnit = product.discount_unit;
-                
-                console.log('할인 정보 발견:', {
-                  product_id: product.product_id,
-                  basePrice,
-                  discountRate,
-                  discountUnit,
-                  selectedChannelInfo: data.selectedChannelInfo ? '존재함' : '없음',
-                  selectedChannelInfoDetails: data.selectedChannelInfo ? {
-                    channel_name_2: data.selectedChannelInfo.channel_name_2,
-                    min_price: data.selectedChannelInfo.min_price
-                  } : '없음'
-                });
-                
-                // 유틸리티 함수 사용
-                const newPrice = calculateDiscount(basePrice, discountRate, 'round', discountUnit, data.selectedChannelInfo);
-                
-                console.log('할인 계산 결과:', {
-                  product_id: product.product_id,
-                  basePrice,
-                  newPrice,
-                  discount: basePrice - newPrice,
-                  discountRate,
-                  discountUnit,
-                  min_price: data.selectedChannelInfo?.min_price
-                });
-
-                // 예상수수료, 정산예정금액, 예상순이익 재계산
-                const updatedProduct = {
-                  ...product,
-                  discount_price: newPrice,
-                  discount: basePrice - newPrice,
-                  discount_rate: discountRate,
-                  discount_unit: discountUnit
-                };
-                
-                if (data.selectedChannelInfo) {
-                  updatedProduct.expected_settlement_amount = calculateSettlementAmount(updatedProduct);
-                  updatedProduct.expected_net_profit = calculateNetProfit(updatedProduct, data.selectedChannelInfo);
-                  updatedProduct.expected_commission_fee = calculateCommissionFee(updatedProduct, data.selectedChannelInfo, isFeeDiscountEnabled);
-                }
-                
-                console.log('상품 업데이트 결과:', {
-                  product_id: updatedProduct.product_id,
-                  discount_price: updatedProduct.discount_price,
-                  discount: updatedProduct.discount,
-                  expected_settlement_amount: updatedProduct.expected_settlement_amount,
-                  expected_net_profit: updatedProduct.expected_net_profit,
-                  expected_commission_fee: updatedProduct.expected_commission_fee
-                });
-
-                return updatedProduct;
-              }
-              return product;
+              const basePrice = product.pricing_price || 0;
+              const discountAmount = unitType === '%' 
+                ? basePrice * (discountValue / 100)
+                : discountValue;
+              
+              const newPrice = basePrice - discountAmount;
+              
+              return {
+                ...product,
+                discount_price: newPrice,
+                discount: discountAmount,
+                discount_rate: unitType === '%' ? discountValue : (discountAmount / basePrice) * 100,
+                discount_unit: unitType
+              };
             });
-            
-            console.log('상품 데이터 복원 완료:', updatedProducts.length);
             setProducts(updatedProducts);
           }
+          
+          // 4. 쿠폰 데이터 복원
+          if (data.products) {
+            let updatedProducts = [...data.products];
+            
+            // 쿠폰1 복원
+            if (data.coupon1Discount) {
+              updatedProducts = updatedProducts.map(product => {
+                const couponInfo = data.coupon1Discount.find((c: CouponDiscount) => c.product_id === product.product_id);
+                if (!couponInfo) return product;
+                
+                const basePrice = product[couponInfo.discountBase as keyof Product] as number || 0;
+                const discountAmount = couponInfo.discountType === '%'
+                  ? basePrice * (couponInfo.discountValue / 100)
+                  : couponInfo.discountValue;
+                
+                const newPrice = basePrice - discountAmount;
+                
+                return {
+                  ...product,
+                  coupon_price_1: newPrice,
+                  coupon_discount_1: discountAmount,
+                  coupon_rate_1: couponInfo.discountType === '%' ? couponInfo.discountValue : (discountAmount / basePrice) * 100
+                };
+              });
+            }
+            
+            // 쿠폰2 복원
+            if (data.coupon2Discount) {
+              updatedProducts = updatedProducts.map(product => {
+                const couponInfo = data.coupon2Discount.find((c: CouponDiscount) => c.product_id === product.product_id);
+                if (!couponInfo) return product;
+                
+                const basePrice = product[couponInfo.discountBase as keyof Product] as number || 0;
+                const discountAmount = couponInfo.discountType === '%'
+                  ? basePrice * (couponInfo.discountValue / 100)
+                  : couponInfo.discountValue;
+                
+                const newPrice = basePrice - discountAmount;
+                
+                return {
+                  ...product,
+                  coupon_price_2: newPrice,
+                  coupon_discount_2: discountAmount,
+                  coupon_rate_2: couponInfo.discountType === '%' ? couponInfo.discountValue : (discountAmount / basePrice) * 100
+                };
+              });
+            }
+            
+            // 쿠폰3 복원
+            if (data.coupon3Discount) {
+              updatedProducts = updatedProducts.map(product => {
+                const couponInfo = data.coupon3Discount.find((c: CouponDiscount) => c.product_id === product.product_id);
+                if (!couponInfo) return product;
+                
+                const basePrice = product[couponInfo.discountBase as keyof Product] as number || 0;
+                const discountAmount = couponInfo.discountType === '%'
+                  ? basePrice * (couponInfo.discountValue / 100)
+                  : couponInfo.discountValue;
+                
+                const newPrice = basePrice - discountAmount;
+                
+                return {
+                  ...product,
+                  coupon_price_3: newPrice,
+                  coupon_discount_3: discountAmount,
+                  coupon_rate_3: couponInfo.discountType === '%' ? couponInfo.discountValue : (discountAmount / basePrice) * 100
+                };
+              });
+            }
+            
+            setProducts(updatedProducts);
+          }
+          
+          // 5. 기타 데이터 복원
+          if (data.title) setTitle(data.title);
+          if (data.memo1) setMemo1(data.memo1);
+          if (data.memo2) setMemo2(data.memo2);
+          if (data.memo3) setMemo3(data.memo3);
+          if (data.fee_discount !== undefined) setIsAdjustFeeEnabled(data.fee_discount);
         }
       } catch (error) {
         console.error('데이터 로드 중 오류 발생:', error);
         toast({
-          title: "오류",
-          description: "저장된 데이터를 불러오는 중 오류가 발생했습니다.",
+          description: <div className="flex items-center gap-2"><CircleAlert className="h-5 w-5" /> 저장된 데이터를 불러오는 중 오류가 발생했습니다.</div>,
           variant: "destructive"
         });
       }
@@ -1881,6 +1932,58 @@ export default function CartPage() {
 
     loadSavedData();
   }, []);
+
+  // 계산 함수 사용 부분 수정
+  const calculateProductValues = (product: Product) => {
+    if (!selectedChannelInfo) return;
+
+    // 기본 원가 계산
+    const baseCost = calculateBaseCost(product, selectedChannelInfo);
+    
+    // 할인율 계산
+    const immediateDiscountRate = calculateImmediateDiscountRate(product);
+    const coupon1DiscountRate = calculateCoupon1DiscountRate(product);
+    const coupon2DiscountRate = calculateCoupon2DiscountRate(product);
+    const coupon3DiscountRate = calculateCoupon3DiscountRate(product);
+    const finalDiscountRate = calculateFinalDiscountRate(product);
+    
+    // 조정된 원가 계산
+    const adjustedCost = calculateAdjustedCost(product);
+    
+    // 수수료 계산
+    const commissionFee = calculateCommissionFee(product, selectedChannelInfo, isAdjustFeeEnabled);
+    const adjustedFeeRate = calculateAdjustedFeeRate(product, selectedChannelInfo, isAdjustFeeEnabled);
+    
+    // 물류비 계산
+    const logisticsCost = calculateLogisticsCost(selectedChannelInfo, deliveryType, selectedChannelInfo.amazon_shipping_cost || 0);
+    
+    // 순이익 계산
+    const netProfit = calculateNetProfit(product, selectedChannelInfo);
+    const profitMargin = calculateProfitMargin(product, selectedChannelInfo);
+    
+    // 정산금액 계산
+    const settlementAmount = calculateSettlementAmount(product);
+    
+    // 원가율 계산
+    const costRatio = calculateCostRatio(product, selectedChannelInfo);
+
+    return {
+      baseCost,
+      immediateDiscountRate,
+      coupon1DiscountRate,
+      coupon2DiscountRate,
+      coupon3DiscountRate,
+      finalDiscountRate,
+      adjustedCost,
+      commissionFee,
+      adjustedFeeRate,
+      logisticsCost,
+      netProfit,
+      profitMargin,
+      settlementAmount,
+      costRatio
+    };
+  };
 
   return (
     <ToastProvider>
