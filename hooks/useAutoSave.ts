@@ -124,16 +124,65 @@ const saveToFirebase = async (data: AutoSaveData, user: User | null) => {
   if (!user) return;
 
   try {
-    // undefined 값을 가진 필드 제거
+    console.log('=== Firebase 저장 시작 ===');
+    console.log('저장할 데이터:', JSON.stringify(data, null, 2));
+    
+    // undefined 값이 있는지 확인
+    const hasUndefined = Object.entries(data).some(([key, value]) => {
+      if (value === undefined) {
+        console.error(`undefined 값 발견: ${key}`);
+        return true;
+      }
+      if (typeof value === 'object' && value !== null) {
+        const hasNestedUndefined = Object.entries(value).some(([nestedKey, nestedValue]) => {
+          if (nestedValue === undefined) {
+            console.error(`중첩된 undefined 값 발견: ${key}.${nestedKey}`);
+            return true;
+          }
+          return false;
+        });
+        if (hasNestedUndefined) return true;
+      }
+      return false;
+    });
+
+    if (hasUndefined) {
+      console.error('undefined 값이 포함된 데이터는 저장할 수 없습니다.');
+      return;
+    }
+
+    // undefined 값을 제거한 깨끗한 데이터 생성
     const cleanData = Object.entries(data).reduce((acc, [key, value]) => {
       if (value !== undefined) {
-        acc[key] = value;
+        if (typeof value === 'object' && value !== null) {
+          const cleanNestedData = Object.entries(value).reduce((nestedAcc, [nestedKey, nestedValue]) => {
+            if (nestedValue !== undefined) {
+              nestedAcc[nestedKey] = nestedValue;
+            }
+            return nestedAcc;
+          }, {} as Record<string, any>);
+          acc[key] = cleanNestedData;
+        } else {
+          acc[key] = value;
+        }
       }
       return acc;
     }, {} as Record<string, any>);
 
-    await setDoc(doc(db, 'userCarts', user.uid), cleanData, { merge: true });
+    console.log('정제된 데이터:', JSON.stringify(cleanData, null, 2));
+
+    const docRef = doc(db, 'userCarts', user.uid);
+    await setDoc(docRef, {
+      ...cleanData,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+
+    console.log('Firebase 저장 성공');
   } catch (error) {
-    console.error('할인 정보 파이어베이스 저장 실패:', error);
+    console.error('Firebase 저장 실패:', error);
+    if (error instanceof Error) {
+      console.error('에러 메시지:', error.message);
+      console.error('에러 스택:', error.stack);
+    }
   }
 }; 
