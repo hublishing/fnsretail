@@ -160,6 +160,16 @@ export function ImmediateDiscountModal({
         return product;
       });
 
+      // 먼저 상태 업데이트 및 모달 닫기
+      onApplyDiscount(updatedProducts);
+      console.log('할인 적용 완료:', updatedProducts);
+      
+      setShowDiscountModal(false);
+      toast({
+        description: <div className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5" /> 할인이 적용되었습니다.</div>,
+      });
+
+      // 파이어베이스 저장은 비동기로 처리하고 오류가 발생해도 UI에 영향을 주지 않도록 함
       if (userId) {
         try {
           console.log('=== 파이어베이스 저장 시작 ===');
@@ -168,6 +178,20 @@ export function ImmediateDiscountModal({
           const changedProducts = updatedProducts.filter(product => 
             selectedProducts.includes(product.product_id)
           );
+          
+          // 변경된 상품들의 데이터를 정리
+          const cleanedChangedProducts = changedProducts.map(product => {
+            const cleanedProduct = { ...product };
+            // undefined 값을 가진 필드들을 null로 변환
+            Object.keys(cleanedProduct).forEach(key => {
+              if (cleanedProduct[key] === undefined) {
+                cleanedProduct[key] = null;
+              }
+            });
+            return cleanedProduct;
+          });
+          
+          console.log('변경된 상품 데이터:', cleanedChangedProducts);
           
           const saveData = {
             immediateDiscount: {
@@ -192,20 +216,31 @@ export function ImmediateDiscountModal({
             
             let existingProducts = existingData.products || [];
             
-            const updatedExistingProducts = existingProducts.map((existingProduct: Product) => {
-              const changedProduct = changedProducts.find(p => p.product_id === existingProduct.product_id);
+            // 기존 상품들의 undefined 값도 정리
+            const cleanedExistingProducts = existingProducts.map((product: Product) => {
+              const cleanedProduct = { ...product };
+              Object.keys(cleanedProduct).forEach(key => {
+                if (cleanedProduct[key] === undefined) {
+                  cleanedProduct[key] = null;
+                }
+              });
+              return cleanedProduct;
+            });
+            
+            const updatedExistingProducts = cleanedExistingProducts.map((existingProduct: Product) => {
+              const changedProduct = cleanedChangedProducts.find(p => p.product_id === existingProduct.product_id);
               return changedProduct || existingProduct;
             });
             
-            changedProducts.forEach(changedProduct => {
-              if (!existingProducts.some((p: Product) => p.product_id === changedProduct.product_id)) {
+            cleanedChangedProducts.forEach(changedProduct => {
+              if (!cleanedExistingProducts.some((p: Product) => p.product_id === changedProduct.product_id)) {
                 updatedExistingProducts.push(changedProduct);
               }
             });
             
             cleanData.products = updatedExistingProducts;
           } else {
-            cleanData.products = changedProducts;
+            cleanData.products = cleanedChangedProducts;
           }
           
           console.log('최종 저장 데이터:', cleanData);
@@ -213,23 +248,21 @@ export function ImmediateDiscountModal({
           console.log('할인 정보 파이어베이스 저장 완료');
         } catch (error) {
           console.error('할인 정보 파이어베이스 저장 실패:', error);
-          throw error;
+          // 파이어베이스 저장 실패 시에도 사용자에게 알림만 표시하고 계속 진행
+          toast({
+            variant: "destructive",
+            description: "할인 정보 저장 중 오류가 발생했습니다. 할인은 적용되었습니다.",
+          });
         }
       }
-
-      onApplyDiscount(updatedProducts);
-      console.log('할인 적용 완료:', updatedProducts);
-      
-      setShowDiscountModal(false);
-      toast({
-        description: <div className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5" /> 할인이 적용되었습니다.</div>,
-      });
     } catch (error) {
       console.error('할인 적용 중 오류:', error);
       toast({
         variant: "destructive",
         description: "할인 적용 중 오류가 발생했습니다.",
       });
+      // 오류 발생 시에도 모달을 닫음
+      setShowDiscountModal(false);
     }
   };
 
