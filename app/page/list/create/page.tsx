@@ -492,31 +492,12 @@ export default function CartPage() {
    * 할인 적용 처리
    * @param updatedProducts 할인 적용할 상품 목록
    */
-  const handleApplyDiscount = useCallback((products: Product[]) => {
-
-    // undefined 값이 있는지 확인하고 정리
-    const cleanedProducts = products.map(product => {
-      const cleanedProduct = { ...product };
-      // shop_product_id가 undefined인 경우 빈 문자열로 설정
-      if (cleanedProduct.shop_product_id === undefined) {
-        cleanedProduct.shop_product_id = '';
-      }
-      // global_price가 undefined인 경우 0으로 설정
-      if (cleanedProduct.global_price === undefined) {
-        cleanedProduct.global_price = 0;
-      }
-      // 다른 undefined 값들도 처리
-      Object.keys(cleanedProduct).forEach(key => {
-        if (cleanedProduct[key] === undefined) {
-          cleanedProduct[key] = null;
-        }
-      });
-      return cleanedProduct;
-    });
-
-    // 상품 목록 업데이트
-    setProducts(cleanedProducts);
-  }, [setProducts]);
+  const handleApplyDiscount = (products: Product[]) => {
+    console.log('=== handleApplyDiscount 시작 ===');
+    console.log('입력된 상품:', products);
+    setProducts(products);
+    console.log('=== handleApplyDiscount 완료 ===');
+  };
 
   // 탭별 상태 업데이트 핸들러
   const handleTabStateUpdate = useCallback((tab: string, updates: Partial<typeof tabStates.tab1>) => {
@@ -863,114 +844,19 @@ export default function CartPage() {
   };
 
   // 즉시할인 적용 핸들러
-  const handleImmediateDiscountApply = async (products: Product[]) => {
+  const handleImmediateDiscountApply = (products: Product[]) => {
     console.log('=== handleImmediateDiscountApply 시작 ===');
     console.log('입력된 상품:', products);
-    console.log('현재 상태:', {
-      user,
-      discountType,
-      discountValue,
-      discountUnit,
-      selectedProducts
-    });
-
-    if (!user) return;
-    
-    try {
-      // undefined 값 정리
-      const cleanedProducts = products.map(product => {
-        console.log('상품 정리 전:', product);
-        const cleanedProduct = { ...product };
-        // shop_product_id가 undefined인 경우 빈 문자열로 설정
-        if (cleanedProduct.shop_product_id === undefined) {
-          cleanedProduct.shop_product_id = '';
-        }
-        // global_price가 undefined인 경우 0으로 설정
-        if (cleanedProduct.global_price === undefined) {
-          cleanedProduct.global_price = 0;
-        }
-        // 다른 undefined 값들도 처리
-        Object.keys(cleanedProduct).forEach(key => {
-          if (cleanedProduct[key] === undefined) {
-            cleanedProduct[key] = null;
-          }
-        });
-        console.log('상품 정리 후:', cleanedProduct);
-        return cleanedProduct;
-      });
-
-      // 파이어베이스 저장은 모달에서 처리하므로 여기서는 상태 업데이트만 수행
-      setProducts(cleanedProducts);
-      console.log('=== handleImmediateDiscountApply 완료 ===');
-    } catch (error) {
-      console.error('즉시할인 적용 실패:', error);
-      console.error('에러 발생 시점의 데이터:', {
-        products,
-        discountType,
-        discountValue,
-        discountUnit,
-        selectedProducts
-      });
-      toast({
-        description: <div className="flex items-center gap-2"><CircleAlert className="h-5 w-5" /> 즉시할인 적용에 실패했습니다.</div>,
-        variant: "destructive"
-      });
-    }
+    setProducts(products);
+    console.log('=== handleImmediateDiscountApply 완료 ===');
   };
 
   // 쿠폰 적용 핸들러
-  const handleCouponApply = async (
-    couponType: '1' | '2' | '3',
-    couponData: {
-      product_id: string;
-      hurdleTarget: string;
-      hurdleAmount: number;
-      discountBase: string;
-      discountType: string;
-      discountValue: number;
-      roundUnit: string;
-      roundType: string;
-      discountCap: number;
-      selfRatio: number;
-    }[]
-  ) => {
-    if (!user) return;
-    
-    try {
-      const docRef = doc(db, 'userCarts', user.uid);
-      await setDoc(docRef, {
-        [`coupon${couponType}Discount`]: couponData,
-        updatedAt: new Date().toISOString()
-      }, { merge: true });
-      
-      // 쿠폰 적용 및 재계산
-      const updatedProducts = products.map(product => {
-        const couponInfo = couponData.find(c => c.product_id === product.product_id);
-        if (!couponInfo) return product;
-        
-        const basePrice = product[couponInfo.discountBase as keyof Product] as number || 0;
-        const discountAmount = couponInfo.discountType === '%'
-          ? basePrice * (couponInfo.discountValue / 100)
-          : couponInfo.discountValue;
-        
-        const newPrice = basePrice - discountAmount;
-        
-        return {
-          ...product,
-          [`coupon_price_${couponType}`]: newPrice,
-          [`coupon_discount_${couponType}`]: discountAmount,
-          [`coupon_rate_${couponType}`]: couponInfo.discountType === '%' ? couponInfo.discountValue : (discountAmount / basePrice) * 100
-        };
-      });
-      
-      setProducts(updatedProducts);
-    } catch (error) {
-      console.error('쿠폰 저장 실패:', error);
-      toast({
-        description: <div className="flex items-center gap-2"><CircleAlert className="h-5 w-5" /> 쿠폰 저장에 실패했습니다.</div>,
-        variant: "destructive"
-      });
-    }
+  const handleCouponApply = (products: Product[]) => {
+    console.log('=== handleCouponApply 시작 ===');
+    console.log('입력된 상품:', products);
+    setProducts(products);
+    console.log('=== handleCouponApply 완료 ===');
   };
 
   // 날짜 선택 핸들러 수정
