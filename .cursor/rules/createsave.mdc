@@ -3,63 +3,106 @@ description:
 globs: 
 alwaysApply: true
 ---
-Create Page - Auto-Save & Data Handling Guidelines
-Goal
-Automatically save user inputs to Firestore whenever changes are made, so that all data is consistently restored after a page refresh or navigation.
-No manual save button is required.
+# Create Page - Auto-Save & Data Handling Guidelines
 
-Key Requirements
-Auto-Save Behavior
-✅ All user inputs and changes must be automatically saved to Firestore in real time.
-✅ No manual save button is needed.
-✅ Use Firestore for persistent storage of user inputs.
-✅ Apply debounce when saving to Firestore to prevent excessive write operations.
+## Goal
+-자동 저장 및 페이지 리로드 시 데이터 복원을 통해 일관된 사용자 경험 제공
+-모든 계산 로직을 중앙 집중화하여 일관된 계산 처리 및 유지보수성 향상
 
-Page Reload & Navigation Behavior
-When the user reloads or returns to the page:
-✅ All previously saved data must be restored from Firestore.
-✅ Calculations must be re-applied based on the saved inputs and original data, ensuring consistency and preventing errors.
-✅ Original data (e.g., from BigQuery) must remain unchanged to maintain calculation accuracy.
-✅ Ensure reactive updates: after Firestore data is loaded and state is restored, trigger recalculation of all dependent values.
+## Key Requirements
 
-🧩 Important Notes
-❌ Do not save final calculated results in Firestore.
-✅ Only save the user input values that influence calculations.
-✅ On page load, retrieve saved user inputs from Firestore and re-run calculations using the latest original data.
-✅ Maintain accuracy by always fetching the latest base data from BigQuery (or the original source).
-✅ To optimize performance and reduce Firestore costs, apply debounce to all Firestore write operations.
+### Calculation Logic Centralization Guidelines
+- 단일 계산 클래스에서 모든 계산 로직 관리
+- 사용자 액션 및 페이지 리로드 시 동일한 계산 로직 사용
+- 계산에 필요한 입력값만 전달받아 처리
 
-💾 Data Storage Policy
-Category	Storage Method	Notes
-Channel Selection	✅ Store selected channel name/ID in Firestore	Firestore storage
-Product Base Data	❌ Do not store	Always fetched from original source (BigQuery, etc.)
-Discount Amount	✅ Store in Firestore	User input value
-Calculation Results	❌ Do not store	Calculated dynamically on the fly
-Commission Switch Status	✅ Store in Firestore	User-selected switch state
-Shipping Condition Selection	✅ Store in Firestore	Dropdown selected value
-Date Selection	✅ Store in Firestore	User-selected date
-Memo 1 / 2 / 3	✅ Store in Firestore	User input values
-Title	✅ Store in Firestore	User input value
-🛠️ Development Notes
-For all Firestore operations, always refer to:
-lib > firebase folder (project standard location for Firestore utilities).
+### DO ✅
+- 명확한 타입 정의
+- 단위 테스트 작성
+- 계산 과정 로깅
+- 성능 최적화 (메모이제이션 등)
 
-Structure code to:
+### DON'T ❌
+- 계산 로직 분산 금지
+- 전역 상태 직접 참조 금지
+- 비동기 처리 없이 동기적 계산
+- 불필요한 중간 결과 저장
 
-Watch for user input changes.
 
-Trigger Firestore updates immediately on change, with debounce applied.
+### Auto-Save Behavior
+✅ 모든 사용자 입력은 Firebase에 자동 저장
+✅ 수동 저장 버튼 불필요
+✅ Firebase를 통한 영구 저장소 사용
+✅ 과도한 쓰기 작업 방지를 위한 디바운스 적용
 
-Ensure calculations run after Firestore data is loaded.
+#### 사용자 액션1 (채널 선택)
+- 사용자 채널 선택값 확인
+- YES/NO 분기 처리
+- YES인 경우 계산값을 실행
+- Firebase에 선택값 저장
 
-✅ Summary
-Save user actions (inputs, selections, switches) as input values, not final computed results.
+#### 사용자 액션2 (배송 조건)
+- 사용자 배송 조건 선택값 확인
+- YES인 경우 플로우 추가
+- NO인 경우 예외처리 후 재선택
+- Firebase에 선택값 저장
 
-On page load, fetch original data and saved user inputs, and run calculations dynamically.
+#### 사용자 액션3 (즉시할인)
+- 즉시할인 입력 처리
+- 원단위/쪽단위 선택 분기
+- 즉시할인 금액 계산
+- Firebase에 입력값 저장
 
-For Firestore operations, always use the designated firebase utilities folder (lib > firebase).
+#### 사용자 액션4 (쿠폰)
+- 쿠폰 선택 (우선1/우선2/우선3)
+- 사용가능 기준금액 계산
+- 할인적용 기준금액 계산
+- 복잡한 계산 로직 처리:
+  - 할인구분 (원/%)
+  - 소수점 처리 (1, 0.1, 0.01)
+  - 절사수 처리 (올림/내림/반올림)
+  - 최종 할인금액 계산
+- Firebase에 선택값 저장
 
-Always apply debounce to Firestore writes to optimize performance and reduce unnecessary writes.
+### Page Reload & Navigation Behavior
+페이지 리로드 시 다음 순서로 진행: 
+1. 사용자 액션1 (채널 Firebase 저장값 불러오기) 복원 → 계산 실행
+2. 사용자 액션2 (배송조건 Firebase 저장값 불러오기) 복원 → 계산 실행
+3. 사용자 액션3 (즉시할인 Firebase 저장값 불러오기) 복원 → 계산 실행
+4. 사용자 액션4 (쿠폰 Firebase 저장값 불러오기) 복원 → 계산 실행
+
+### 🧩 Important Notes
+❌ 계산 결과는 Firebase에 저장하지 않음
+✅ 사용자 입력값만 저장
+✅ 각 액션 복원 시마다 계산 실행
+✅ BigQuery의 최신 데이터 기반으로 계산
+✅ Firebase 쓰기 작업에 디바운스 적용
+ 
+
+### 💾 Data Storage Policy
+Category | Storage Method | Notes
+---------|---------------|-------
+Channel Selection | ✅ Firebase | 액션1 복원 후 계산
+Shipping Condition | ✅ Firebase | 액션2 복원 후 계산
+Discount Amount | ✅ Firebase | 액션3 복원 후 계산
+Coupon Selection | ✅ Firebase | 액션4 복원 후 계산
+Calculation Results | ❌ 저장안함 | 각 단계별 실시간 계산
+
+### 🛠️ Development Notes
+- Firebase 작업은 항상 lib > firebase 폴더 참조
+- 사용자 입력 변경 감지
+- 디바운스 적용된 Firebase 업데이트
+- 각 액션 복원마다 계산 로직 실행
+
+### ✅ Summary
+- 사용자 입력값만 저장, 계산 결과는 저장하지 않음
+- 페이지 로드 시 단계별 복원 및 계산
+- Firebase 작업은 지정된 유틸리티 폴더 사용
+- 성능 최적화를 위한 디바운스 적용
+
+### directiory참조
+[directory.mdc](mdc:.cursor/rules/directory.mdc)
+
 
 
 

@@ -30,8 +30,8 @@ fnsretail/
 │   └── utils/
 │       └── calculations/
 │
-├── components/ *ShadCN/UI
-│   └── ui/ 
+├── components/ *modal,layout
+│   └── ui/ *ShadCN/UI
 │
 ├── hooks/
 ├── lib/ *firebase

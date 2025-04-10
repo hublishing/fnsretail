@@ -92,8 +92,7 @@ import {
   calculateAdjustedFeeRate,
   calculateChannelPrice,
   calculateAdjustedCost
-} from '@/app/utils/calculations';
-import { ListTopbar } from '@/components/list-topbar';
+} from '@/app/utils/calculations'; 
 import { parseChannelBasicInfo } from '@/app/utils/calculations/common';
 import { useToast } from "@/components/ui/use-toast"
 import { Toast } from "@/components/ui/toast"
@@ -1885,8 +1884,7 @@ export default function CartPage() {
 
   return (
     <ToastProvider>
-      <div className="container mx-auto py-4">
-        <ListTopbar/>
+      <div className="container mx-auto py-4"> 
         
         {/* 편집 섹션 */}
         <Card className="mb-6 py-5 px-5 bg-card rounded-lg shadow-sm">
