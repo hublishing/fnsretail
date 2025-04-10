@@ -2528,7 +2528,7 @@ export default function CartPage() {
           <ImmediateDiscountModal
             showDiscountModal={showImmediateDiscountModal}
             setShowDiscountModal={setShowImmediateDiscountModal}
-            onApplyDiscount={handleApplyDiscount}
+            onApplyDiscount={handleImmediateDiscountApply}
             products={products}
             selectedProducts={selectedProducts}
             onClose={() => setShowImmediateDiscountModal(false)}
