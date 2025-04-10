@@ -99,8 +99,16 @@ export function ImmediateDiscountModal({
     })
   }
 
-  const handleApplyDiscount = async () => {
+  const handleImmediateDiscountApply = async () => {
     try {
+      console.log('=== 즉시할인 적용 시작 ===');
+      console.log('현재 상태:', {
+        discountType: discountState.discountType,
+        discountValue: discountState.discountValue,
+        unitType: discountState.unitType,
+        selectedProducts
+      });
+
       if (!selectedProducts.length) {
         console.log('선택된 상품이 없음');
         return;
@@ -115,24 +123,18 @@ export function ImmediateDiscountModal({
             if (discountState.unitType === '%') {
               newPrice = calculateDiscount(basePrice, discountState.discountValue, 'round', '0.01', selectedChannelInfo);
             } else {
-              // 원 단위일 때는 직접 금액 차감
               newPrice = basePrice - discountState.discountValue;
-              // 10원 단위로 내림
               newPrice = Math.ceil(newPrice / 10) * 10;
             }
           } else {
-            // 최저손익 로직 - 단위에 따라 다르게 처리
             if (discountState.unitType === '%') {
               newPrice = calculateDiscount(basePrice, discountState.discountValue, 'round', '0.01', selectedChannelInfo);
             } else {
-              // 원 단위면 직접 금액 차감
               newPrice = basePrice - discountState.discountValue;
-              // 10원 단위로 내림
               newPrice = Math.ceil(newPrice / 10) * 10;
             }
           }
           
-          // 음수 가격 방지
           newPrice = Math.max(0, newPrice);
           
           const updatedProduct = { ...product };
@@ -141,27 +143,32 @@ export function ImmediateDiscountModal({
           updatedProduct.discount_rate = ((Number(product.pricing_price) - newPrice) / Number(product.pricing_price)) * 100;
           updatedProduct.discount_unit = discountState.unitType;
 
-          // 예상수수료, 정산예정금액, 예상순이익 재계산
           updatedProduct.expected_settlement_amount = calculateExpectedSettlementAmount(updatedProduct);
           updatedProduct.expected_net_profit = calculateExpectedNetProfit(updatedProduct);
           updatedProduct.expected_commission_fee = calculateExpectedCommissionFee(updatedProduct);
+
+          console.log('상품 업데이트:', {
+            product_id: updatedProduct.product_id,
+            original_price: product.pricing_price,
+            new_price: newPrice,
+            discount: updatedProduct.discount,
+            discount_rate: updatedProduct.discount_rate
+          });
 
           return updatedProduct; 
         }
         return product;
       });
 
-      // 파이어베이스에 할인 정보 저장
       if (userId) {
         try {
+          console.log('=== 파이어베이스 저장 시작 ===');
           const docRef = doc(db, 'userCarts', userId);
           
-          // 변경된 상품만 추출
           const changedProducts = updatedProducts.filter(product => 
             selectedProducts.includes(product.product_id)
           );
           
-          // 저장할 데이터 준비
           const saveData = {
             immediateDiscount: {
               discountType: discountState.discountType,
@@ -173,41 +180,40 @@ export function ImmediateDiscountModal({
             updatedAt: new Date().toISOString()
           };
           
-          // undefined 값 제거
-          const cleanData = removeUndefined(saveData);
+          console.log('저장할 데이터:', saveData);
           
-          // 기존 데이터 가져오기
+          const cleanData = removeUndefined(saveData);
+          console.log('정리된 데이터:', cleanData);
+          
           const docSnap = await getDoc(docRef);
           if (docSnap.exists()) {
             const existingData = docSnap.data();
+            console.log('기존 데이터:', existingData);
             
-            // 기존 products 배열이 있으면 가져오기
             let existingProducts = existingData.products || [];
             
-            // 변경된 상품만 업데이트
             const updatedExistingProducts = existingProducts.map((existingProduct: Product) => {
               const changedProduct = changedProducts.find(p => p.product_id === existingProduct.product_id);
               return changedProduct || existingProduct;
             });
             
-            // 새로 추가된 상품이 있다면 추가
             changedProducts.forEach(changedProduct => {
               if (!existingProducts.some((p: Product) => p.product_id === changedProduct.product_id)) {
                 updatedExistingProducts.push(changedProduct);
               }
             });
             
-            // 최종 저장 데이터에 업데이트된 products 배열 추가
             cleanData.products = updatedExistingProducts;
           } else {
-            // 문서가 없는 경우 새로 생성
             cleanData.products = changedProducts;
           }
           
+          console.log('최종 저장 데이터:', cleanData);
           await setDoc(docRef, cleanData, { merge: true });
           console.log('할인 정보 파이어베이스 저장 완료');
         } catch (error) {
           console.error('할인 정보 파이어베이스 저장 실패:', error);
+          throw error;
         }
       }
 
@@ -282,7 +288,7 @@ export function ImmediateDiscountModal({
           </div>
 
           <div className="mt-4 flex justify-end">
-            <Button onClick={handleApplyDiscount}>즉시할인 적용</Button>
+            <Button onClick={handleImmediateDiscountApply}>즉시할인 적용</Button>
           </div>
         </div>
       </DialogContent>
