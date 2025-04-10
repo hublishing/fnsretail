@@ -1654,13 +1654,13 @@ export default function CartPage() {
     fee_discount: isAdjustFeeEnabled,
     productIds: products.map(p => p.product_id),
     selectedChannelInfo,
-    immediateDiscount: {
-      discountType,
-      discountValue,
-      unitType: discountUnit,
+    immediateDiscount: selectedProducts.length > 0 ? {
+      discountType: discountType || 'amount',
+      discountValue: discountValue || 0,
+      unitType: discountUnit || '%',
       appliedProducts: selectedProducts,
       updatedAt: new Date().toISOString()
-    }
+    } : undefined
   }, user);
 
   // 상품 데이터가 로드된 후 계산을 실행하는 useEffect 추가
