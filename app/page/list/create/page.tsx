@@ -899,35 +899,11 @@ export default function CartPage() {
         return cleanedProduct;
       });
 
-      console.log('Firebase 저장할 데이터:', {
-        immediateDiscount: {
-          discountType: discountType || 'amount',
-          discountValue: discountValue || 0,
-          unitType: discountUnit || '%',
-          appliedProducts: selectedProducts,
-          updatedAt: new Date().toISOString()
-        },
-        products: cleanedProducts,
-        updatedAt: new Date().toISOString()
-      });
-
-      const docRef = doc(db, 'userCarts', user.uid);
-      await setDoc(docRef, {
-        immediateDiscount: {
-          discountType: discountType || 'amount',
-          discountValue: discountValue || 0,
-          unitType: discountUnit || '%',
-          appliedProducts: selectedProducts,
-          updatedAt: new Date().toISOString()
-        },
-        products: cleanedProducts,
-        updatedAt: new Date().toISOString()
-      }, { merge: true });
-      
+      // 파이어베이스 저장은 모달에서 처리하므로 여기서는 상태 업데이트만 수행
       setProducts(cleanedProducts);
       console.log('=== handleImmediateDiscountApply 완료 ===');
     } catch (error) {
-      console.error('즉시할인 저장 실패:', error);
+      console.error('즉시할인 적용 실패:', error);
       console.error('에러 발생 시점의 데이터:', {
         products,
         discountType,
@@ -936,7 +912,7 @@ export default function CartPage() {
         selectedProducts
       });
       toast({
-        description: <div className="flex items-center gap-2"><CircleAlert className="h-5 w-5" /> 즉시할인 저장에 실패했습니다.</div>,
+        description: <div className="flex items-center gap-2"><CircleAlert className="h-5 w-5" /> 즉시할인 적용에 실패했습니다.</div>,
         variant: "destructive"
       });
     }
