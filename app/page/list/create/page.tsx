@@ -337,6 +337,12 @@ export default function CartPage() {
   const [showAdjustCostModal, setShowAdjustCostModal] = useState(false);
   const [adjustCostValue, setAdjustCostValue] = useState<string>('');
   const [isFeeDiscountEnabled, setIsFeeDiscountEnabled] = useState(false);
+  const [immediateDiscount, setImmediateDiscount] = useState<{
+    discountType: string;
+    discountValue: number;
+    unitType: string;
+    appliedProducts: string[];
+  } | null>(null);
   
   // 각 탭별 상태 변수들
   const [tabStates, setTabStates] = useState<{
@@ -585,46 +591,12 @@ export default function CartPage() {
             if (Array.isArray(data.products) && data.products.length > 0) {
               console.log('상품 데이터 직접 설정:', data.products.length);
               setProducts(data.products);
+            }
 
-              // 4. 즉시할인 정보가 있는 경우 적용
-              if (data.immediateDiscount) {
-                console.log('즉시할인 정보 복원:', data.immediateDiscount);
-                const { discountType, discountValue, unitType, appliedProducts } = data.immediateDiscount;
-                
-                const updatedProducts = data.products.map((product: Product) => {
-                  if (appliedProducts.includes(product.product_id)) {
-                    const basePrice = Number(product.pricing_price) || 0;
-                    let newPrice;
-                    
-                    if (unitType === '%') {
-                      // 퍼센트 할인의 경우 100으로 나누어 계산
-                      newPrice = calculateDiscount(basePrice, discountValue / 100, 'round', '0.01', data.selectedChannelInfo);
-                    } else {
-                      // 금액 할인의 경우 그대로 사용
-                      newPrice = calculateDiscount(basePrice, discountValue, 'round', '0.01', data.selectedChannelInfo);
-                    }
-                    
-                    const updatedProduct = { ...product };
-                    updatedProduct.discount_price = newPrice;
-                    updatedProduct.discount = Number(product.pricing_price) - newPrice;
-                    updatedProduct.discount_rate = ((Number(product.pricing_price) - newPrice) / Number(product.pricing_price)) * 100;
-                    updatedProduct.discount_unit = unitType;
-
-                    // 예상수수료, 정산예정금액, 예상순이익 재계산
-                    if (data.selectedChannelInfo) {
-                      updatedProduct.expected_settlement_amount = calculateSettlementAmount(updatedProduct);
-                      updatedProduct.expected_net_profit = calculateNetProfit(updatedProduct, data.selectedChannelInfo);
-                      updatedProduct.expected_commission_fee = calculateCommissionFee(updatedProduct, data.selectedChannelInfo, isFeeDiscountEnabled);
-                    }
-
-                    return updatedProduct;
-                  }
-                  return product;
-                });
-                
-                setProducts(updatedProducts);
-                console.log('즉시할인 적용 완료');
-              }
+            // 4. 즉시할인 정보가 있는 경우 적용
+            if (data.immediateDiscount) {
+              console.log('즉시할인 정보 복원:', data.immediateDiscount);
+              setImmediateDiscount(data.immediateDiscount);
             }
           }
         } else {
@@ -1617,100 +1589,23 @@ export default function CartPage() {
           }
           
           // 3. 즉시할인 데이터 복원
-          if (data.immediateDiscount && data.products) {
-            const { discountType, discountValue, unitType, appliedProducts } = data.immediateDiscount;
-            const updatedProducts = data.products.map((product: Product) => {
-              if (!appliedProducts.includes(product.product_id)) return product;
-              
-              const basePrice = product.pricing_price || 0;
-              const discountAmount = unitType === '%' 
-                ? basePrice * (discountValue / 100)
-                : discountValue;
-              
-              const newPrice = basePrice - discountAmount;
-              
-              return {
-                ...product,
-                discount_price: newPrice,
-                discount: discountAmount,
-                discount_rate: unitType === '%' ? discountValue : (discountAmount / basePrice) * 100,
-                discount_unit: unitType
-              };
-            });
-            setProducts(updatedProducts);
+          if (data.immediateDiscount) {
+            console.log('즉시할인 정보 복원:', data.immediateDiscount);
+            setImmediateDiscount(data.immediateDiscount);
           }
           
           // 4. 쿠폰 데이터 복원
-          if (data.products) {
-            let updatedProducts = [...data.products];
-            
-            // 쿠폰1 복원
-            if (data.coupon1Discount) {
-              updatedProducts = updatedProducts.map(product => {
-                const couponInfo = data.coupon1Discount.find((c: CouponDiscount) => c.product_id === product.product_id);
-                if (!couponInfo) return product;
-                
-                const basePrice = product[couponInfo.discountBase as keyof Product] as number || 0;
-                const discountAmount = couponInfo.discountType === '%'
-                  ? basePrice * (couponInfo.discountValue / 100)
-                  : couponInfo.discountValue;
-                
-                const newPrice = basePrice - discountAmount;
-                
-                return {
-                  ...product,
-                  coupon_price_1: newPrice,
-                  coupon_discount_1: discountAmount,
-                  coupon_rate_1: couponInfo.discountType === '%' ? couponInfo.discountValue : (discountAmount / basePrice) * 100
-                };
-              });
-            }
-            
-            // 쿠폰2 복원
-            if (data.coupon2Discount) {
-              updatedProducts = updatedProducts.map(product => {
-                const couponInfo = data.coupon2Discount.find((c: CouponDiscount) => c.product_id === product.product_id);
-                if (!couponInfo) return product;
-                
-                const basePrice = product[couponInfo.discountBase as keyof Product] as number || 0;
-                const discountAmount = couponInfo.discountType === '%'
-                  ? basePrice * (couponInfo.discountValue / 100)
-                  : couponInfo.discountValue;
-                
-                const newPrice = basePrice - discountAmount;
-                
-                return {
-                  ...product,
-                  coupon_price_2: newPrice,
-                  coupon_discount_2: discountAmount,
-                  coupon_rate_2: couponInfo.discountType === '%' ? couponInfo.discountValue : (discountAmount / basePrice) * 100
-                };
-              });
-            }
-            
-            // 쿠폰3 복원
-            if (data.coupon3Discount) {
-              updatedProducts = updatedProducts.map(product => {
-                const couponInfo = data.coupon3Discount.find((c: CouponDiscount) => c.product_id === product.product_id);
-                if (!couponInfo) return product;
-                
-                const basePrice = product[couponInfo.discountBase as keyof Product] as number || 0;
-                const discountAmount = couponInfo.discountType === '%'
-                  ? basePrice * (couponInfo.discountValue / 100)
-                  : couponInfo.discountValue;
-                
-                const newPrice = basePrice - discountAmount;
-                
-                return {
-                  ...product,
-                  coupon_price_3: newPrice,
-                  coupon_discount_3: discountAmount,
-                  coupon_rate_3: couponInfo.discountType === '%' ? couponInfo.discountValue : (discountAmount / basePrice) * 100
-                };
-              });
-            }
-            
-            setProducts(updatedProducts);
+          if (data.coupon1Discount) {
+            console.log('쿠폰1 정보 복원:', data.coupon1Discount);
+            setCoupons(prev => ({ ...prev, coupon1: data.coupon1Discount }));
+          }
+          if (data.coupon2Discount) {
+            console.log('쿠폰2 정보 복원:', data.coupon2Discount);
+            setCoupons(prev => ({ ...prev, coupon2: data.coupon2Discount }));
+          }
+          if (data.coupon3Discount) {
+            console.log('쿠폰3 정보 복원:', data.coupon3Discount);
+            setCoupons(prev => ({ ...prev, coupon3: data.coupon3Discount }));
           }
           
           // 5. 기타 데이터 복원
