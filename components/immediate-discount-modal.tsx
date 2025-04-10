@@ -160,16 +160,7 @@ export function ImmediateDiscountModal({
         return product;
       });
 
-      // 먼저 상태 업데이트 및 모달 닫기
-      onApplyDiscount(updatedProducts);
-      console.log('할인 적용 완료:', updatedProducts);
-      
-      setShowDiscountModal(false);
-      toast({
-        description: <div className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5" /> 할인이 적용되었습니다.</div>,
-      });
-
-      // 파이어베이스 저장은 비동기로 처리하고 오류가 발생해도 UI에 영향을 주지 않도록 함
+      // 파이어베이스 저장을 먼저 수행
       if (userId) {
         try {
           console.log('=== 파이어베이스 저장 시작 ===');
@@ -255,6 +246,15 @@ export function ImmediateDiscountModal({
           });
         }
       }
+
+      // 파이어베이스 저장 후 상태 업데이트 및 모달 닫기
+      onApplyDiscount(updatedProducts);
+      console.log('할인 적용 완료:', updatedProducts);
+      
+      setShowDiscountModal(false);
+      toast({
+        description: <div className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5" /> 할인이 적용되었습니다.</div>,
+      });
     } catch (error) {
       console.error('할인 적용 중 오류:', error);
       toast({
