@@ -493,14 +493,39 @@ export default function CartPage() {
    * @param updatedProducts 할인 적용할 상품 목록
    */
   const handleApplyDiscount = useCallback((products: Product[]) => {
-    console.log('handleApplyDiscount 호출됨:', {
-      products
+    console.log('=== handleApplyDiscount 시작 ===');
+    console.log('입력된 상품 목록:', JSON.stringify(products, null, 2));
+
+    // undefined 값이 있는지 확인
+    const hasUndefined = products.some(product => {
+      return Object.entries(product).some(([key, value]) => {
+        if (value === undefined) {
+          console.error(`상품 ${product.product_id}의 ${key} 필드에 undefined 값 발견`);
+          return true;
+        }
+        if (typeof value === 'object' && value !== null) {
+          const hasNestedUndefined = Object.entries(value).some(([nestedKey, nestedValue]) => {
+            if (nestedValue === undefined) {
+              console.error(`상품 ${product.product_id}의 ${key}.${nestedKey} 필드에 undefined 값 발견`);
+              return true;
+            }
+            return false;
+          });
+          if (hasNestedUndefined) return true;
+        }
+        return false;
+      });
     });
+
+    if (hasUndefined) {
+      console.error('undefined 값이 포함된 상품 데이터가 있습니다.');
+      return;
+    }
 
     // 상품 목록 업데이트
     setProducts(products);
 
-    console.log('handleApplyDiscount 완료');
+    console.log('=== handleApplyDiscount 완료 ===');
   }, [setProducts]);
 
   // 탭별 상태 업데이트 핸들러
