@@ -135,11 +135,6 @@ export function DiscountModal({
             newPrice = calculateDiscount(basePrice, state.discountValue, state.roundType, state.decimalPoint);
           } else {
             newPrice = basePrice - state.discountValue;
-            if (state.roundType === 'floor') {
-              newPrice = Math.floor(newPrice / 10) * 10;
-            } else {
-              newPrice = Math.ceil(newPrice / 10) * 10;
-            }
           }
           
           const updatedProduct = { ...product };

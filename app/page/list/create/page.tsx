@@ -502,6 +502,87 @@ export default function CartPage() {
     console.log('=== handleApplyDiscount 시작 ===');
     console.log('입력된 상품:', products);
     setProducts(products);
+    
+    // 쿠폰 할인 데이터를 Firebase에 저장
+    if (user) {
+      try {
+        // 쿠폰 할인 데이터 추출
+        const coupon1Discount = products
+          .filter(p => p.coupon_price_1 !== undefined)
+          .map(p => ({
+            product_id: p.product_id,
+            hurdleTarget: 'discount_price',
+            hurdleAmount: 0,
+            discountBase: 'discount_price',
+            discountType: 'amount' as const,
+            discountValue: Number(p.discount_price) - Number(p.coupon_price_1),
+            roundUnit: 'none',
+            roundType: 'ceil' as const,
+            discountCap: 0,
+            selfRatio: 0,
+            decimalPoint: 'none' as const
+          }));
+          
+        const coupon2Discount = products
+          .filter(p => p.coupon_price_2 !== undefined)
+          .map(p => ({
+            product_id: p.product_id,
+            hurdleTarget: 'coupon_price_1',
+            hurdleAmount: 0,
+            discountBase: 'coupon_price_1',
+            discountType: 'amount' as const,
+            discountValue: Number(p.coupon_price_1) - Number(p.coupon_price_2),
+            roundUnit: 'none',
+            roundType: 'ceil' as const,
+            discountCap: 0,
+            selfRatio: 0,
+            decimalPoint: 'none' as const
+          }));
+          
+        const coupon3Discount = products
+          .filter(p => p.coupon_price_3 !== undefined)
+          .map(p => ({
+            product_id: p.product_id,
+            hurdleTarget: 'coupon_price_2',
+            hurdleAmount: 0,
+            discountBase: 'coupon_price_2',
+            discountType: 'amount' as const,
+            discountValue: Number(p.coupon_price_2) - Number(p.coupon_price_3),
+            roundUnit: 'none',
+            roundType: 'ceil' as const,
+            discountCap: 0,
+            selfRatio: 0,
+            decimalPoint: 'none' as const
+          }));
+        
+        // Firebase에 저장
+        const docRef = doc(db, 'userCarts', user.uid);
+        
+        // undefined 값이 아닌 데이터만 포함하는 객체 생성
+        const couponData: Record<string, any> = {
+          updatedAt: new Date().toISOString()
+        };
+        
+        if (coupon1Discount.length > 0) {
+          couponData.coupon1Discount = coupon1Discount;
+        }
+        
+        if (coupon2Discount.length > 0) {
+          couponData.coupon2Discount = coupon2Discount;
+        }
+        
+        if (coupon3Discount.length > 0) {
+          couponData.coupon3Discount = coupon3Discount;
+        }
+        
+        setDoc(docRef, couponData, { merge: true });
+        
+        console.log('쿠폰 할인 데이터 Firebase 저장 완료');
+      } catch (error) {
+        console.error('쿠폰 할인 데이터 저장 중 오류:', error);
+      }
+    }
+    
     console.log('=== handleApplyDiscount 완료 ===');
   };
 
@@ -1424,15 +1505,66 @@ export default function CartPage() {
     memo3,
     fee_discount: isAdjustFeeEnabled,
     productIds: products.map(p => p.product_id),
-    selectedChannelInfo,
+    selectedChannelInfo: selectedChannelInfo || undefined,
     immediateDiscount: selectedProducts.length > 0 ? {
       discountType: discountType || 'amount',
       discountValue: discountValue || 0,
       unitType: discountUnit || '%',
       appliedProducts: selectedProducts,
       updatedAt: new Date().toISOString()
-    } : undefined
-  }, user);
+    } : null,
+    coupon1Discount: selectedProducts.length > 0 ? selectedProducts.map(productId => {
+      const product = products.find(p => p.product_id === productId);
+      if (!product || product.coupon_price_1 === undefined) return null;
+      return {
+        product_id: productId,
+        hurdleTarget: 'discount_price',
+        hurdleAmount: 0,
+        discountBase: 'discount_price',
+        discountType: 'amount' as const,
+        discountValue: Number(product.discount_price) - Number(product.coupon_price_1),
+        roundUnit: 'none',
+        roundType: 'ceil' as const,
+        discountCap: 0,
+        selfRatio: 0,
+        decimalPoint: 'none' as const
+      };
+    }).filter((item): item is NonNullable<typeof item> => item !== null) : undefined,
+    coupon2Discount: selectedProducts.length > 0 ? selectedProducts.map(productId => {
+      const product = products.find(p => p.product_id === productId);
+      if (!product || product.coupon_price_2 === undefined) return null;
+      return {
+        product_id: productId,
+        hurdleTarget: 'coupon_price_1',
+        hurdleAmount: 0,
+        discountBase: 'coupon_price_1',
+        discountType: 'amount' as const,
+        discountValue: Number(product.coupon_price_1) - Number(product.coupon_price_2),
+        roundUnit: 'none',
+        roundType: 'ceil' as const,
+        discountCap: 0,
+        selfRatio: 0,
+        decimalPoint: 'none' as const
+      };
+    }).filter((item): item is NonNullable<typeof item> => item !== null) : undefined,
+    coupon3Discount: selectedProducts.length > 0 ? selectedProducts.map(productId => {
+      const product = products.find(p => p.product_id === productId);
+      if (!product || product.coupon_price_3 === undefined) return null;
+      return {
+        product_id: productId,
+        hurdleTarget: 'coupon_price_2',
+        hurdleAmount: 0,
+        discountBase: 'coupon_price_2',
+        discountType: 'amount' as const,
+        discountValue: Number(product.coupon_price_2) - Number(product.coupon_price_3),
+        roundUnit: 'none',
+        roundType: 'ceil' as const,
+        discountCap: 0,
+        selfRatio: 0,
+        decimalPoint: 'none' as const
+      };
+    }).filter((item): item is NonNullable<typeof item> => item !== null) : undefined
+  });
 
   // 상품 데이터가 로드된 후 계산을 실행하는 useEffect 추가
   useEffect(() => {
@@ -1537,147 +1669,256 @@ export default function CartPage() {
     return newPrice;
   };
 
+  // 사용자 인증 상태 감지
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user) {
+        setUser({
+          uid: user.uid,
+          email: user.email || undefined
+        });
+      } else {
+        setUser(null);
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   // Firebase에서 데이터 복원
   useEffect(() => {
     const loadSavedData = async () => {
       try {
-        const user = auth.currentUser;
-        if (!user) return;
+        console.log('=== Firebase 데이터 로드 시작 ===');
+        if (!user) {
+          console.log('사용자 정보 없음 - 인증 필요');
+          return;
+        }
 
         const docRef = doc(db, 'userCarts', user.uid);
         const docSnap = await getDoc(docRef);
         
         if (docSnap.exists()) {
           const data = docSnap.data();
+          console.log('Firebase에서 가져온 전체 데이터:', data);
           
-          // 1. 채널 선택 데이터 복원
+          // 1. 채널 정보 복원
           if (data.selectedChannelInfo) {
             console.log('채널 정보 복원:', data.selectedChannelInfo);
             setSelectedChannelInfo(data.selectedChannelInfo);
             setSelectedChannel(data.selectedChannelInfo.channel_name_2);
             setChannelSearchTerm(data.selectedChannelInfo.channel_name_2);
             setFilters(prev => ({ ...prev, channel_name_2: data.selectedChannelInfo.channel_name_2 }));
-            
-            // 채널 정보 기반 계산 실행
-            if (data.products) {
-              const updatedProducts = data.products.map((product: Product) => ({
-                ...product,
-                pricing_price: calculateChannelPrice(product, data.selectedChannelInfo),
-                logistics_cost: calculateLogisticsCost(data.selectedChannelInfo, data.delivery_type || 'conditional', Number(data.selectedChannelInfo.amazon_shipping_cost)),
-                expected_commission_fee: calculateCommissionFee(product, data.selectedChannelInfo, data.fee_discount || false),
-                expected_net_profit: calculateNetProfit(product, data.selectedChannelInfo),
-                expected_settlement_amount: calculateSettlementAmount(product),
-                cost_ratio: calculateCostRatio(product, data.selectedChannelInfo)
-              }));
-              setProducts(updatedProducts);
-            }
           }
           
-          // 2. 배송조건 데이터 복원
-          if (data.delivery_type) {
-            setDeliveryType(data.delivery_type);
-            setFilters(prev => ({ ...prev, delivery_type: data.delivery_type }));
-            
-            // 물류비 재계산
-            if (data.selectedChannelInfo && data.products) {
-              const updatedProducts = data.products.map((product: Product) => ({
-                ...product,
-                logistics_cost: calculateLogisticsCost(data.selectedChannelInfo, data.delivery_type, Number(data.selectedChannelInfo.amazon_shipping_cost))
-              }));
-              setProducts(updatedProducts);
-            }
+          // 2. 상품 데이터 복원
+          if (data.products) {
+            console.log('상품 데이터 복원:', data.products.length);
+            setProducts(data.products);
           }
           
-          // 3. 즉시할인 데이터 복원
+          // 3. 즉시할인 정보 복원
           if (data.immediateDiscount) {
             console.log('즉시할인 정보 복원:', data.immediateDiscount);
             setImmediateDiscount(data.immediateDiscount);
           }
-          
-          // 4. 쿠폰 데이터 복원
+
+          // 4. 쿠폰1 할인 정보 복원
           if (data.coupon1Discount) {
-            console.log('쿠폰1 정보 복원:', data.coupon1Discount);
-            setCoupons(prev => ({ ...prev, coupon1: data.coupon1Discount }));
+            console.log('쿠폰1 정보 복원:', {
+              count: data.coupon1Discount.length,
+              appliedProducts: data.coupon1Discount.map((c: CouponDiscount) => c.product_id),
+              details: data.coupon1Discount
+            });
+            
+            if (data.products) {
+              const updatedProducts = data.products.map((product: Product) => {
+                const coupon1 = data.coupon1Discount.find((c: CouponDiscount) => c.product_id === product.product_id);
+                if (coupon1) {
+                  console.log(`상품 ${product.product_id}의 쿠폰1 할인 계산:`, {
+                    basePrice: coupon1.discountBase,
+                    discountValue: coupon1.discountValue,
+                    roundType: coupon1.roundType,
+                    roundUnit: coupon1.roundUnit,
+                    currentPricingPrice: product.pricing_price,
+                    currentDiscountPrice: product.discount_price
+                  });
+                  
+                  const basePrice = coupon1.discountBase === 'pricing_price' ? product.pricing_price :
+                                  coupon1.discountBase === 'discount_price' ? product.discount_price :
+                                  product.pricing_price;
+                  
+                  console.log(`계산된 기준가격: ${basePrice}`);
+                  
+                  const calculatedPrice = calculateDiscount(
+                    basePrice,
+                    coupon1.discountValue,
+                    coupon1.roundType,
+                    coupon1.roundUnit,
+                    data.selectedChannelInfo
+                  );
+                  
+                  console.log(`최종 계산된 쿠폰1 가격: ${calculatedPrice}`);
+                  
+                  return {
+                    ...product,
+                    coupon_price_1: calculatedPrice
+                  };
+                }
+                return product;
+              });
+              console.log('쿠폰1 할인 계산 완료:', updatedProducts);
+              
+              // 쿠폰1 계산이 완료된 후 상태 업데이트
+              setProducts(prevProducts => {
+                const mergedProducts = prevProducts.map(prevProduct => {
+                  const updatedProduct = updatedProducts.find((p: Product) => p.product_id === prevProduct.product_id);
+                  return updatedProduct ? { ...prevProduct, ...updatedProduct } : prevProduct;
+                });
+                return mergedProducts;
+              });
+
+              // 쿠폰2 계산은 쿠폰1이 적용된 상태에서 진행
+              if (data.coupon2Discount) {
+                console.log('쿠폰2 정보 복원:', {
+                  count: data.coupon2Discount.length,
+                  appliedProducts: data.coupon2Discount.map((c: CouponDiscount) => c.product_id),
+                  details: data.coupon2Discount
+                });
+                
+                const updatedProductsForCoupon2 = updatedProducts.map((product: Product) => {
+                  const coupon2 = data.coupon2Discount.find((c: CouponDiscount) => c.product_id === product.product_id);
+                  if (coupon2) {
+                    console.log(`상품 ${product.product_id}의 쿠폰2 할인 계산:`, {
+                      basePrice: coupon2.discountBase,
+                      discountValue: coupon2.discountValue,
+                      roundType: coupon2.roundType,
+                      roundUnit: coupon2.roundUnit,
+                      currentPricingPrice: product.pricing_price,
+                      currentDiscountPrice: product.discount_price,
+                      coupon1Price: product.coupon_price_1
+                    });
+                    
+                    const basePrice = coupon2.discountBase === 'pricing_price' ? product.pricing_price :
+                                    coupon2.discountBase === 'discount_price' ? product.discount_price :
+                                    coupon2.discountBase === 'coupon_price_1' ? (product.coupon_price_1 || product.discount_price) :
+                                    product.pricing_price;
+                    
+                    console.log(`쿠폰2 기준가격 계산 상세:`, {
+                      discountBase: coupon2.discountBase,
+                      pricingPrice: product.pricing_price,
+                      discountPrice: product.discount_price,
+                      coupon1Price: product.coupon_price_1,
+                      calculatedBasePrice: basePrice
+                    });
+                    
+                    const calculatedPrice = calculateDiscount(
+                      basePrice,
+                      coupon2.discountValue,
+                      coupon2.roundType,
+                      coupon2.roundUnit,
+                      data.selectedChannelInfo
+                    );
+                    
+                    console.log(`최종 계산된 쿠폰2 가격: ${calculatedPrice}`);
+                    
+                    return {
+                      ...product,
+                      coupon_price_2: calculatedPrice
+                    };
+                  }
+                  return product;
+                });
+                console.log('쿠폰2 할인 계산 완료:', updatedProductsForCoupon2);
+                
+                // 쿠폰2 계산이 완료된 후 상태 업데이트
+                setProducts(prevProducts => {
+                  const mergedProducts = prevProducts.map(prevProduct => {
+                    const updatedProduct = updatedProductsForCoupon2.find((p: Product) => p.product_id === prevProduct.product_id);
+                    return updatedProduct ? { ...prevProduct, ...updatedProduct } : prevProduct;
+                  });
+                  return mergedProducts;
+                });
+
+                // 쿠폰3 계산은 쿠폰2가 적용된 상태에서 진행
+                if (data.coupon3Discount) {
+                  console.log('쿠폰3 정보 복원:', {
+                    count: data.coupon3Discount.length,
+                    appliedProducts: data.coupon3Discount.map((c: CouponDiscount) => c.product_id),
+                    details: data.coupon3Discount
+                  });
+                  
+                  const updatedProductsForCoupon3 = updatedProductsForCoupon2.map((product: Product) => {
+                    const coupon3 = data.coupon3Discount.find((c: CouponDiscount) => c.product_id === product.product_id);
+                    if (coupon3) {
+                      console.log(`상품 ${product.product_id}의 쿠폰3 할인 계산:`, {
+                        basePrice: coupon3.discountBase,
+                        discountValue: coupon3.discountValue,
+                        roundType: coupon3.roundType,
+                        roundUnit: coupon3.roundUnit,
+                        currentPricingPrice: product.pricing_price,
+                        currentDiscountPrice: product.discount_price,
+                        coupon1Price: product.coupon_price_1,
+                        coupon2Price: product.coupon_price_2
+                      });
+                      
+                      const basePrice = coupon3.discountBase === 'pricing_price' ? product.pricing_price :
+                                      coupon3.discountBase === 'discount_price' ? product.discount_price :
+                                      coupon3.discountBase === 'coupon_price_1' ? (product.coupon_price_1 || product.discount_price) :
+                                      coupon3.discountBase === 'coupon_price_2' ? (product.coupon_price_2 || product.coupon_price_1 || product.discount_price) :
+                                      product.pricing_price;
+                      
+                      console.log(`쿠폰3 기준가격 계산 상세:`, {
+                        discountBase: coupon3.discountBase,
+                        pricingPrice: product.pricing_price,
+                        discountPrice: product.discount_price,
+                        coupon1Price: product.coupon_price_1,
+                        coupon2Price: product.coupon_price_2,
+                        calculatedBasePrice: basePrice
+                      });
+                      
+                      const calculatedPrice = calculateDiscount(
+                        basePrice,
+                        coupon3.discountValue,
+                        coupon3.roundType,
+                        coupon3.roundUnit,
+                        data.selectedChannelInfo
+                      );
+                      
+                      console.log(`최종 계산된 쿠폰3 가격: ${calculatedPrice}`);
+                      
+                      return {
+                        ...product,
+                        coupon_price_3: calculatedPrice
+                      };
+                    }
+                    return product;
+                  });
+                  console.log('쿠폰3 할인 계산 완료:', updatedProductsForCoupon3);
+                  
+                  // 쿠폰3 계산이 완료된 후 최종 상태 업데이트
+                  setProducts(prevProducts => {
+                    const mergedProducts = prevProducts.map(prevProduct => {
+                      const updatedProduct = updatedProductsForCoupon3.find((p: Product) => p.product_id === prevProduct.product_id);
+                      return updatedProduct ? { ...prevProduct, ...updatedProduct } : prevProduct;
+                    });
+                    return mergedProducts;
+                  });
+                }
+              }
+            }
           }
-          if (data.coupon2Discount) {
-            console.log('쿠폰2 정보 복원:', data.coupon2Discount);
-            setCoupons(prev => ({ ...prev, coupon2: data.coupon2Discount }));
-          }
-          if (data.coupon3Discount) {
-            console.log('쿠폰3 정보 복원:', data.coupon3Discount);
-            setCoupons(prev => ({ ...prev, coupon3: data.coupon3Discount }));
-          }
-          
-          // 5. 기타 데이터 복원
-          if (data.title) setTitle(data.title);
-          if (data.memo1) setMemo1(data.memo1);
-          if (data.memo2) setMemo2(data.memo2);
-          if (data.memo3) setMemo3(data.memo3);
-          if (data.fee_discount !== undefined) setIsAdjustFeeEnabled(data.fee_discount);
         }
       } catch (error) {
-        console.error('데이터 로드 중 오류 발생:', error);
-        toast({
-          description: <div className="flex items-center gap-2"><CircleAlert className="h-5 w-5" /> 저장된 데이터를 불러오는 중 오류가 발생했습니다.</div>,
-          variant: "destructive"
-        });
+        console.error('데이터 복원 중 오류 발생:', error);
       }
     };
 
-    loadSavedData();
-  }, []);
-
-  // 계산 함수 사용 부분 수정
-  const calculateProductValues = (product: Product) => {
-    if (!selectedChannelInfo) return;
-
-    // 기본 원가 계산
-    const baseCost = calculateBaseCost(product, selectedChannelInfo);
-    
-    // 할인율 계산
-    const immediateDiscountRate = calculateImmediateDiscountRate(product);
-    const coupon1DiscountRate = calculateCoupon1DiscountRate(product);
-    const coupon2DiscountRate = calculateCoupon2DiscountRate(product);
-    const coupon3DiscountRate = calculateCoupon3DiscountRate(product);
-    const finalDiscountRate = calculateFinalDiscountRate(product);
-    
-    // 조정된 원가 계산
-    const adjustedCost = calculateAdjustedCost(product);
-    
-    // 수수료 계산
-    const commissionFee = calculateCommissionFee(product, selectedChannelInfo, isAdjustFeeEnabled);
-    const adjustedFeeRate = calculateAdjustedFeeRate(product, selectedChannelInfo, isAdjustFeeEnabled);
-    
-    // 물류비 계산
-    const logisticsCost = calculateLogisticsCost(selectedChannelInfo, deliveryType, selectedChannelInfo.amazon_shipping_cost || 0);
-    
-    // 순이익 계산
-    const netProfit = calculateNetProfit(product, selectedChannelInfo);
-    const profitMargin = calculateProfitMargin(product, selectedChannelInfo);
-    
-    // 정산금액 계산
-    const settlementAmount = calculateSettlementAmount(product);
-    
-    // 원가율 계산
-    const costRatio = calculateCostRatio(product, selectedChannelInfo);
-
-    return {
-      baseCost,
-      immediateDiscountRate,
-      coupon1DiscountRate,
-      coupon2DiscountRate,
-      coupon3DiscountRate,
-      finalDiscountRate,
-      adjustedCost,
-      commissionFee,
-      adjustedFeeRate,
-      logisticsCost,
-      netProfit,
-      profitMargin,
-      settlementAmount,
-      costRatio
-    };
-  };
+    if (user) {
+      loadSavedData();
+    }
+  }, [user]);
 
   return (
     <ToastProvider>
