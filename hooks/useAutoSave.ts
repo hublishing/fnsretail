@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { ChannelInfo } from '@/app/types/cart';
@@ -69,6 +69,7 @@ interface User {
 export const useAutoSave = (data: AutoSaveData, currentUser: User | null) => {
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const prevDataRef = useRef(data);
 
   const saveToFirestore = useCallback(async () => {
     if (!currentUser?.uid) return;
@@ -105,9 +106,45 @@ export const useAutoSave = (data: AutoSaveData, currentUser: User | null) => {
 
   // 데이터가 변경될 때마다 자동 저장
   useEffect(() => {
-    if (currentUser?.uid) {
+    // immediateDiscount 필드에서 updatedAt을 제외하고 비교
+    const compareImmediateDiscount = (prev: any, curr: any) => {
+      if (!prev && !curr) return true;
+      if (!prev || !curr) return false;
+      
+      return (
+        prev.discountType === curr.discountType &&
+        prev.discountValue === curr.discountValue &&
+        prev.unitType === curr.unitType &&
+        JSON.stringify(prev.appliedProducts) === JSON.stringify(curr.appliedProducts)
+      );
+    };
+    
+    // immediateDiscount 필드가 실제로 변경되었는지 확인 (updatedAt 제외)
+    const immediateDiscountChanged = !compareImmediateDiscount(
+      prevDataRef.current.immediateDiscount,
+      data.immediateDiscount
+    );
+    
+    // 다른 필드가 변경되었는지 확인
+    const otherFieldsChanged = 
+      JSON.stringify({
+        ...prevDataRef.current,
+        immediateDiscount: undefined
+      }) !== 
+      JSON.stringify({
+        ...data,
+        immediateDiscount: undefined
+      });
+    
+    if (currentUser?.uid && (immediateDiscountChanged || otherFieldsChanged)) {
+      console.log('데이터 변경 감지, 저장 시작', {
+        immediateDiscountChanged,
+        otherFieldsChanged
+      });
       debouncedSave();
+      prevDataRef.current = data;
     }
+    
     return () => {
       debouncedSave.cancel();
     };

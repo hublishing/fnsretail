@@ -190,9 +190,7 @@ export function ImmediateDiscountModal({
               discountValue: discountState.discountValue,
               unitType: discountState.unitType,
               appliedProducts: selectedProducts,
-              updatedAt: new Date().toISOString()
             },
-            updatedAt: new Date().toISOString()
           };
           
           console.log('저장할 데이터:', saveData);
