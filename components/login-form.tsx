@@ -32,7 +32,7 @@ export function LoginForm({ formAction, error }: LoginFormProps) {
             required
           />
         </div>
-        <div className="space-y-2">
+        <div className="space-y-2 pb-4">
           <label htmlFor="password" className="text-sm font-medium">
             비밀번호
           </label>
