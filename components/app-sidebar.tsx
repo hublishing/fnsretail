@@ -88,19 +88,33 @@ const list = [
   },
 ]
 
-const information = [
-    {
-      title: "마이페이지",
-      href: "/page/my-page",
-      icon: User,
-    },
-    {
-        title: "패치노트",
-        href: "/page/patch-notes",
-        icon: History,
-    },
+const mypage = [
+  {
+    title: "마이페이지",
+    href: "#",
+    icon: List,
+    isActive: false,
+    items: [
+      {
+        title: "리스트",
+        url: "#",
+      },
+      {
+        title: "채널업로드",
+        url: "/page/mypage/upload-channel",
+      },
+    ],
+  },
 ]
 
+
+const information = [
+  {
+      title: "패치노트",
+      href: "/page/patch-notes",
+      icon: History,
+  },
+]
  
 
 
@@ -194,6 +208,46 @@ export function AppSidebar() {
                 <SidebarGroupContent>
                     <SidebarMenu>
                     {list.map((item) => (
+                        <Collapsible
+                          key={item.title}
+                          asChild
+                          defaultOpen={item.isActive}
+                          className="group/collapsible"
+                        >
+                          <SidebarMenuItem>
+                            <CollapsibleTrigger asChild>
+                              <SidebarMenuButton tooltip={item.title}>
+                                {item.icon && <item.icon />}
+                                <span>{item.title}</span>
+                                {item.items && (
+                                  <ChevronRightIcon className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                                )}
+                              </SidebarMenuButton>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent>
+                              <SidebarMenu className="border-sidebar-border mx-3.5 flex min-w-0 translate-x-px flex-col gap-1 border-l px-2.5 py-0.5 group-data-[collapsible=icon]:hidden">
+                                {item.items?.map((subItem) => (
+                                  <SidebarMenuItem key={subItem.title}>
+                                    <SidebarMenuButton asChild>
+                                      <a href={subItem.url}>
+                                        <span>{subItem.title}</span>
+                                      </a>
+                                    </SidebarMenuButton>
+                                  </SidebarMenuItem>
+                                ))}
+                              </SidebarMenu>
+                            </CollapsibleContent>
+                          </SidebarMenuItem>
+                        </Collapsible>
+                      ))}
+                    </SidebarMenu>
+                </SidebarGroupContent>
+            </SidebarGroup>
+            <SidebarGroup>
+                <SidebarGroupLabel>Product</SidebarGroupLabel>
+                <SidebarGroupContent>
+                    <SidebarMenu>
+                    {mypage.map((item) => (
                         <Collapsible
                           key={item.title}
                           asChild
