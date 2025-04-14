@@ -21,6 +21,7 @@ import { Product, ChannelInfo } from '@/app/types/cart'
 import { calculateDiscount } from '@/app/utils/calculations/common'
 import { useToast } from "@/components/ui/use-toast"
 import { CheckCircle2 } from "lucide-react"
+import { Switch } from "@/components/ui/switch"
 
 // 숫자 포맷팅 유틸리티 함수 추가
 const formatNumber = (value: number | string): string => {
@@ -44,6 +45,19 @@ export interface TabState {
   discountCap: number
   discountCapType: 'max' | 'fixed'
   decimalPoint: '0.01' | '0.1' | '1' | 'none'
+  isDoubleCoupon: boolean
+  secondCoupon: {
+    hurdleTarget: string
+    hurdleAmount: number
+    discountBase: string
+    discountType: DiscountType
+    discountValue: number
+    selfRatio: number
+    roundType: 'floor' | 'ceil' | 'round'
+    discountCap: number
+    discountCapType: 'max' | 'fixed'
+    decimalPoint: '0.01' | '0.1' | '1' | 'none'
+  }
 }
 
 interface DiscountModalProps {
@@ -86,7 +100,20 @@ export function DiscountModal({
       roundType: 'ceil',
       discountCap: 0,
       discountCapType: 'max',
-      decimalPoint: 'none'
+      decimalPoint: 'none',
+      isDoubleCoupon: false,
+      secondCoupon: {
+        hurdleTarget: 'discount_price',
+        hurdleAmount: 0,
+        discountBase: 'discount_price',
+        discountType: 'amount',
+        discountValue: 0,
+        selfRatio: 0,
+        roundType: 'ceil',
+        discountCap: 0,
+        discountCapType: 'max',
+        decimalPoint: 'none'
+      }
     },
     tab2: {
       hurdleTarget: 'coupon_price_1',
@@ -98,7 +125,20 @@ export function DiscountModal({
       roundType: 'ceil',
       discountCap: 0,
       discountCapType: 'max',
-      decimalPoint: 'none'
+      decimalPoint: 'none',
+      isDoubleCoupon: false,
+      secondCoupon: {
+        hurdleTarget: 'discount_price',
+        hurdleAmount: 0,
+        discountBase: 'discount_price',
+        discountType: 'amount',
+        discountValue: 0,
+        selfRatio: 0,
+        roundType: 'ceil',
+        discountCap: 0,
+        discountCapType: 'max',
+        decimalPoint: 'none'
+      }
     },
     tab3: {
       hurdleTarget: 'coupon_price_2',
@@ -110,7 +150,20 @@ export function DiscountModal({
       roundType: 'ceil',
       discountCap: 0,
       discountCapType: 'max',
-      decimalPoint: 'none'
+      decimalPoint: 'none',
+      isDoubleCoupon: false,
+      secondCoupon: {
+        hurdleTarget: 'discount_price',
+        hurdleAmount: 0,
+        discountBase: 'discount_price',
+        discountType: 'amount',
+        discountValue: 0,
+        selfRatio: 0,
+        roundType: 'ceil',
+        discountCap: 0,
+        discountCapType: 'max',
+        decimalPoint: 'none'
+      }
     }
   })
 
@@ -148,27 +201,71 @@ export function DiscountModal({
       const updatedProducts = currentProducts.map(product => {
         if (selectedProducts.includes(product.product_id)) {
           const basePrice = Number(product[state.discountBase as keyof Product]) || 0;
-          let newPrice;
+          let newPrice = basePrice;
           
-          if (state.discountType === 'rate') {
-            // 할인율로 계산한 금액
-            const calculatedDiscount = calculateDiscount(basePrice, state.discountValue, state.roundType, state.decimalPoint);
-            const discountAmount = basePrice - calculatedDiscount;
+          // 이중쿠폰이 활성화된 경우
+          if (state.isDoubleCoupon) {
+            const firstBasePrice = Number(product[state.discountBase as keyof Product]) || 0;
+            const secondBasePrice = Number(product[state.secondCoupon.discountBase as keyof Product]) || 0;
             
-            // discountCapType에 따른 최종 할인금액 결정
-            if (state.discountCapType === 'max') {
-              // 최대 할인금액 제한
-              newPrice = Math.max(basePrice - state.discountCap, calculatedDiscount);
-            } else {
-              // 고정 할인금액 적용
-              if (discountAmount > state.discountCap) {
-                newPrice = calculatedDiscount;
+            // 첫 번째 쿠폰의 기준금액 범위 체크
+            if (firstBasePrice >= state.hurdleAmount && firstBasePrice < state.secondCoupon.hurdleAmount) {
+              // 첫 번째 쿠폰 적용
+              if (state.discountType === 'rate') {
+                const calculatedDiscount = calculateDiscount(firstBasePrice, state.discountValue, state.roundType, state.decimalPoint);
+                const discountAmount = firstBasePrice - calculatedDiscount;
+                
+                if (state.discountCapType === 'max') {
+                  newPrice = Math.max(firstBasePrice - state.discountCap, calculatedDiscount);
+                } else {
+                  if (discountAmount > state.discountCap) {
+                    newPrice = calculatedDiscount;
+                  } else {
+                    newPrice = firstBasePrice - state.discountCap;
+                  }
+                }
               } else {
-                newPrice = basePrice - state.discountCap;
+                newPrice = firstBasePrice - state.discountValue;
+              }
+            }
+            // 두 번째 쿠폰의 기준금액 범위 체크
+            else if (secondBasePrice >= state.secondCoupon.hurdleAmount) {
+              // 두 번째 쿠폰 적용
+              if (state.secondCoupon.discountType === 'rate') {
+                const secondCalculatedDiscount = calculateDiscount(secondBasePrice, state.secondCoupon.discountValue, state.secondCoupon.roundType, state.secondCoupon.decimalPoint);
+                const secondDiscountAmount = secondBasePrice - secondCalculatedDiscount;
+                
+                if (state.secondCoupon.discountCapType === 'max') {
+                  newPrice = Math.max(secondBasePrice - state.secondCoupon.discountCap, secondCalculatedDiscount);
+                } else {
+                  if (secondDiscountAmount > state.secondCoupon.discountCap) {
+                    newPrice = secondCalculatedDiscount;
+                  } else {
+                    newPrice = secondBasePrice - state.secondCoupon.discountCap;
+                  }
+                }
+              } else {
+                newPrice = secondBasePrice - state.secondCoupon.discountValue;
               }
             }
           } else {
-            newPrice = basePrice - state.discountValue;
+            // 단일 쿠폰 적용
+            if (state.discountType === 'rate') {
+              const calculatedDiscount = calculateDiscount(basePrice, state.discountValue, state.roundType, state.decimalPoint);
+              const discountAmount = basePrice - calculatedDiscount;
+              
+              if (state.discountCapType === 'max') {
+                newPrice = Math.max(basePrice - state.discountCap, calculatedDiscount);
+              } else {
+                if (discountAmount > state.discountCap) {
+                  newPrice = calculatedDiscount;
+                } else {
+                  newPrice = basePrice - state.discountCap;
+                }
+              }
+            } else {
+              newPrice = basePrice - state.discountValue;
+            }
           }
           
           const updatedProduct = { ...product };
@@ -447,6 +544,237 @@ export function DiscountModal({
                         <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
                       </div>
                     </div>
+
+                    {/* 이중쿠폰 스위치 */}
+                    <div className="flex items-center gap-2">
+                      <Label className="w-[110px]">이중쿠폰</Label>
+                      <Switch
+                        checked={getCurrentTabState().isDoubleCoupon}
+                        onCheckedChange={(checked) => handleTabStateChange('tab1', 'isDoubleCoupon', checked)}
+                      />
+                    </div>
+
+                    {/* 두 번째 쿠폰 입력창 */}
+                    {getCurrentTabState().isDoubleCoupon && (
+                      <>
+                        <div className="border-t pt-4 mt-4">
+                          <div className="flex items-center gap-2">
+                            <Label className="w-[110px]">사용가능 기준금액</Label>
+                            <Select
+                              value={getCurrentTabState().secondCoupon.hurdleTarget}
+                              onValueChange={(value: string) => handleTabStateChange('tab1', 'secondCoupon', {
+                                ...getCurrentTabState().secondCoupon,
+                                hurdleTarget: value
+                              })}
+                            >
+                              <SelectTrigger className="w-[150px] h-10">
+                                <SelectValue placeholder="기준금액 선택" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="pricing_price">채널별판매가</SelectItem>
+                                <SelectItem value="discount_price">즉시할인가</SelectItem>
+                                <SelectItem value="coupon_price_1">쿠폰적용가1</SelectItem>
+                                <SelectItem value="coupon_price_2">쿠폰적용가2</SelectItem>
+                                <SelectItem value="coupon_price_3">쿠폰적용가3</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Label className="w-[110px] ml-4">기준금액 (원 이상)</Label>
+                            <div className="relative">
+                              <Input
+                                type="text"
+                                value={formatNumber(getCurrentTabState().secondCoupon.hurdleAmount)}
+                                onChange={(e) => handleTabStateChange('tab1', 'secondCoupon', {
+                                  ...getCurrentTabState().secondCoupon,
+                                  hurdleAmount: parseNumber(e.target.value)
+                                })}
+                                className="w-[100px] h-10"
+                                placeholder="예: 50000"
+                              />
+                              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">원</span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 mt-4">
+                            <Label className="w-[110px]">할인적용 기준금액</Label>
+                            <Select
+                              value={getCurrentTabState().secondCoupon.discountBase}
+                              onValueChange={(value: string) => handleTabStateChange('tab1', 'secondCoupon', {
+                                ...getCurrentTabState().secondCoupon,
+                                discountBase: value
+                              })}
+                            >
+                              <SelectTrigger className="w-[150px] h-10">
+                                <SelectValue placeholder="기준금액 선택" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="pricing_price">채널별판매가</SelectItem>
+                                <SelectItem value="discount_price">즉시할인가</SelectItem>
+                                <SelectItem value="coupon_price_1">쿠폰적용가1</SelectItem>
+                                <SelectItem value="coupon_price_2">쿠폰적용가2</SelectItem>
+                                <SelectItem value="coupon_price_3">쿠폰적용가3</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Label className="w-[110px] ml-4">할인 구분</Label>
+                            <Select
+                              value={getCurrentTabState().secondCoupon.discountType}
+                              onValueChange={(value: DiscountType) => handleTabStateChange('tab1', 'secondCoupon', {
+                                ...getCurrentTabState().secondCoupon,
+                                discountType: value
+                              })}
+                            >
+                              <SelectTrigger className="w-[100px] h-10">
+                                <SelectValue placeholder="할인 구분" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="amount">할인금액</SelectItem>
+                                <SelectItem value="rate">할인율</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          {/* 할인금액 입력 필드 */}
+                          {getCurrentTabState().secondCoupon.discountType === 'amount' && (
+                            <div className="flex items-center gap-2 mt-4">
+                              <Label className="w-[110px]">할인금액</Label>
+                              <div className="relative">
+                                <Input
+                                  type="text"
+                                  value={formatNumber(getCurrentTabState().secondCoupon.discountValue)}
+                                  onChange={(e) => handleTabStateChange('tab1', 'secondCoupon', {
+                                    ...getCurrentTabState().secondCoupon,
+                                    discountValue: parseNumber(e.target.value)
+                                  })}
+                                  className="w-[150px] h-10"
+                                  placeholder="할인금액 입력"
+                                />
+                                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">원</span>
+                              </div>
+
+                              <Label className="w-[110px] ml-4">자사부담</Label>
+                              <div className="relative">
+                                <Input
+                                  type="text"
+                                  value={formatNumber(getCurrentTabState().secondCoupon.selfRatio)}
+                                  onChange={(e) => handleTabStateChange('tab1', 'secondCoupon', {
+                                    ...getCurrentTabState().secondCoupon,
+                                    selfRatio: parseNumber(e.target.value)
+                                  })}
+                                  className="w-[100px] h-10"
+                                  placeholder="%"
+                                />
+                                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* 할인율 입력 필드 */}
+                          {getCurrentTabState().secondCoupon.discountType === 'rate' && (
+                            <>
+                              <div className="flex items-center gap-2 mt-4">
+                                <Label className="w-[110px]">할인율</Label>
+                                <div className="relative">
+                                  <Input
+                                    type="text"
+                                    value={formatNumber(getCurrentTabState().secondCoupon.discountValue)}
+                                    onChange={(e) => handleTabStateChange('tab1', 'secondCoupon', {
+                                      ...getCurrentTabState().secondCoupon,
+                                      discountValue: parseNumber(e.target.value)
+                                    })}
+                                    className="w-[100px] h-10"
+                                    placeholder="할인율 입력"
+                                  />
+                                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
+                                </div>
+
+                                <Select
+                                  value={getCurrentTabState().secondCoupon.decimalPoint}
+                                  onValueChange={(value: '0.01' | '0.1' | '1' | 'none') => handleTabStateChange('tab1', 'secondCoupon', {
+                                    ...getCurrentTabState().secondCoupon,
+                                    decimalPoint: value
+                                  })}
+                                >
+                                  <SelectTrigger className="w-[100px] h-10">
+                                    <SelectValue placeholder="소수점" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="none">소수점</SelectItem>
+                                    <SelectItem value="0.01">0.01</SelectItem>
+                                    <SelectItem value="0.1">0.1</SelectItem>
+                                    <SelectItem value="1">1</SelectItem>
+                                  </SelectContent>
+                                </Select>
+
+                                {getCurrentTabState().secondCoupon.decimalPoint !== 'none' && (
+                                  <Select
+                                    value={getCurrentTabState().secondCoupon.roundType}
+                                    onValueChange={(value: 'floor' | 'ceil' | 'round') => handleTabStateChange('tab1', 'secondCoupon', {
+                                      ...getCurrentTabState().secondCoupon,
+                                      roundType: value
+                                    })}
+                                  >
+                                    <SelectTrigger className="w-[100px] h-10">
+                                      <SelectValue placeholder="반올림" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="ceil">올림</SelectItem>
+                                      <SelectItem value="floor">내림</SelectItem>
+                                      <SelectItem value="round">반올림</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                )}
+                              </div>
+
+                              <div className="flex items-center gap-2 mt-4">
+                                <Select
+                                  value={getCurrentTabState().secondCoupon.discountCapType}
+                                  onValueChange={(value) => handleTabStateChange('tab1', 'secondCoupon', {
+                                    ...getCurrentTabState().secondCoupon,
+                                    discountCapType: value
+                                  })}
+                                >
+                                  <SelectTrigger className="w-[80px]">
+                                    <SelectValue placeholder="선택" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="max">최대</SelectItem>
+                                    <SelectItem value="fixed">고정</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <Label className="w-[120px]">할인금액</Label>
+                                <div className="relative">
+                                  <Input
+                                    type="text"
+                                    value={formatNumber(getCurrentTabState().secondCoupon.discountCap)}
+                                    onChange={(e) => handleTabStateChange('tab1', 'secondCoupon', {
+                                      ...getCurrentTabState().secondCoupon,
+                                      discountCap: parseNumber(e.target.value)
+                                    })}
+                                    className="w-[100px] h-10"
+                                    placeholder="할인금액"
+                                  />
+                                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">원</span>
+                                </div>
+
+                                <Label className="w-[110px] ml-4">자사부담</Label>
+                                <div className="relative">
+                                  <Input
+                                    type="text"
+                                    value={formatNumber(getCurrentTabState().secondCoupon.selfRatio)}
+                                    onChange={(e) => handleTabStateChange('tab1', 'secondCoupon', {
+                                      ...getCurrentTabState().secondCoupon,
+                                      selfRatio: parseNumber(e.target.value)
+                                    })}
+                                    className="w-[100px] h-10"
+                                    placeholder="%"
+                                  />
+                                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
+                                </div>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </>
+                    )}
                   </>
                 )}
               </div> 
