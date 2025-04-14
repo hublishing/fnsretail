@@ -589,13 +589,16 @@ export default function DynamicTable() {
       if (docSnap.exists()) {
         const data = docSnap.data();
         const currentProductIds = data.productIds || [];
+        const currentProducts = data.products || [];
         
         // 해당 상품 ID 제거
         const updatedProductIds = currentProductIds.filter((id: string) => id !== product.product_id);
+        const updatedProducts = currentProducts.filter((p: Product) => p.product_id !== product.product_id);
         
         // Firestore 업데이트
         await setDoc(docRef, {
           productIds: updatedProductIds,
+          products: updatedProducts,
           updatedAt: new Date().toISOString()
         });
 
@@ -668,7 +671,9 @@ export default function DynamicTable() {
         total_order_qty: product.total_order_qty,
         img_desc1: product.img_desc1,
         category_3: product.category_3,
-        brand: product.brand
+        brand: product.brand,
+        category_1: product.category_1,
+        extra_column2: product.extra_column2
       }));
 
       // Firestore 업데이트

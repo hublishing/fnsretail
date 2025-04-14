@@ -1930,9 +1930,14 @@ export default function CartPage() {
             <div className="flex flex-col gap-6">
               <div className="text-sm text-gray-500">
                 <span className="mr-4">UUID : {listUuid}</span>
-                <span className="mr-4">작성자 : {user?.uid === 'a8mwwycqhaZLIb9iOcshPbpAVrj2' ? '한재훈' :
+                <span className="mr-4">작성자 : 
+                {user?.uid === 'a8mwwycqhaZLIb9iOcshPbpAVrj2' ? '한재훈' :
                  user?.uid === 'MhMI2KxbxkPHIAJP0o4sPSZG35e2' ? '이세명' :
-                 user?.uid === '6DnflkbFSifLCNVQGWGv7aqJ2w72' ? '박연수' : ''}</span>
+                 user?.uid === '6DnflkbFSifLCNVQGWGv7aqJ2w72' ? '박연수' : 
+                 user?.uid === 'XXiPzREDqeYEixyYZ0WKhhmlB5j1' ? '정가분' : 
+                 user?.uid === 'NGqyl33oZHWB1lLmOLAK5DsRy5p1' ? '장아람' : 
+                 user?.uid === 'f5zfSKJkMGZoVtEWrvICx1ELfRv2' ? '박경선' : 
+                 ''}</span>
                 <span className="mr-4">상품 : {products.length}개</span>
                 {selectedChannelInfo?.average_fee_rate && (<span className="mr-4 rounded-md shadow-sm bg-muted px-2 py-1">평균수수료 : {parseFloat(selectedChannelInfo.average_fee_rate).toFixed(1)}%</span>)}
                 {products.length > 0 && (

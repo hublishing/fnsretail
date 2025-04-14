@@ -22,6 +22,15 @@ import { calculateDiscount } from '@/app/utils/calculations/common'
 import { useToast } from "@/components/ui/use-toast"
 import { CheckCircle2 } from "lucide-react"
 
+// 숫자 포맷팅 유틸리티 함수 추가
+const formatNumber = (value: number | string): string => {
+  return Number(value).toLocaleString('ko-KR');
+};
+
+const parseNumber = (value: string): number => {
+  return Number(value.replace(/,/g, ''));
+};
+
 type DiscountType = 'amount' | 'rate'
 
 export interface TabState {
@@ -118,6 +127,12 @@ export function DiscountModal({
       }
     }))
   }
+
+  // 숫자 입력 핸들러 추가
+  const handleNumberChange = (tab: string, field: keyof TabState, value: string) => {
+    const parsedValue = parseNumber(value);
+    handleTabStateChange(tab, field, parsedValue);
+  };
 
   const handleApplyDiscount = async (type: 'coupon1' | 'coupon2' | 'coupon3', state: TabState) => {
     try {
@@ -251,13 +266,16 @@ export function DiscountModal({
                     </SelectContent>
                   </Select> 
                   <Label className="w-[110px] ml-4">기준금액 (원 이상)</Label>
-                  <Input
-                    type="number"
-                    value={getCurrentTabState().hurdleAmount}
-                    onChange={(e) => handleTabStateChange('tab1', 'hurdleAmount', Number(e.target.value))}
-                    className="w-[100px] h-10"
-                    placeholder="예: 50000"
-                  />
+                  <div className="relative">
+                    <Input
+                      type="text"
+                      value={formatNumber(getCurrentTabState().hurdleAmount)}
+                      onChange={(e) => handleNumberChange('tab1', 'hurdleAmount', e.target.value)}
+                      className="w-[100px] h-10"
+                      placeholder="예: 50000"
+                    />
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">원</span>
+                  </div>
                 </div>
 
                 {/* 할인 적용 기준금액 및 할인 구분 */}
@@ -296,23 +314,29 @@ export function DiscountModal({
                 {/* 할인금액 입력 필드 */}
                 {getCurrentTabState().discountType === 'amount' && (
                   <div className="flex items-center gap-2">
-                    <Label className="w-[110px]">할인금액 (원)</Label>
-                    <Input
-                      type="number"
-                      value={getCurrentTabState().discountValue}
-                      onChange={(e) => handleTabStateChange('tab1', 'discountValue', Number(e.target.value))}
-                      className="w-[150px] h-10"
-                      placeholder="할인금액 입력"
-                    />
+                    <Label className="w-[110px]">할인금액</Label>
+                    <div className="relative">
+                      <Input
+                        type="text"
+                        value={formatNumber(getCurrentTabState().discountValue)}
+                        onChange={(e) => handleNumberChange('tab1', 'discountValue', e.target.value)}
+                        className="w-[150px] h-10"
+                        placeholder="할인금액 입력"
+                      />
+                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">원</span>
+                    </div>
+
                     <Label className="w-[110px] ml-4">자사부담</Label>
-                    <Input
-                      type="number"
-                      value={getCurrentTabState().selfRatio}
-                      onChange={(e) => handleTabStateChange('tab1', 'selfRatio', Number(e.target.value))}
-                      className="w-[100px] h-10"
-                      placeholder="%"
-                    />
-                    <span className="text-sm text-muted-foreground">%</span>
+                    <div className="relative">
+                      <Input
+                        type="text"
+                        value={formatNumber(getCurrentTabState().selfRatio)}
+                        onChange={(e) => handleNumberChange('tab1', 'selfRatio', e.target.value)}
+                        className="w-[100px] h-10"
+                        placeholder="%"
+                      />
+                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
+                    </div>
                   </div>
                 )}
 
@@ -320,15 +344,18 @@ export function DiscountModal({
                 {getCurrentTabState().discountType === 'rate' && (
                   <>
                     <div className="flex items-center gap-2">
-                      <Label className="w-[110px]">할인율 (%)</Label>
-                      <Input
-                        type="number"
-                        value={getCurrentTabState().discountValue}
-                        onChange={(e) => handleTabStateChange('tab1', 'discountValue', Number(e.target.value))}
-                        className="w-[100px] h-10"
-                        placeholder="할인율 입력"
-                      />
-                      <span className="text-sm text-muted-foreground">%</span>
+                      <Label className="w-[110px]">할인율</Label>
+                      <div className="relative">
+                        <Input
+                          type="text"
+                          value={formatNumber(getCurrentTabState().discountValue)}
+                          onChange={(e) => handleNumberChange('tab1', 'discountValue', e.target.value)}
+                          className="w-[100px] h-10"
+                          placeholder="할인율 입력"
+                        />
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
+                      </div>
+
                       {getCurrentTabState().discountType === 'rate' && (
                         <> 
                           <Select
@@ -365,23 +392,30 @@ export function DiscountModal({
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <Label className="w-[110px]">최대 할인금액 (원)</Label>
-                      <Input
-                        type="number"
-                        value={getCurrentTabState().discountCap}
-                        onChange={(e) => handleTabStateChange('tab1', 'discountCap', Number(e.target.value))}
-                        className="w-[100px] h-10"
-                        placeholder="최대 할인금액"
-                      />
-                      <Label className="w-[110px] ml-4">자사부담 (%)</Label>
-                      <Input
-                        type="number"
-                        value={getCurrentTabState().selfRatio}
-                        onChange={(e) => handleTabStateChange('tab1', 'selfRatio', Number(e.target.value))}
-                        className="w-[100px] h-10"
-                        placeholder="%"
-                      />
-                      <span className="text-sm text-muted-foreground">%</span>
+                      <Label className="w-[110px]">최대 할인금액</Label>
+                      <div className="relative">
+                        <Input
+                          type="text"
+                          value={formatNumber(getCurrentTabState().discountCap)}
+                          onChange={(e) => handleNumberChange('tab1', 'discountCap', e.target.value)}
+                          className="w-[100px] h-10"
+                          placeholder="최대 할인금액"
+                        />
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">원</span>
+                      </div>
+
+                      <Label className="w-[110px] ml-4">자사부담</Label>
+                      
+                      <div className="relative">
+                        <Input
+                          type="text"
+                          value={formatNumber(getCurrentTabState().selfRatio)}
+                          onChange={(e) => handleNumberChange('tab1', 'selfRatio', e.target.value)}
+                          className="w-[100px] h-10"
+                          placeholder="%"
+                        />
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
+                      </div>
                     </div>
                   </>
                 )}
@@ -414,13 +448,16 @@ export function DiscountModal({
                     </SelectContent>
                   </Select> 
                   <Label className="w-[110px] ml-4">기준금액 (원 이상)</Label>
-                  <Input
-                    type="number"
-                    value={getCurrentTabState().hurdleAmount}
-                    onChange={(e) => handleTabStateChange('tab2', 'hurdleAmount', Number(e.target.value))}
-                    className="w-[100px] h-10"
-                    placeholder="예: 50000"
-                  />
+                  <div className="relative">
+                    <Input
+                      type="text"
+                      value={formatNumber(getCurrentTabState().hurdleAmount)}
+                      onChange={(e) => handleNumberChange('tab2', 'hurdleAmount', e.target.value)}
+                      className="w-[100px] h-10"
+                      placeholder="예: 50000"
+                    />
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">원</span>
+                  </div>
                 </div>
 
                 {/* 할인 적용 기준금액 및 할인 구분 */}
@@ -459,23 +496,29 @@ export function DiscountModal({
                 {/* 할인금액 입력 필드 */}
                 {getCurrentTabState().discountType === 'amount' && (
                   <div className="flex items-center gap-2">
-                    <Label className="w-[110px]">할인금액 (원)</Label>
-                    <Input
-                      type="number"
-                      value={getCurrentTabState().discountValue}
-                      onChange={(e) => handleTabStateChange('tab2', 'discountValue', Number(e.target.value))}
-                      className="w-[150px] h-10"
-                      placeholder="할인금액 입력"
-                    />
+                    <Label className="w-[110px]">할인금액</Label>
+                    <div className="relative">
+                      <Input
+                        type="text"
+                        value={formatNumber(getCurrentTabState().discountValue)}
+                        onChange={(e) => handleNumberChange('tab2', 'discountValue', e.target.value)}
+                        className="w-[150px] h-10"
+                        placeholder="할인금액 입력"
+                      />
+                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">원</span>
+                    </div>
+
                     <Label className="w-[110px] ml-4">자사부담</Label>
-                    <Input
-                      type="number"
-                      value={getCurrentTabState().selfRatio}
-                      onChange={(e) => handleTabStateChange('tab2', 'selfRatio', Number(e.target.value))}
-                      className="w-[100px] h-10"
-                      placeholder="%"
-                    />
-                    <span className="text-sm text-muted-foreground">%</span>
+                    <div className="relative">
+                      <Input
+                        type="text"
+                        value={formatNumber(getCurrentTabState().selfRatio)}
+                        onChange={(e) => handleNumberChange('tab2', 'selfRatio', e.target.value)}
+                        className="w-[100px] h-10"
+                        placeholder="%"
+                      />
+                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
+                    </div>
                   </div>
                 )}
 
@@ -483,15 +526,18 @@ export function DiscountModal({
                 {getCurrentTabState().discountType === 'rate' && (
                   <>
                     <div className="flex items-center gap-2">
-                      <Label className="w-[110px]">할인율 (%)</Label>
-                      <Input
-                        type="number"
-                        value={getCurrentTabState().discountValue}
-                        onChange={(e) => handleTabStateChange('tab2', 'discountValue', Number(e.target.value))}
-                        className="w-[100px] h-10"
-                        placeholder="할인율 입력"
-                      />
-                      <span className="text-sm text-muted-foreground">%</span>
+                      <Label className="w-[110px]">할인율</Label>
+                      <div className="relative">
+                        <Input
+                          type="text"
+                          value={formatNumber(getCurrentTabState().discountValue)}
+                          onChange={(e) => handleNumberChange('tab2', 'discountValue', e.target.value)}
+                          className="w-[100px] h-10"
+                          placeholder="할인율 입력"
+                        />
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
+                      </div>
+
                       {getCurrentTabState().discountType === 'rate' && (
                         <> 
                           <Select
@@ -508,41 +554,49 @@ export function DiscountModal({
                               <SelectItem value="1">1</SelectItem>
                             </SelectContent>
                           </Select> 
-                          <Select
-                            value={getCurrentTabState().roundType}
-                            onValueChange={(value: 'floor' | 'ceil' | 'round') => handleTabStateChange('tab2', 'roundType', value)}
-                          >
-                            <SelectTrigger className="w-[100px] h-10"> 
-                              <SelectValue placeholder="반올림" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="ceil">올림</SelectItem>
-                              <SelectItem value="floor">내림</SelectItem>
-                              <SelectItem value="round">반올림</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          {getCurrentTabState().decimalPoint !== 'none' && (
+                            <Select
+                              value={getCurrentTabState().roundType}
+                              onValueChange={(value: 'floor' | 'ceil' | 'round') => handleTabStateChange('tab2', 'roundType', value)}
+                            >
+                              <SelectTrigger className="w-[100px] h-10">
+                                <SelectValue placeholder="반올림" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="ceil">올림</SelectItem>
+                                <SelectItem value="floor">내림</SelectItem>
+                                <SelectItem value="round">반올림</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          )}
                         </>
                       )}
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <Label className="w-[110px]">최대 할인금액 (원)</Label>
-                      <Input
-                        type="number"
-                        value={getCurrentTabState().discountCap}
-                        onChange={(e) => handleTabStateChange('tab2', 'discountCap', Number(e.target.value))}
-                        className="w-[100px] h-10"
-                        placeholder="최대 할인금액"
-                      />
-                      <Label className="w-[110px] ml-4">자사부담 (%)</Label>
-                      <Input
-                        type="number"
-                        value={getCurrentTabState().selfRatio}
-                        onChange={(e) => handleTabStateChange('tab2', 'selfRatio', Number(e.target.value))}
-                        className="w-[100px] h-10"
-                        placeholder="%"
-                      />
-                      <span className="text-sm text-muted-foreground">%</span>
+                      <Label className="w-[110px]">최대 할인금액</Label>
+                      <div className="relative">
+                        <Input
+                          type="text"
+                          value={formatNumber(getCurrentTabState().discountCap)}
+                          onChange={(e) => handleNumberChange('tab2', 'discountCap', e.target.value)}
+                          className="w-[100px] h-10"
+                          placeholder="최대 할인금액"
+                        />
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">원</span>
+                      </div>
+
+                      <Label className="w-[110px] ml-4">자사부담</Label>
+                      <div className="relative">
+                        <Input
+                          type="text"
+                          value={formatNumber(getCurrentTabState().selfRatio)}
+                          onChange={(e) => handleNumberChange('tab2', 'selfRatio', e.target.value)}
+                          className="w-[100px] h-10"
+                          placeholder="%"
+                        />
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
+                      </div>
                     </div>
                   </>
                 )}
@@ -575,13 +629,16 @@ export function DiscountModal({
                     </SelectContent>
                   </Select> 
                   <Label className="w-[110px] ml-4">기준금액 (원 이상)</Label>
-                  <Input
-                    type="number"
-                    value={getCurrentTabState().hurdleAmount}
-                    onChange={(e) => handleTabStateChange('tab3', 'hurdleAmount', Number(e.target.value))}
-                    className="w-[100px] h-10"
-                    placeholder="예: 50000"
-                  />
+                  <div className="relative">
+                    <Input
+                      type="text"
+                      value={formatNumber(getCurrentTabState().hurdleAmount)}
+                      onChange={(e) => handleNumberChange('tab3', 'hurdleAmount', e.target.value)}
+                      className="w-[100px] h-10"
+                      placeholder="예: 50000"
+                    />
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">원</span>
+                  </div>
                 </div>
 
                 {/* 할인 적용 기준금액 및 할인 구분 */}
@@ -620,23 +677,29 @@ export function DiscountModal({
                 {/* 할인금액 입력 필드 */}
                 {getCurrentTabState().discountType === 'amount' && (
                   <div className="flex items-center gap-2">
-                    <Label className="w-[110px]">할인금액 (원)</Label>
-                    <Input
-                      type="number"
-                      value={getCurrentTabState().discountValue}
-                      onChange={(e) => handleTabStateChange('tab3', 'discountValue', Number(e.target.value))}
-                      className="w-[150px] h-10"
-                      placeholder="할인금액 입력"
-                    />
+                    <Label className="w-[110px]">할인금액</Label>
+                    <div className="relative">
+                      <Input
+                        type="text"
+                        value={formatNumber(getCurrentTabState().discountValue)}
+                        onChange={(e) => handleNumberChange('tab3', 'discountValue', e.target.value)}
+                        className="w-[150px] h-10"
+                        placeholder="할인금액 입력"
+                      />
+                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">원</span>
+                    </div>
+
                     <Label className="w-[110px] ml-4">자사부담</Label>
-                    <Input
-                      type="number"
-                      value={getCurrentTabState().selfRatio}
-                      onChange={(e) => handleTabStateChange('tab3', 'selfRatio', Number(e.target.value))}
-                      className="w-[100px] h-10"
-                      placeholder="%"
-                    />
-                    <span className="text-sm text-muted-foreground">%</span>
+                    <div className="relative">
+                      <Input
+                        type="text"
+                        value={formatNumber(getCurrentTabState().selfRatio)}
+                        onChange={(e) => handleNumberChange('tab3', 'selfRatio', e.target.value)}
+                        className="w-[100px] h-10"
+                        placeholder="%"
+                      />
+                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
+                    </div>
                   </div>
                 )}
 
@@ -644,15 +707,18 @@ export function DiscountModal({
                 {getCurrentTabState().discountType === 'rate' && (
                   <>
                     <div className="flex items-center gap-2">
-                      <Label className="w-[110px]">할인율 (%)</Label>
-                      <Input
-                        type="number"
-                        value={getCurrentTabState().discountValue}
-                        onChange={(e) => handleTabStateChange('tab3', 'discountValue', Number(e.target.value))}
-                        className="w-[100px] h-10"
-                        placeholder="할인율 입력"
-                      />
-                      <span className="text-sm text-muted-foreground">%</span>
+                      <Label className="w-[110px]">할인율</Label>
+                      <div className="relative">
+                        <Input
+                          type="text"
+                          value={formatNumber(getCurrentTabState().discountValue)}
+                          onChange={(e) => handleNumberChange('tab3', 'discountValue', e.target.value)}
+                          className="w-[100px] h-10"
+                          placeholder="할인율 입력"
+                        />
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
+                      </div>
+
                       {getCurrentTabState().discountType === 'rate' && (
                         <> 
                           <Select
@@ -669,41 +735,49 @@ export function DiscountModal({
                               <SelectItem value="1">1</SelectItem>
                             </SelectContent>
                           </Select> 
-                          <Select
-                            value={getCurrentTabState().roundType}
-                            onValueChange={(value: 'floor' | 'ceil' | 'round') => handleTabStateChange('tab3', 'roundType', value)}
-                          >
-                            <SelectTrigger className="w-[100px] h-10">
-                              <SelectValue placeholder="반올림" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="ceil">올림</SelectItem>
-                              <SelectItem value="floor">내림</SelectItem>
-                              <SelectItem value="round">반올림</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          {getCurrentTabState().decimalPoint !== 'none' && (
+                            <Select
+                              value={getCurrentTabState().roundType}
+                              onValueChange={(value: 'floor' | 'ceil' | 'round') => handleTabStateChange('tab3', 'roundType', value)}
+                            >
+                              <SelectTrigger className="w-[100px] h-10">
+                                <SelectValue placeholder="반올림" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="ceil">올림</SelectItem>
+                                <SelectItem value="floor">내림</SelectItem>
+                                <SelectItem value="round">반올림</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          )}
                         </>
                       )}
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <Label className="w-[110px]">최대 할인금액 (원)</Label>
-                      <Input
-                        type="number"
-                        value={getCurrentTabState().discountCap}
-                        onChange={(e) => handleTabStateChange('tab3', 'discountCap', Number(e.target.value))}
-                        className="w-[100px] h-10"
-                        placeholder="최대 할인금액"
-                      />
-                      <Label className="w-[110px] ml-4">자사부담 (%)</Label>
-                      <Input
-                        type="number"
-                        value={getCurrentTabState().selfRatio}
-                        onChange={(e) => handleTabStateChange('tab3', 'selfRatio', Number(e.target.value))}
-                        className="w-[100px] h-10"
-                        placeholder="%"
-                      />
-                      <span className="text-sm text-muted-foreground">%</span>
+                      <Label className="w-[110px]">최대 할인금액</Label>
+                      <div className="relative">
+                        <Input
+                          type="text"
+                          value={formatNumber(getCurrentTabState().discountCap)}
+                          onChange={(e) => handleNumberChange('tab3', 'discountCap', e.target.value)}
+                          className="w-[100px] h-10"
+                          placeholder="최대 할인금액"
+                        />
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">원</span>
+                      </div>
+
+                      <Label className="w-[110px] ml-4">자사부담</Label>
+                      <div className="relative">
+                        <Input
+                          type="text"
+                          value={formatNumber(getCurrentTabState().selfRatio)}
+                          onChange={(e) => handleNumberChange('tab3', 'selfRatio', e.target.value)}
+                          className="w-[100px] h-10"
+                          placeholder="%"
+                        />
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
+                      </div>
                     </div>
                   </>
                 )}
