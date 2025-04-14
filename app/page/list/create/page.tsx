@@ -1367,12 +1367,14 @@ export default function CartPage() {
     }
   };
 
+  
   // 상품 목록이 변경될 때마다 실행
   useEffect(() => {
     if (products.length > 0) {
       console.log('상품 목록 변경 감지:', {
         productsLength: products.length,
-        hasDiscountPrice: products.some(p => p.discount_price)
+        hasDiscountPrice: products.some(p => p.discount_price),
+        averageDiscountRate: calculateAverageDiscountRate(products).toFixed(1)
       });
     }
   }, [products]);
@@ -1905,6 +1907,19 @@ export default function CartPage() {
       loadSavedData();
     }
   }, [user]);
+
+  // 평균 할인율 계산을 위한 상태 추가
+  const [averageDiscountRate, setAverageDiscountRate] = useState<number>(0);
+
+  // products가 변경될 때마다 평균 할인율 재계산
+  useEffect(() => {
+    if (products.length > 0) {
+      const newAverageDiscountRate = calculateAverageDiscountRate(products);
+      setAverageDiscountRate(newAverageDiscountRate);
+    } else {
+      setAverageDiscountRate(0);
+    }
+  }, [products]);
 
   return (
     <ToastProvider>

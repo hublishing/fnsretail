@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Calendar, Home, Inbox, Settings } from "lucide-react"
+import { Calendar, Home, Inbox, Settings, User } from "lucide-react"
 import { Menu, LogOut, History, LayoutDashboard, ShoppingCart, Search, FileText, PlusCircle, NotebookText, List, ChevronDown, ChevronUp, ChevronRight as ChevronRightIcon } from "lucide-react"
 import {
   DropdownMenu,
@@ -88,13 +88,20 @@ const list = [
   },
 ]
 
-const patch = [
+const information = [
+    {
+      title: "마이페이지",
+      href: "/page/my-page",
+      icon: User,
+    },
     {
         title: "패치노트",
         href: "/page/patch-notes",
         icon: History,
     },
 ]
+
+ 
 
 
 export function AppSidebar() {
@@ -226,7 +233,7 @@ export function AppSidebar() {
                 <SidebarGroupLabel>Infomation</SidebarGroupLabel>
                 <SidebarGroupContent>
                     <SidebarMenu>
-                    {patch.map((item) => (
+                    {information.map((item) => (
                         <SidebarMenuItem key={item.title}>
                         <SidebarMenuButton asChild>
                             <a href={item.href}>

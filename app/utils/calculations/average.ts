@@ -9,14 +9,26 @@ import { calculateProfitMargin } from './profit';
 export function calculateAverageDiscountRate(products: Product[]): number {
   if (!products.length) return 0;
   
-  const totalDiscountRate = products.reduce((acc, product) => {
-    const discountRate = product.discount_price && product.pricing_price 
-      ? ((product.pricing_price - product.discount_price) / product.pricing_price) * 100
-      : 0;
-    return acc + discountRate;
-  }, 0);
+  let totalDiscountRate = 0;
+  let validProductsCount = 0;
+
+  products.forEach(product => {
+    // 최종 할인가격 계산 (쿠폰3 > 쿠폰2 > 쿠폰1 > 즉시할인 순)
+    const finalDiscountPrice = product.coupon_price_3 || 
+                             product.coupon_price_2 || 
+                             product.coupon_price_1 || 
+                             product.discount_price;
+
+    if (finalDiscountPrice && product.pricing_price) {
+      const discountRate = ((product.pricing_price - finalDiscountPrice) / product.pricing_price) * 100;
+      if (discountRate > 0) {
+        totalDiscountRate += discountRate;
+        validProductsCount++;
+      }
+    }
+  });
   
-  return Math.round(totalDiscountRate / products.length);
+  return validProductsCount > 0 ? totalDiscountRate / validProductsCount : 0;
 }
 
 /**
