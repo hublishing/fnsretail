@@ -240,13 +240,13 @@ interface AutoSaveData {
   fee_discount: boolean;
   productIds: string[];
   selectedChannelInfo: ChannelInfo | null;
-  immediateDiscount?: {
-    discountType: string;
-    discountValue: number;
-    unitType: string;
-    appliedProducts: string[];
-    updatedAt: string;
-  };
+  //immediateDiscount?: {
+  //  discountType: string;
+  //  discountValue: number;
+  //  unitType: string;
+  //  appliedProducts: string[];
+  //  updatedAt: string;
+  //};
 }
 
 export default function CartPage() {
@@ -560,20 +560,11 @@ export default function CartPage() {
         
         // undefined 값이 아닌 데이터만 포함하는 객체 생성
         const couponData: Record<string, any> = {
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString(),
+          coupon1Discount: coupon1Discount || [],
+          coupon2Discount: coupon2Discount || [],
+          coupon3Discount: coupon3Discount || []
         };
-        
-        if (coupon1Discount.length > 0) {
-          couponData.coupon1Discount = coupon1Discount;
-        }
-        
-        if (coupon2Discount.length > 0) {
-          couponData.coupon2Discount = coupon2Discount;
-        }
-        
-        if (coupon3Discount.length > 0) {
-          couponData.coupon3Discount = coupon3Discount;
-        }
         
         setDoc(docRef, couponData, { merge: true });
         
@@ -675,10 +666,10 @@ export default function CartPage() {
             }
 
             // 4. 즉시할인 정보가 있는 경우 적용
-            if (data.immediateDiscount) {
-              console.log('즉시할인 정보 복원:', data.immediateDiscount);
-              setImmediateDiscount(data.immediateDiscount);
-            }
+            //if (data.immediateDiscount) {
+            //  console.log('즉시할인 정보 복원:', data.immediateDiscount);
+            //  setImmediateDiscount(data.immediateDiscount);
+            //}
           }
         } else {
           console.log('파이어베이스 문서가 존재하지 않습니다.');
@@ -1415,11 +1406,18 @@ export default function CartPage() {
       
       if (docSnap.exists()) {
         const currentData = docSnap.data();
-        await setDoc(docRef, {
+        
+        // 쿠폰 할인 정보 초기화
+        const updatedData = {
           ...currentData,
           products: updatedProducts,
+          coupon1Discount: [],
+          coupon2Discount: [],
+          coupon3Discount: [],
           updatedAt: new Date().toISOString()
-        });
+        };
+
+        await setDoc(docRef, updatedData);
       }
   
       toast({
@@ -1494,13 +1492,13 @@ export default function CartPage() {
     fee_discount: isAdjustFeeEnabled,
     productIds: products.map(p => p.product_id),
     selectedChannelInfo: selectedChannelInfo || undefined,
-    immediateDiscount: selectedProducts.length > 0 ? {
-      discountType: discountType || 'amount',
-      discountValue: discountValue || 0,
-      unitType: discountUnit || '%',
-      appliedProducts: selectedProducts,
-      updatedAt: new Date().toISOString()
-    } : null,
+    //immediateDiscount: selectedProducts.length > 0 ? {
+    //  discountType: discountType || 'amount',
+    //  discountValue: discountValue || 0,
+    //  unitType: discountUnit || '%',
+    //  appliedProducts: selectedProducts,
+    //  updatedAt: new Date().toISOString()
+    //} : null,
     coupon1Discount: selectedProducts.length > 0 ? selectedProducts.map(productId => {
       const product = products.find(p => p.product_id === productId);
       if (!product || product.coupon_price_1 === undefined) return null;
@@ -1707,10 +1705,10 @@ export default function CartPage() {
           }
           
           // 3. 즉시할인 정보 복원
-          if (data.immediateDiscount) {
-            console.log('즉시할인 정보 복원:', data.immediateDiscount);
-            setImmediateDiscount(data.immediateDiscount);
-          }
+          //if (data.immediateDiscount) {
+          //  console.log('즉시할인 정보 복원:', data.immediateDiscount);
+          //  setImmediateDiscount(data.immediateDiscount);
+          //}
 
           // 4. 쿠폰1 할인 정보 복원
           if (data.coupon1Discount) {

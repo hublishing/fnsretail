@@ -193,6 +193,14 @@ export function DiscountModal({
 
   const handleApplyDiscount = async (type: 'coupon1' | 'coupon2' | 'coupon3', state: TabState) => {
     try {
+      console.log('=== handleApplyDiscount 시작 ===');
+      console.log('입력 파라미터:', {
+        type,
+        state,
+        selectedProducts,
+        currentProductsLength: currentProducts.length
+      });
+
       if (!selectedProducts.length) {
         console.log('선택된 상품이 없음');
         return;
@@ -200,23 +208,49 @@ export function DiscountModal({
 
       const updatedProducts = currentProducts.map(product => {
         if (selectedProducts.includes(product.product_id)) {
+          console.log('상품 처리 시작:', {
+            product_id: product.product_id,
+            basePrice: product[state.discountBase as keyof Product],
+            discountType: state.discountType,
+            discountValue: state.discountValue
+          });
+
           const basePrice = Number(product[state.discountBase as keyof Product]) || 0;
           let newPrice = basePrice;
           
           // 이중쿠폰이 활성화된 경우
           if (state.isDoubleCoupon) {
+            console.log('이중쿠폰 처리 시작');
             const firstBasePrice = Number(product[state.discountBase as keyof Product]) || 0;
             const secondBasePrice = Number(product[state.secondCoupon.discountBase as keyof Product]) || 0;
             
+            console.log('이중쿠폰 기준가격:', {
+              firstBasePrice,
+              secondBasePrice,
+              hurdleAmount: state.hurdleAmount,
+              secondHurdleAmount: state.secondCoupon.hurdleAmount
+            });
+            
             // 첫 번째 쿠폰의 기준금액 범위 체크
             if (firstBasePrice >= state.hurdleAmount && firstBasePrice < state.secondCoupon.hurdleAmount) {
-              // 첫 번째 쿠폰 적용
-          if (state.discountType === 'rate') {
+              console.log('첫 번째 쿠폰 적용');
+              if (state.discountType === 'rate') {
                 const calculatedDiscount = calculateDiscount(firstBasePrice, state.discountValue, state.roundType, state.decimalPoint);
                 const discountAmount = firstBasePrice - calculatedDiscount;
                 
+                console.log('첫 번째 쿠폰 할인 계산:', {
+                  calculatedDiscount,
+                  discountAmount,
+                  discountCapType: state.discountCapType,
+                  discountCap: state.discountCap
+                });
+                
                 if (state.discountCapType === 'max') {
-                  newPrice = Math.max(firstBasePrice - state.discountCap, calculatedDiscount);
+                  if (state.discountCap === 0) {
+                    newPrice = calculatedDiscount;
+                  } else {
+                    newPrice = Math.max(firstBasePrice - state.discountCap, calculatedDiscount);
+                  }
                 } else {
                   if (discountAmount > state.discountCap) {
                     newPrice = calculatedDiscount;
@@ -230,10 +264,17 @@ export function DiscountModal({
             }
             // 두 번째 쿠폰의 기준금액 범위 체크
             else if (secondBasePrice >= state.secondCoupon.hurdleAmount) {
-              // 두 번째 쿠폰 적용
+              console.log('두 번째 쿠폰 적용');
               if (state.secondCoupon.discountType === 'rate') {
                 const secondCalculatedDiscount = calculateDiscount(secondBasePrice, state.secondCoupon.discountValue, state.secondCoupon.roundType, state.secondCoupon.decimalPoint);
                 const secondDiscountAmount = secondBasePrice - secondCalculatedDiscount;
+                
+                console.log('두 번째 쿠폰 할인 계산:', {
+                  secondCalculatedDiscount,
+                  secondDiscountAmount,
+                  discountCapType: state.secondCoupon.discountCapType,
+                  discountCap: state.secondCoupon.discountCap
+                });
                 
                 if (state.secondCoupon.discountCapType === 'max') {
                   newPrice = Math.max(secondBasePrice - state.secondCoupon.discountCap, secondCalculatedDiscount);
@@ -250,12 +291,24 @@ export function DiscountModal({
             }
           } else {
             // 단일 쿠폰 적용
+            console.log('단일 쿠폰 처리 시작');
             if (state.discountType === 'rate') {
               const calculatedDiscount = calculateDiscount(basePrice, state.discountValue, state.roundType, state.decimalPoint);
               const discountAmount = basePrice - calculatedDiscount;
               
+              console.log('단일 쿠폰 할인 계산:', {
+                calculatedDiscount,
+                discountAmount,
+                discountCapType: state.discountCapType,
+                discountCap: state.discountCap
+              });
+              
               if (state.discountCapType === 'max') {
-                newPrice = Math.max(basePrice - state.discountCap, calculatedDiscount);
+                if (state.discountCap === 0) {
+                  newPrice = calculatedDiscount;
+                } else {
+                  newPrice = Math.max(basePrice - state.discountCap, calculatedDiscount);
+                }
               } else {
                 if (discountAmount > state.discountCap) {
                   newPrice = calculatedDiscount;
@@ -263,20 +316,32 @@ export function DiscountModal({
                   newPrice = basePrice - state.discountCap;
                 }
               }
-          } else {
-            newPrice = basePrice - state.discountValue;
+            } else {
+              newPrice = basePrice - state.discountValue;
             }
           }
+          
+          console.log('최종 가격 계산:', {
+            originalPrice: basePrice,
+            newPrice,
+            discountAmount: basePrice - newPrice
+          });
           
           const updatedProduct = { ...product };
           switch (type) {
             case 'coupon1':
               updatedProduct.coupon_price_1 = newPrice;
+              updatedProduct.coupon_price_2 = updatedProduct.coupon_price_2 ?? null;
+              updatedProduct.coupon_price_3 = updatedProduct.coupon_price_3 ?? null;
               break;
             case 'coupon2':
+              updatedProduct.coupon_price_1 = updatedProduct.coupon_price_1 ?? null;
               updatedProduct.coupon_price_2 = newPrice;
+              updatedProduct.coupon_price_3 = updatedProduct.coupon_price_3 ?? null;
               break;
             case 'coupon3':
+              updatedProduct.coupon_price_1 = updatedProduct.coupon_price_1 ?? null;
+              updatedProduct.coupon_price_2 = updatedProduct.coupon_price_2 ?? null;
               updatedProduct.coupon_price_3 = newPrice;
               break;
           }
@@ -288,6 +353,12 @@ export function DiscountModal({
             Number(product[state.discountBase as keyof Product]) - updatedProduct.coupon_price_2 : 0;
           const discountAmount3 = updatedProduct.coupon_price_3 ? 
             Number(product[state.discountBase as keyof Product]) - updatedProduct.coupon_price_3 : 0;
+          
+          console.log('쿠폰별 할인금액:', {
+            discountAmount1,
+            discountAmount2,
+            discountAmount3
+          });
           
           // 쿠폰별 자사부담액 계산 및 저장
           const prevSelfBurden1 = product.self_burden_1 || 0;
@@ -310,6 +381,16 @@ export function DiscountModal({
               break;
           }
           
+          console.log('자사부담액 계산:', {
+            prevSelfBurden1,
+            prevSelfBurden2,
+            prevSelfBurden3,
+            newSelfBurden1: selfBurden1,
+            newSelfBurden2: selfBurden2,
+            newSelfBurden3: selfBurden3,
+            selfRatio: state.selfRatio
+          });
+          
           updatedProduct.self_burden_1 = selfBurden1;
           updatedProduct.self_burden_2 = selfBurden2;
           updatedProduct.self_burden_3 = selfBurden3;
@@ -322,14 +403,29 @@ export function DiscountModal({
           updatedProduct.expected_net_profit = calculateExpectedNetProfit(updatedProduct);
           updatedProduct.expected_commission_fee = calculateExpectedCommissionFee(updatedProduct);
 
+          console.log('상품 업데이트 완료:', {
+            product_id: updatedProduct.product_id,
+            coupon_price_1: updatedProduct.coupon_price_1,
+            coupon_price_2: updatedProduct.coupon_price_2,
+            coupon_price_3: updatedProduct.coupon_price_3,
+            self_burden_1: updatedProduct.self_burden_1,
+            self_burden_2: updatedProduct.self_burden_2,
+            self_burden_3: updatedProduct.self_burden_3,
+            discount_burden_amount: updatedProduct.discount_burden_amount,
+            expected_settlement_amount: updatedProduct.expected_settlement_amount,
+            expected_net_profit: updatedProduct.expected_net_profit,
+            expected_commission_fee: updatedProduct.expected_commission_fee
+          });
+
           return updatedProduct;
         }
         return product;
       });
 
-      onApplyDiscount(updatedProducts);
-      console.log('할인 적용 완료:', updatedProducts);
+      console.log('=== handleApplyDiscount 완료 ===');
+      console.log('업데이트된 상품 목록:', updatedProducts);
       
+      onApplyDiscount(updatedProducts);
       setShowDiscountModal(false);
       toast({
         description: <div className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5" /> 할인이 적용되었습니다.</div>,
@@ -1138,7 +1234,8 @@ export function DiscountModal({
                                   <SelectItem value="0.1">0.1</SelectItem>
                                   <SelectItem value="1">1</SelectItem>
                                 </SelectContent>
-                              </Select> 
+                              </Select>
+
                               {getCurrentTabState().decimalPoint !== 'none' && (
                                 <Select
                                   value={getCurrentTabState().roundType}
@@ -1160,11 +1257,11 @@ export function DiscountModal({
                       )}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4"> 
+                    <div className="grid grid-cols-2 gap-4">
                       <div className="flex flex-col gap-2">
                         <div className="relative">
                           <Label className="w-full text-muted-foreground">
-                            {getCurrentTabState().discountCapType === 'max' ? '최대할인금액' : '고정할인금액'}
+                          {getCurrentTabState().discountCapType === 'max' ? '최대할인금액' : '고정할인금액'}
                           </Label>
                           <div className="relative">
                             <Input
@@ -1401,7 +1498,8 @@ export function DiscountModal({
                                   <SelectItem value="0.1">0.1</SelectItem>
                                   <SelectItem value="1">1</SelectItem>
                                 </SelectContent>
-                              </Select> 
+                              </Select>
+
                               {getCurrentTabState().decimalPoint !== 'none' && (
                                 <Select
                                   value={getCurrentTabState().roundType}
@@ -1423,11 +1521,11 @@ export function DiscountModal({
                       )}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4"> 
+                    <div className="grid grid-cols-2 gap-4">
                       <div className="flex flex-col gap-2">
                         <div className="relative">
                           <Label className="w-full text-muted-foreground">
-                            {getCurrentTabState().discountCapType === 'max' ? '최대할인금액' : '고정할인금액'}
+                          {getCurrentTabState().discountCapType === 'max' ? '최대할인금액' : '고정할인금액'}
                           </Label>
                           <div className="relative">
                             <Input

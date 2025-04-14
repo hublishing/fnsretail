@@ -7,13 +7,13 @@ import { useAuth } from '@/lib/auth';
 
 type DiscountType = 'amount' | 'rate';
 
-interface ImmediateDiscount {
-  discountType: string;
-  discountValue: number;
-  unitType: string;
-  appliedProducts: string[];
-  updatedAt: string;
-}
+//interface ImmediateDiscount {
+//  discountType: string;
+//  discountValue: number;
+//  unitType: string;
+//  appliedProducts: string[];
+//  updatedAt: string;
+//}
 
 interface CouponDiscount {
   product_id: string;
@@ -41,7 +41,7 @@ interface AutoSaveData {
   fee_discount?: boolean;
   productIds?: string[];
   selectedChannelInfo?: ChannelInfo;
-  immediateDiscount?: ImmediateDiscount | null;
+  // immediateDiscount?: ImmediateDiscount | null;
   coupon1Discount?: CouponDiscount[];
   coupon2Discount?: CouponDiscount[];
   coupon3Discount?: CouponDiscount[];
@@ -82,7 +82,7 @@ export function useAutoSave(data: AutoSaveData) {
   useEffect(() => {
     const prevData = prevDataRef.current;
     const changes = {
-      immediateDiscount: compareImmediateDiscount(prevData.immediateDiscount, data.immediateDiscount),
+      //immediateDiscount: compareImmediateDiscount(prevData.immediateDiscount, data.immediateDiscount),
       coupon1Discount: compareCouponDiscount(prevData.coupon1Discount || [], data.coupon1Discount || []),
       coupon2Discount: compareCouponDiscount(prevData.coupon2Discount || [], data.coupon2Discount || []),
       coupon3Discount: compareCouponDiscount(prevData.coupon3Discount || [], data.coupon3Discount || [])
@@ -197,6 +197,7 @@ const saveToFirebase = async (data: AutoSaveData, user: User | null) => {
   }
 };
 
+{/*
 const compareImmediateDiscount = (prev: any, curr: any) => {
   if (!prev && !curr) return true;
   if (!prev || !curr) return false;
@@ -206,6 +207,7 @@ const compareImmediateDiscount = (prev: any, curr: any) => {
   
   return JSON.stringify(prevRest) === JSON.stringify(currRest);
 };
+*/}
 
 const compareCouponDiscount = (prev: CouponDiscount[], current: CouponDiscount[]): boolean => {
   if (prev.length !== current.length) return true;

@@ -184,19 +184,12 @@ export function ImmediateDiscountModal({
           
           console.log('변경된 상품 데이터:', cleanedChangedProducts);
           
+          // immediateDiscount 제거
           const saveData = {
-            immediateDiscount: {
-              discountType: discountState.discountType,
-              discountValue: discountState.discountValue,
-              unitType: discountState.unitType,
-              appliedProducts: selectedProducts,
-            },
+            products: cleanedChangedProducts
           };
           
-          console.log('저장할 데이터:', saveData);
-          
           const cleanData = removeUndefined(saveData);
-          console.log('정리된 데이터:', cleanData);
           
           const docSnap = await getDoc(docRef);
           if (docSnap.exists()) {
