@@ -1387,65 +1387,53 @@ export default function CartPage() {
   }, [products]);
 
   // handleRevertCalculations 함수 수정
-  const handleRevertCalculations = () => {
-    console.log('[handleRevertCalculations] START');
+  const handleRevertCalculations = async () => {
+    if (!user) return;
     
-    if (!autoSavedCalculations) {
-      console.log('[handleRevertCalculations] 저장된 계산 데이터가 없음');
-      toast({
-        description: <div className="flex items-center gap-2"><CircleAlert className="h-5 w-5" /> 저장된 계산 데이터가 없습니다.</div>,
-        variant: "destructive"
+    if (!confirm('선택한 상품의 할인 정보를 초기화하시겠습니까?')) return;
+  
+    try {
+      // 선택된 상품들의 할인 정보 초기화
+      const updatedProducts = products.map(product => {
+        if (selectedProducts.includes(product.product_id)) {
+          return {
+            ...product,
+            discount_price: null,  // 즉시할인
+            coupon_price_1: null,  // 쿠폰1
+            coupon_price_2: null,  // 쿠폰2
+            coupon_price_3: null   // 쿠폰3
+          };
+        }
+        return product;
       });
-      return;
-    }
-
-    const checkedProducts = products.filter(p => selectedProducts.includes(p.product_id));
-    console.log(`[handleRevertCalculations] 체크된 상품 수: ${checkedProducts.length}`);
-    
-    if (checkedProducts.length === 0) {
-      console.log('[handleRevertCalculations] 선택된 상품이 없음');
-      toast({
-        description: <div className="flex items-center gap-2"><CircleAlert className="h-5 w-5" /> 선택된 상품이 없습니다.</div>,
-        variant: "destructive"
-      });
-      return;
-    }
-
-    console.log('[handleRevertCalculations] 되돌리기 시작');
-    
-    // 체크된 상품만 이전 계산 데이터로 되돌리기
-    const revertedProducts = products.map(product => {
-      if (!selectedProducts.includes(product.product_id)) return product;
+  
+      setProducts(updatedProducts as Product[]);
+  
+      // Firebase 업데이트
+      const docRef = doc(db, 'userCarts', user.uid);
+      const docSnap = await getDoc(docRef);
       
-      const savedProduct = autoSavedCalculations.products.find(
-        p => p.product_id === product.product_id
-      );
-      
-      if (savedProduct) {
-        return {
-          ...savedProduct,
-          // 배송비는 현재 배송조건으로 계산
-          logistics_cost: selectedChannelInfo 
-            ? calculateLogisticsCost(
-                selectedChannelInfo, 
-                deliveryType,  // 현재 선택된 배송조건 사용
-                Number(selectedChannelInfo.amazon_shipping_cost)
-              )
-            : 0
-        };
+      if (docSnap.exists()) {
+        const currentData = docSnap.data();
+        await setDoc(docRef, {
+          ...currentData,
+          products: updatedProducts,
+          updatedAt: new Date().toISOString()
+        });
       }
-      return product;
-    });
-
-    console.log('[handleRevertCalculations] 상태 업데이트');
-    setProducts(revertedProducts);
-    
-    console.log('[handleRevertCalculations] 토스트 메시지 표시');
-    toast({
-      description: <div className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5" /> {checkedProducts.length}개 상품의 계산 데이터를 되돌렸습니다.</div>,
-    });
-    
-    console.log('[handleRevertCalculations] END');
+  
+      toast({
+        title: "초기화 완료",
+        description: "선택한 상품의 할인 정보가 초기화되었습니다.",
+      });
+    } catch (error) {
+      console.error('초기화 실패:', error);
+      toast({
+        title: "초기화 실패",
+        description: "할인 정보 초기화에 실패했습니다.",
+        variant: "destructive"
+      });
+    }
   };
 
   // 조정원가 설정 핸들러
@@ -2163,7 +2151,7 @@ export default function CartPage() {
                   variant="outline"
                   size="sm"
                   onClick={handleRevertCalculations}
-                  disabled={!autoSavedCalculations || !products.some(p => selectedProducts.includes(p.product_id))}
+                  disabled={selectedProducts.length === 0}
                   className="border-0 hover:bg-transparent hover:text-primary flex items-center gap-2"
                 >
                   선택 초기화
