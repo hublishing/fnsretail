@@ -337,17 +337,17 @@ export function DiscountModal({
           switch (type) {
             case 'coupon1':
               updatedProduct.coupon_price_1 = newPrice;
-              updatedProduct.coupon_price_2 = updatedProduct.coupon_price_2 ?? null;
-              updatedProduct.coupon_price_3 = updatedProduct.coupon_price_3 ?? null;
+              updatedProduct.coupon_price_2 = null;  // 강제로 null 설정
+              updatedProduct.coupon_price_3 = null;
               break;
             case 'coupon2':
-              updatedProduct.coupon_price_1 = updatedProduct.coupon_price_1 ?? null;
+              updatedProduct.coupon_price_1 = null;
               updatedProduct.coupon_price_2 = newPrice;
-              updatedProduct.coupon_price_3 = updatedProduct.coupon_price_3 ?? null;
+              updatedProduct.coupon_price_3 = null;
               break;
             case 'coupon3':
-              updatedProduct.coupon_price_1 = updatedProduct.coupon_price_1 ?? null;
-              updatedProduct.coupon_price_2 = updatedProduct.coupon_price_2 ?? null;
+              updatedProduct.coupon_price_1 = null;
+              updatedProduct.coupon_price_2 = null;
               updatedProduct.coupon_price_3 = newPrice;
               break;
           }
