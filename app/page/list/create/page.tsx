@@ -1075,7 +1075,9 @@ export default function CartPage() {
   };
 
   // 선택된 상품 삭제 핸들러
-  const handleRemoveSelectedProducts = () => {
+  const handleRemoveSelectedProducts = async () => {
+    if (!user) return;
+    
     if (selectedProducts.length === 0) {
       toast({
         description: <div className="flex items-center gap-2"><CircleAlert className="h-5 w-5" /> 선택된 상품이 없습니다.</div>,
@@ -1084,16 +1086,56 @@ export default function CartPage() {
       return;
     }
     
-    const updatedProducts = products.filter(p => !selectedProducts.includes(p.product_id));
-    setProducts(updatedProducts);
-    setSelectedProducts([]);
-    
-    // 되돌리기 기능에 기록
-    recordStateChange('PRODUCT_REMOVE', selectedProducts, '선택된 상품 삭제');
-
-    toast({
-      description: <div className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5" /> {selectedProducts.length}개의 상품이 삭제되었습니다.</div>,
-    });
+    try {
+      const updatedProducts = products.filter(p => !selectedProducts.includes(p.product_id));
+      
+      // Firebase에 저장할 데이터 정제
+      const cleanProducts = updatedProducts.map(product => ({
+        product_id: product.product_id,
+        name: product.name || '',
+        org_price: product.org_price || 0,
+        shop_price: product.shop_price || 0,
+        cost_ratio: product.cost_ratio || 0,
+        total_stock: product.total_stock || 0,
+        img_desc1: product.img_desc1 || '',
+        category_3: product.category_3 || '',
+        brand: product.brand || '',
+        category_1: product.category_1 || '',
+        extra_column2: product.extra_column2 || '',
+        // 할인 관련 필드
+        discount_price: product.discount_price || null,
+        coupon_price_1: product.coupon_price_1 || null,
+        coupon_price_2: product.coupon_price_2 || null,
+        coupon_price_3: product.coupon_price_3 || null,
+        discount_burden_amount: product.discount_burden_amount || 0,
+        // 계산된 필드들
+        logistics_cost: product.logistics_cost || 0,
+        commission_fee: product.commission_fee || 0,
+        adjusted_cost: product.adjusted_cost || 0
+      }));
+  
+      // 로컬 상태 업데이트
+      setProducts(updatedProducts);
+      setSelectedProducts([]);
+      
+      // Firebase 업데이트
+      const docRef = doc(db, 'userCarts', user.uid);
+      await setDoc(docRef, {
+        products: cleanProducts,
+        productIds: cleanProducts.map(p => p.product_id),
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+  
+      toast({
+        description: <div className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5" /> {selectedProducts.length}개의 상품이 삭제되었습니다.</div>,
+      });
+    } catch (error) {
+      console.error('상품 삭제 실패:', error);
+      toast({
+        description: <div className="flex items-center gap-2"><CircleAlert className="h-5 w-5" /> 상품 삭제에 실패했습니다.</div>,
+        variant: "destructive"
+      });
+    }
   };
 
   // 초기화 핸들러
@@ -1907,19 +1949,6 @@ export default function CartPage() {
       loadSavedData();
     }
   }, [user]);
-
-  // 평균 할인율 계산을 위한 상태 추가
-  const [averageDiscountRate, setAverageDiscountRate] = useState<number>(0);
-
-  // products가 변경될 때마다 평균 할인율 재계산
-  useEffect(() => {
-    if (products.length > 0) {
-      const newAverageDiscountRate = calculateAverageDiscountRate(products);
-      setAverageDiscountRate(newAverageDiscountRate);
-    } else {
-      setAverageDiscountRate(0);
-    }
-  }, [products]);
 
   return (
     <ToastProvider>
