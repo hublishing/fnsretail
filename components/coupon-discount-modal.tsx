@@ -216,6 +216,12 @@ export function DiscountModal({
           });
 
           const basePrice = Number(product[state.discountBase as keyof Product]) || 0;
+          // 기준금액 체크 추가
+          if (basePrice < state.hurdleAmount) {
+            // 기준금액보다 작으면 할인 적용하지 않고 원래 상품 반환
+            return product;
+          }
+          
           let newPrice = basePrice;
           
           // 이중쿠폰이 활성화된 경우
