@@ -23,13 +23,21 @@ export async function GET(request: NextRequest) {
     
     // SQL 쿼리 작성
     const query = `
+      WITH RankedProducts AS (
+        SELECT
+          product_id,
+          channel_product_id,
+          ROW_NUMBER() OVER (PARTITION BY product_id ORDER BY date DESC) as rn
+        FROM \`third-current-410914.project_m.product_sub_db\`
+        WHERE channel_name = @channel
+        AND channel_product_id IS NOT NULL
+        AND channel_product_id != ''
+      )
       SELECT DISTINCT
         product_id,
         channel_product_id
-      FROM \`third-current-410914.project_m.product_sub_db\`
-      WHERE channel_name = @channel
-      AND channel_product_id IS NOT NULL
-      AND channel_product_id != ''
+      FROM RankedProducts
+      WHERE rn = 1
     `;
 
     // JWT 토큰 생성
