@@ -35,12 +35,22 @@ interface Log {
   count: number;
 }
 
+interface Detail {
+  product_id: string;
+  channel_product_id: string;
+  channel_name: string;
+  user_id: string;
+  upload_id: string;
+  date: string;
+}
+
 export default function UploadChannelPage() {
   const { toast } = useToast();
   const [session, setSession] = useState<any>(null);
   const [channels, setChannels] = useState<string[]>([]);
   const [selectedChannel, setSelectedChannel] = useState<string | null>(null);
   const [logs, setLogs] = useState<Log[]>([]);
+  const [details, setDetails] = useState<Detail[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -166,12 +176,19 @@ export default function UploadChannelPage() {
       }
 
       const uploadId = uuidv4();
+      console.log('새로운 업로드 ID 생성:', uploadId);
       setCurrentUploadId(uploadId);
 
       const formData = new FormData();
       formData.append('file', file);
       formData.append('channelName', selectedChannel);
       formData.append('uploadId', uploadId);
+
+      console.log('업로드 요청 시작:', {
+        channelName: selectedChannel,
+        uploadId,
+        fileName: file.name
+      });
 
       const response = await fetch('/api/upload-channel/upload', {
         method: 'POST',
@@ -186,6 +203,7 @@ export default function UploadChannelPage() {
       }
 
       const result = await response.json();
+      console.log('업로드 결과:', result);
       setUploadedCount(result.count || 0);
 
       toast({
@@ -193,6 +211,7 @@ export default function UploadChannelPage() {
       });
 
       // 전체 로그 새로고침
+      console.log('전체 로그 새로고침 시작');
       const logsResponse = await fetch('/api/upload-channel/logs', {
         headers: {
           'user-id': currentSession.user_id,
@@ -201,8 +220,13 @@ export default function UploadChannelPage() {
       
       if (logsResponse.ok) {
         const logsData = await logsResponse.json();
+        console.log('전체 로그 데이터:', logsData);
         setLogs(logsData.logs || []);
       }
+
+      // 업로드 완료 후 상세 데이터 조회
+      console.log('상세 데이터 조회 시작');
+      await fetchDetails(uploadId);
     } catch (error) {
       console.error('업로드 오류:', error);
       toast({
@@ -283,6 +307,43 @@ export default function UploadChannelPage() {
     }
   };
 
+  // 상세 데이터 조회
+  const fetchDetails = async (uploadId: string) => {
+    try {
+      if (!session?.user_id) {
+        console.error('사용자 ID가 없습니다');
+        return;
+      }
+
+      console.log('상세 데이터 조회 시작:', { uploadId, userId: session.user_id });
+
+      const response = await fetch(`/api/upload-channel/detail?uploadId=${uploadId}`, {
+        headers: {
+          'user-id': session.user_id,
+        },
+      });
+      
+      console.log('상세 데이터 API 응답:', {
+        status: response.status,
+        statusText: response.statusText
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('상세 데이터 응답:', data);
+        setDetails(data.details || []);
+      } else {
+        const errorData = await response.text();
+        console.error('상세 데이터 조회 실패:', {
+          status: response.status,
+          error: errorData
+        });
+      }
+    } catch (error) {
+      console.error('상세 데이터 로드 오류:', error);
+    }
+  };
+
   return (
     <div className="container mx-auto p-4 space-y-6">
       {/* 1번 섹션 */}
@@ -346,19 +407,24 @@ export default function UploadChannelPage() {
                   파일 선택
                 </Button>
               </div>
-            </div>
-            <div className="flex gap-4 items-center">
+              <div className="flex gap-4 items-center">
               {selectedFile && (
                 <div className="text-sm text-gray-500">
                   {selectedFile.name}
                 </div>
               )}
+              {/*{currentUploadId && (
+                <div className="text-sm text-gray-500">
+                  업로드 ID: {currentUploadId}
+                </div>
+              )}*/}
               {uploadedCount > 0 && (
                 <div className="flex items-center gap-2 text-green-600 font-medium">
                   <CheckCircle2 className="h-4 w-4" />
                   {uploadedCount} 상품 반영 완료
                 </div>
               )}
+              </div>
             </div>
           </div>
         </CardContent>
@@ -409,6 +475,45 @@ export default function UploadChannelPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* 상세 데이터 테이블 */}
+      {currentUploadId && (
+        <Card>
+          <CardHeader>
+            <CardTitle>상세 데이터 {/*(업로드 ID: {currentUploadId})*/}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>날짜</TableHead>
+                  <TableHead>채널명</TableHead>
+                  <TableHead>이지어드민코드</TableHead>
+                  <TableHead>채널상품코드</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {details.length > 0 ? (
+                  details.map((detail, index) => (
+                    <TableRow key={index}>
+                      <TableCell>{detail.date}</TableCell>
+                      <TableCell>{detail.channel_name}</TableCell>
+                      <TableCell>{detail.product_id}</TableCell>
+                      <TableCell>{detail.channel_product_id}</TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center">
+                      상세 데이터가 없습니다.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 } 
