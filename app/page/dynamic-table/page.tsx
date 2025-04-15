@@ -675,7 +675,8 @@ export default function DynamicTable() {
         category_1: product.category_1,
         extra_column2: product.extra_column2,
         drop_yn: product.drop_yn || '',
-        exclusive2: product.exclusive2 || ''
+        exclusive2: product.exclusive2 || '',
+        supply_name: product.supply_name || '' 
       }));
 
       // Firestore 업데이트
