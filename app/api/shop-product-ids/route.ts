@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { createPrivateKey } from 'crypto';
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
@@ -21,21 +23,13 @@ export async function GET(request: NextRequest) {
     
     // SQL 쿼리 작성
     const query = `
-      WITH RankedProducts AS (
-        SELECT
-          product_id,
-          shop_product_id,
-          ROW_NUMBER() OVER (PARTITION BY product_id ORDER BY order_date DESC) as rn
-        FROM \`third-current-410914.project_m.order_db\`
-        WHERE channel_name = @channel
-        AND shop_product_id IS NOT NULL
-        AND shop_product_id != ''
-      )
       SELECT DISTINCT
         product_id,
-        shop_product_id
-      FROM RankedProducts
-      WHERE rn = 1
+        channel_product_id
+      FROM \`third-current-410914.project_m.product_sub_db\`
+      WHERE channel_name = @channel
+      AND channel_product_id IS NOT NULL
+      AND channel_product_id != ''
     `;
 
     // JWT 토큰 생성
@@ -118,9 +112,9 @@ export async function GET(request: NextRequest) {
     const shopProductIds: Record<string, string> = {};
     data.rows?.forEach((row: any) => {
       const productId = row.f[0].v;
-      const shopProductId = row.f[1].v;
-      if (productId && shopProductId && shopProductId !== 'NaN' && shopProductId !== 'nan') {
-        shopProductIds[productId] = shopProductId;
+      const channelProductId = row.f[1].v;
+      if (productId && channelProductId && channelProductId !== 'NaN' && channelProductId !== 'nan') {
+        shopProductIds[productId] = channelProductId;
       }
     });
 
