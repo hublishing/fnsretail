@@ -1,313 +1,414 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { getSession } from '@/app/actions/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useToast } from "@/components/ui/use-toast";
-import { Channel, Log } from '@/app/types/types';
-import * as XLSX from 'xlsx';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useRouter } from 'next/navigation';
-import { auth } from '@/lib/firebase';
+import { useToast } from '@/components/ui/use-toast';
+import { CheckCircle2, CircleAlert } from 'lucide-react';
+import { v4 as uuidv4 } from 'uuid';
+
+interface Log {
+  user_id: string;
+  date: string;
+  channel_name: string;
+  product_id: string;
+  channel_product_id: string;
+  upload_id?: string;
+  count: number;
+}
 
 export default function UploadChannelPage() {
-  const [channels, setChannels] = useState<Channel[]>([]);
-  const [selectedChannel, setSelectedChannel] = useState<string>('');
-  const [productId, setProductId] = useState('');
-  const [previewData, setPreviewData] = useState<any>(null);
-  const [logs, setLogs] = useState<Log[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const [session, setSession] = useState<any>(null);
+  const [channels, setChannels] = useState<string[]>([]);
+  const [selectedChannel, setSelectedChannel] = useState<string | null>(null);
+  const [logs, setLogs] = useState<Log[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadedCount, setUploadedCount] = useState<number>(0);
+  const [currentUploadId, setCurrentUploadId] = useState<string | null>(null);
   const router = useRouter();
-
-  useEffect(() => {
-    fetchChannels();
-    fetchLogs();
-  }, []);
-
-  const fetchChannels = async () => {
-    try {
-      const response = await fetch('/api/upload-channel/channels');
-      if (!response.ok) throw new Error('채널 정보를 불러오는데 실패했습니다.');
-      const data = await response.json();
-      setChannels(data);
-    } catch (error) {
-      console.error('Error fetching channels:', error);
-      toast({
-        title: "에러",
-        description: "채널 정보를 불러오는데 실패했습니다.",
-        variant: "destructive"
-      });
-    }
-  };
 
   const fetchLogs = async () => {
     try {
-      const response = await fetch('/api/upload-channel/logs');
-      if (!response.ok) throw new Error('로그를 불러오는데 실패했습니다.');
-      const data = await response.json();
-      setLogs(data);
-    } catch (error) {
-      console.error('Error fetching logs:', error);
-      toast({
-        title: "에러",
-        description: "로그를 불러오는데 실패했습니다.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const fetchPreviewData = async () => {
-    if (!selectedChannel || !productId) return;
-    try {
-      const response = await fetch(`/api/upload-channel/preview?channelName=${selectedChannel}&productId=${productId}`);
-      const data = await response.json();
-      setPreviewData(data);
-    } catch (error) {
-      console.error('Error fetching preview data:', error);
-      toast({
-        title: "에러",
-        description: "미리보기 데이터를 불러오는데 실패했습니다.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleDownloadTemplate = () => {
-    const template = [
-      {
-        '이지어드민코드': '',
-        '채널상품코드': ''
-      }
-    ];
-
-    const ws = XLSX.utils.json_to_sheet(template);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
-    XLSX.writeFile(wb, 'upload_template.xlsx');
-  };
-
-  const handleUpload = async (file: File) => {
-    try {
-      console.log('파일 업로드 시작:', file.name);
-      const user = auth.currentUser;
-      
-      if (!user) {
-        console.log('사용자 로그인 필요');
-        toast({
-          title: "업로드 실패",
-          description: "로그인이 필요합니다.",
-          variant: "destructive"
-        });
+      if (!session?.user_id) {
+        console.error('사용자 ID가 없습니다');
         return;
       }
 
-      const token = await user.getIdToken();
-      console.log('인증 토큰 획득');
-
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        try {
-          const data = e.target?.result;
-          console.log('파일 읽기 완료');
-          
-          if (!data) {
-            console.log('파일 데이터 없음');
-            toast({
-              title: "업로드 실패",
-              description: "파일 데이터가 없습니다.",
-              variant: "destructive"
-            });
-            return;
-          }
-
-          const workbook = XLSX.read(data, { type: 'binary' });
-          const sheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[sheetName];
-          const jsonData = XLSX.utils.sheet_to_json(worksheet);
-          
-          console.log('Excel 데이터 변환 완료, 행 수:', jsonData.length);
-
-          const response = await fetch('/api/upload-channel/upload', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-              channelName: selectedChannel,
-              data: jsonData
-            })
-          });
-
-          console.log('API 응답 상태:', response.status);
-          
-          if (!response.ok) {
-            const errorData = await response.json();
-            console.error('업로드 실패:', errorData);
-            throw new Error(errorData.error || '업로드에 실패했습니다.');
-          }
-
-          const result = await response.json();
-          console.log('업로드 성공:', result);
-          toast({
-            title: "업로드 성공",
-            description: `총 ${result.uploadedCount}개의 상품이 성공적으로 업로드되었습니다.`,
-            variant: "success"
-          });
-        } catch (error) {
-          console.error('파일 처리 중 에러:', error);
-          toast({
-            title: "업로드 실패",
-            description: error instanceof Error ? error.message : '파일 업로드 중 오류가 발생했습니다.',
-            variant: "destructive"
-          });
-        }
-      };
-
-      reader.onerror = (error) => {
-        console.error('파일 읽기 에러:', error);
-        toast({
-          title: "업로드 실패",
-          description: "파일을 읽는 중 오류가 발생했습니다.",
-          variant: "destructive"
-        });
-      };
-
-      reader.readAsBinaryString(file);
+      const response = await fetch('/api/upload-channel/logs', {
+        headers: {
+          'user-id': session.user_id,
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setLogs(data.logs || []);
+      } else {
+        console.error('로그 조회 실패:', response.status);
+      }
     } catch (error) {
-      console.error('업로드 처리 중 에러:', error);
+      console.error('로그 로드 오류:', error);
+    }
+  };
+
+  // 세션 확인
+  useEffect(() => {
+    const checkAuth = async () => {
+      const currentSession = await getSession();
+      console.log('현재 세션:', currentSession);
+      
+      if (!currentSession) {
+        router.push('/');
+        return;
+      }
+      
+      setSession(currentSession);
+      setIsLoading(false);
+    };
+
+    checkAuth();
+  }, [router]);
+
+  // 로그 조회
+  useEffect(() => {
+    if (session?.user_id) {
+      fetchLogs();
+    }
+  }, [session]);
+
+  // 채널 목록 조회
+  useEffect(() => {
+    const fetchChannels = async () => {
+      if (!session) return;
+      
+      try {
+        setIsLoading(true);
+        setError(null); 
+        
+        const response = await fetch('/api/upload-channel/channels', {
+          headers: {
+            'user-id': session.user_id,
+          },
+        });
+        console.log('API 응답:', response);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (Array.isArray(data)) {
+          setChannels(data);
+        } else {
+          setError('채널 목록을 가져오는데 실패했습니다.');
+          setChannels([]);
+        }
+      } catch (error) {
+        setError(error instanceof Error ? error.message : '채널 목록을 가져오는데 실패했습니다.');
+        setChannels([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchChannels();
+  }, [session]);
+
+  const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    
+    if (!selectedChannel) {
       toast({
-        title: "업로드 실패",
-        description: error instanceof Error ? error.message : '파일 업로드 중 오류가 발생했습니다.',
+        description: <div className="flex items-center gap-2"><CircleAlert className="h-5 w-5" /> 업로드 전에 채널을 선택해주세요.</div>,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!file) {
+      toast({
+        description: <div className="flex items-center gap-2"><CircleAlert className="h-5 w-5" /> 업로드할 파일을 선택해주세요.</div>,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setSelectedFile(file);
+
+    try {
+      const currentSession = await getSession();
+      
+      if (!currentSession) {
+        router.push('/');
+        return;
+      }
+
+      const uploadId = uuidv4();
+      setCurrentUploadId(uploadId);
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('channelName', selectedChannel);
+      formData.append('uploadId', uploadId);
+
+      const response = await fetch('/api/upload-channel/upload', {
+        method: 'POST',
+        headers: {
+          'user-id': currentSession.user_id,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('업로드에 실패했습니다.');
+      }
+
+      const result = await response.json();
+      setUploadedCount(result.count || 0);
+
+      toast({
+        description: <div className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5" /> {result.count}개 상품이 성공적으로 업로드되었습니다.</div>,
+      });
+
+      // 전체 로그 새로고침
+      const logsResponse = await fetch('/api/upload-channel/logs', {
+        headers: {
+          'user-id': currentSession.user_id,
+        },
+      });
+      
+      if (logsResponse.ok) {
+        const logsData = await logsResponse.json();
+        setLogs(logsData.logs || []);
+      }
+    } catch (error) {
+      console.error('업로드 오류:', error);
+      toast({
+        description: <div className="flex items-center gap-2"><CircleAlert className="h-5 w-5" /> 파일 업로드 중 오류가 발생했습니다.</div>,
         variant: "destructive"
       });
     }
   };
 
-  const handleDeleteLog = async (logId: string) => {
+  // 데이터 삭제
+  const handleDelete = async (uploadId: string, channelName: string) => {
     try {
-      const response = await fetch(`/api/upload-channel/logs/${logId}`, {
+      if (!session?.user_id) {
+        console.error('사용자 ID가 없습니다');
+        return;
+      }
+
+      const response = await fetch(`/api/upload-channel/delete?uploadId=${uploadId}&channelName=${channelName}`, {
         method: 'DELETE',
+        headers: {
+          'user-id': session.user_id,
+        },
       });
 
       if (!response.ok) {
-        throw new Error('로그 삭제에 실패했습니다.');
+        throw new Error('삭제에 실패했습니다.');
       }
 
+      // 삭제 성공 후 로그 새로고침
+      await fetchLogs();
+
       toast({
-        title: "성공",
-        description: "로그가 삭제되었습니다.",
-        variant: "success"
+        description: <div className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5" /> 데이터가 성공적으로 삭제되었습니다.</div>,
       });
-      fetchLogs();
     } catch (error) {
-      console.error('Error deleting log:', error);
+      console.error('삭제 오류:', error);
       toast({
-        title: "에러",
-        description: "로그 삭제에 실패했습니다.",
+        description: <div className="flex items-center gap-2"><CircleAlert className="h-5 w-5" /> 데이터 삭제 중 오류가 발생했습니다.</div>,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDownload = async () => {
+    if (!selectedChannel) {
+      toast({
+        description: <div className="flex items-center gap-2"><CircleAlert className="h-5 w-5" /> 채널을 먼저 선택해주세요.</div>,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/upload-channel/download?channelName=${selectedChannel}`);
+      if (!response.ok) {
+        throw new Error('양식 다운로드에 실패했습니다.');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${selectedChannel}_양식.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        description: <div className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5" /> 양식이 다운로드되었습니다.</div>,
+      });
+    } catch (error) {
+      console.error('다운로드 오류:', error);
+      toast({
+        description: <div className="flex items-center gap-2"><CircleAlert className="h-5 w-5" /> 양식 다운로드 중 오류가 발생했습니다.</div>,
         variant: "destructive"
       });
     }
   };
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">채널 업로드</h1>
-      
-      {/* 섹션 1 */}
-      <div className="mb-8 p-4 border rounded-lg">
-        <h2 className="text-xl font-semibold mb-4">1. 채널 선택 및 업로드</h2>
-        <div className="flex gap-4 mb-4">
-          <select
-            value={selectedChannel}
-            onChange={(e) => setSelectedChannel(e.target.value)}
-            className="w-[200px] p-2 border rounded"
-          >
-            <option value="">채널 선택</option>
-            {channels.map((channel) => (
-              <option key={channel.channel_name} value={channel.channel_name}>
-                {channel.channel_name}
-              </option>
-            ))}
-          </select>
-          <Button onClick={handleDownloadTemplate}>양식 다운로드</Button>
-          <Input
-            type="file"
-            accept=".xlsx,.xls"
-            onChange={(e) => {
-              if (e.target.files) {
-                const file = e.target.files[0];
-                handleUpload(file);
-              }
-            }}
-            className="w-[200px]"
-          />
-        </div>
-      </div>
+    <div className="container mx-auto p-4 space-y-6">
+      {/* 1번 섹션 */}
+      <Card>
+        <CardHeader>
+          <CardTitle>채널 선택 및 업로드</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-col gap-4">
+            <div className="flex gap-4 items-center">
+              <Select 
+                value={selectedChannel || undefined} 
+                onValueChange={setSelectedChannel}
+              >
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="채널 선택" />
+                </SelectTrigger>
+                <SelectContent>
+                  {isLoading ? (
+                    <SelectItem value="loading" disabled>
+                      로딩 중...
+                    </SelectItem>
+                  ) : error ? (
+                    <SelectItem value="error" disabled>
+                      {error}
+                    </SelectItem>
+                  ) : channels.length > 0 ? (
+                    channels.map((channel) => (
+                      <SelectItem key={channel} value={channel}>
+                        {channel}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="no-channels" disabled>
+                      채널이 없습니다
+                    </SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+              <Button 
+                onClick={handleDownload}
+                disabled={!selectedChannel}
+              >
+                양식 다운로드
+              </Button>
+              <div className="relative">
+                <input
+                  type="file"
+                  accept=".xlsx"
+                  onChange={handleUpload}
+                  className="hidden"
+                  disabled={!selectedChannel}
+                  key={selectedFile ? 'file-selected' : 'no-file'}
+                  id="file-upload"
+                />
+                <Button
+                  onClick={() => document.getElementById('file-upload')?.click()}
+                  disabled={!selectedChannel}
+                  variant="outline"
+                >
+                  파일 선택
+                </Button>
+              </div>
+            </div>
+            <div className="flex gap-4 items-center">
+              {selectedFile && (
+                <div className="text-sm text-gray-500">
+                  {selectedFile.name}
+                </div>
+              )}
+              {uploadedCount > 0 && (
+                <div className="flex items-center gap-2 text-green-600 font-medium">
+                  <CheckCircle2 className="h-4 w-4" />
+                  {uploadedCount} 상품 반영 완료
+                </div>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-      {/* 섹션 2 */}
-      <div className="mb-8 p-4 border rounded-lg">
-        <h2 className="text-xl font-semibold mb-4">2. 미리보기</h2>
-        <div className="flex gap-4 mb-4">
-          <Input
-            placeholder="이지어드민 코드 입력"
-            value={productId}
-            onChange={(e) => setProductId(e.target.value)}
-            className="w-[200px]"
-          />
-          <Button onClick={fetchPreviewData}>조회</Button>
-        </div>
-        {previewData && (
-          <table className="min-w-full table-auto">
-            <thead>
-              <tr>
-                <th className="px-4 py-2">채널명</th>
-                <th className="px-4 py-2">이지어드민 코드</th>
-                <th className="px-4 py-2">채널 상품 코드</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td className="px-4 py-2">{previewData.channel_name}</td>
-                <td className="px-4 py-2">{previewData.product_id}</td>
-                <td className="px-4 py-2">{previewData.channel_product_id}</td>
-              </tr>
-            </tbody>
-          </table>
-        )}
-      </div>
-
-      {/* 섹션 3 */}
-      <div className="p-4 border rounded-lg">
-        <h2 className="text-xl font-semibold mb-4">3. 업로드 로그</h2>
-        <table className="min-w-full table-auto">
-          <thead>
-            <tr>
-              <th className="px-4 py-2">날짜</th>
-              <th className="px-4 py-2">채널명</th>
-              <th className="px-4 py-2">이지어드민 코드</th>
-              <th className="px-4 py-2">채널 상품 코드</th>
-              <th className="px-4 py-2">삭제</th>
-            </tr>
-          </thead>
-          <tbody>
-            {logs.map((log) => (
-              <tr key={`${log.date}-${log.product_id}`}>
-                <td className="px-4 py-2">{new Date(log.date).toLocaleString()}</td>
-                <td className="px-4 py-2">{log.channel_name}</td>
-                <td className="px-4 py-2">{log.product_id}</td>
-                <td className="px-4 py-2">{log.channel_product_id}</td>
-                <td className="px-4 py-2">
-                  <Button variant="destructive" size="sm" onClick={() => handleDeleteLog(log.user_id)}>
-                    삭제
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {/* 전체 로그 테이블 */}
+      <Card>
+        <CardHeader>
+          <CardTitle>전체 로그</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>날짜</TableHead>
+                <TableHead>채널명</TableHead>
+                <TableHead>업로드 ID</TableHead>
+                <TableHead>상품 수</TableHead>
+                <TableHead>삭제</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {logs.length > 0 ? (
+                logs.map((log, index) => (
+                  <TableRow key={index}>
+                    <TableCell>{log.date}</TableCell>
+                    <TableCell>{log.channel_name}</TableCell>
+                    <TableCell>{log.upload_id}</TableCell>
+                    <TableCell>{log.count}</TableCell>
+                    <TableCell>
+                      <Button
+                        variant="destructive"
+                        onClick={() => handleDelete(log.upload_id || '', log.channel_name)}
+                      >
+                        삭제
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center">
+                    로그 데이터가 없습니다.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
-}
+} 
