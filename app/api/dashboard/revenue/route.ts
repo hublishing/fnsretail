@@ -17,6 +17,8 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   
   // 필터 파라미터
+  const brand_group = searchParams.get('brand_group'); // 브랜드
+  const team = searchParams.get('team');              // 팀
   const channel_category_2 = searchParams.get('channel_category_2');
   const channel_category_3 = searchParams.get('channel_category_3');
   const channel_name = searchParams.get('channel_name');
@@ -28,6 +30,8 @@ export async function GET(request: NextRequest) {
   const filterOptionsOnly = searchParams.get('filterOptionsOnly') === 'true';
 
   logDebug('필터 파라미터', {
+    brand_group,
+    team,
     channel_category_2,
     channel_category_3,
     channel_name,
@@ -46,6 +50,8 @@ export async function GET(request: NextRequest) {
 
     // 필터 옵션 데이터 가져오기 (항상 필요함)
     const filterOptions = await fetchFilterOptions(url, access_token, {
+      brand_group,
+      team,
       channel_category_2,
       channel_category_3,
       channel_name,
@@ -61,6 +67,8 @@ export async function GET(request: NextRequest) {
 
     // 차트 데이터 가져오기
     const chartData = await fetchChartData(url, access_token, {
+      brand_group,
+      team,
       channel_category_2,
       channel_category_3,
       channel_name,
@@ -89,6 +97,8 @@ async function fetchChartData(url: string, access_token: string, filters: any) {
   logDebug('차트 데이터 조회 시작', filters);
 
   const { 
+    brand_group,
+    team,
     channel_category_2,
     channel_category_3,
     channel_name,
@@ -100,6 +110,12 @@ async function fetchChartData(url: string, access_token: string, filters: any) {
   // 필터 조건 설정
   const whereConditions = ['1=1']; // 항상 참인 조건으로 시작
   
+  if (brand_group) {
+    whereConditions.push(`brand_group = '${brand_group}'`);
+  }
+  if (team) {
+    whereConditions.push(`team = '${team}'`);
+  }
   if (channel_category_2) {
     whereConditions.push(`channel_category_2 = '${channel_category_2}'`);
   }
@@ -299,22 +315,57 @@ async function fetchFilterOptions(url: string, access_token: string, filters: an
   logDebug('필터 옵션 조회 시작', filters);
   
   const {
+    brand_group,
+    team,
     channel_category_2,
     channel_category_3,
     channel_name,
     manager
   } = filters;
   
-  // 구분(channel_category_2) 옵션 조회 - 항상 전체 목록
+  // 브랜드(brand_group) 옵션 조회 - 항상 전체 목록
+  const brandGroupOptions = await fetchDistinctValues(
+    url, 
+    access_token, 
+    'brand_group', 
+    {}
+  );
+  
+  // 팀(team) 옵션 조회 - 브랜드 필터 적용
+  const teamFilters: any = {};
+  if (brand_group) {
+    teamFilters.brand_group = brand_group;
+  }
+  const teamOptions = await fetchDistinctValues(
+    url, 
+    access_token, 
+    'team', 
+    teamFilters
+  );
+  
+  // 구분(channel_category_2) 옵션 조회 - 브랜드, 팀 필터 적용
+  const category2Filters: any = {};
+  if (brand_group) {
+    category2Filters.brand_group = brand_group;
+  }
+  if (team) {
+    category2Filters.team = team;
+  }
   const category2Options = await fetchDistinctValues(
     url, 
     access_token, 
     'channel_category_2', 
-    {}
+    category2Filters
   );
   
-  // 분류(channel_category_3) 옵션 조회 - 구분 필터 적용
+  // 분류(channel_category_3) 옵션 조회 - 브랜드, 팀, 구분 필터 적용
   const category3Filters: any = {};
+  if (brand_group) {
+    category3Filters.brand_group = brand_group;
+  }
+  if (team) {
+    category3Filters.team = team;
+  }
   if (channel_category_2) {
     category3Filters.channel_category_2 = channel_category_2;
   }
@@ -325,8 +376,14 @@ async function fetchFilterOptions(url: string, access_token: string, filters: an
     category3Filters
   );
   
-  // 채널(channel_name) 옵션 조회 - 구분, 분류 필터 적용
+  // 채널(channel_name) 옵션 조회 - 브랜드, 팀, 구분, 분류 필터 적용
   const channelFilters: any = {};
+  if (brand_group) {
+    channelFilters.brand_group = brand_group;
+  }
+  if (team) {
+    channelFilters.team = team;
+  }
   if (channel_category_2) {
     channelFilters.channel_category_2 = channel_category_2;
   }
@@ -340,8 +397,14 @@ async function fetchFilterOptions(url: string, access_token: string, filters: an
     channelFilters
   );
   
-  // 담당자(manager) 옵션 조회 - 구분, 분류, 채널 필터 적용
+  // 담당자(manager) 옵션 조회 - 브랜드, 팀, 구분, 분류, 채널 필터 적용
   const managerFilters: any = {};
+  if (brand_group) {
+    managerFilters.brand_group = brand_group;
+  }
+  if (team) {
+    managerFilters.team = team;
+  }
   if (channel_category_2) {
     managerFilters.channel_category_2 = channel_category_2;
   }
@@ -359,6 +422,8 @@ async function fetchFilterOptions(url: string, access_token: string, filters: an
   );
   
   logDebug('필터 옵션 조회 완료', {
+    brandGroupCount: brandGroupOptions.length,
+    teamCount: teamOptions.length,
     category2Count: category2Options.length,
     category3Count: category3Options.length,
     channelCount: channelOptions.length,
@@ -366,6 +431,8 @@ async function fetchFilterOptions(url: string, access_token: string, filters: an
   });
   
   return {
+    brand_group: brandGroupOptions,
+    team: teamOptions,
     category2: category2Options,
     category3: category3Options,
     channel: channelOptions,
@@ -389,6 +456,11 @@ async function fetchDistinctValues(
       whereConditions.push(`${key} = '${value}'`);
     }
   });
+  
+  // '기타' 값 제외 (brand_group 필드에 대해서만)
+  if (columnName === 'brand_group') {
+    whereConditions.push(`${columnName} != '기타'`);
+  }
   
   const whereClause = whereConditions.join(' AND ');
   

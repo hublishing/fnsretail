@@ -35,12 +35,15 @@ import {
 import { DateRange } from 'react-day-picker'
 import { cn } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
+import { CustomTooltip } from "@/components/ui/chart-tooltip"
 
 // 파이 차트 색상
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#663399', '#FF6347', '#4682B4', '#DA70D6', '#32CD32'];
 
 // 필터 인터페이스
 interface Filters {
+  brand_group: string | null;
+  team: string | null;
   channel_category_2: string | null;
   channel_category_3: string | null;
   channel_name: string | null;
@@ -73,6 +76,8 @@ interface ChartData {
 
 // 필터 옵션 인터페이스
 interface FilterOptions {
+  brand_group: string[];
+  team: string[];
   category2: string[];
   category3: string[];
   channel: string[];
@@ -89,6 +94,8 @@ export default function RevenuePage() {
   const [activeTab, setActiveTab] = useState("overview");
   const [chartData, setChartData] = useState<ChartData | null>(null);
   const [filterOptions, setFilterOptions] = useState<FilterOptions>({
+    brand_group: [],
+    team: [],
     category2: [],
     category3: [],
     channel: [],
@@ -107,6 +114,8 @@ export default function RevenuePage() {
   };
   
   const [filters, setFilters] = useState<Filters>({
+    brand_group: null,
+    team: null,
     channel_category_2: null,
     channel_category_3: null,
     channel_name: null,
@@ -121,7 +130,18 @@ export default function RevenuePage() {
       const newFilters = { ...filters, [key]: value === ALL_VALUE ? null : value };
       
       // 계층적 필터링: 상위 필터가 변경되면 하위 필터 초기화
-      if (key === 'channel_category_2') {
+      if (key === 'brand_group') {
+        newFilters.team = null;
+        newFilters.channel_category_2 = null;
+        newFilters.channel_category_3 = null;
+        newFilters.channel_name = null;
+        newFilters.manager = null;
+      } else if (key === 'team') {
+        newFilters.channel_category_2 = null;
+        newFilters.channel_category_3 = null;
+        newFilters.channel_name = null;
+        newFilters.manager = null;
+      } else if (key === 'channel_category_2') {
         newFilters.channel_category_3 = null;
         newFilters.channel_name = null;
         newFilters.manager = null;
@@ -150,6 +170,8 @@ export default function RevenuePage() {
       const params = new URLSearchParams();
       params.append('filterOptionsOnly', 'true');
       
+      if (currentFilters.brand_group) params.append('brand_group', currentFilters.brand_group);
+      if (currentFilters.team) params.append('team', currentFilters.team);
       if (currentFilters.channel_category_2) params.append('channel_category_2', currentFilters.channel_category_2);
       if (currentFilters.channel_category_3) params.append('channel_category_3', currentFilters.channel_category_3);
       if (currentFilters.channel_name) params.append('channel_name', currentFilters.channel_name);
@@ -177,6 +199,8 @@ export default function RevenuePage() {
       
       // URL 파라미터 생성
       const params = new URLSearchParams();
+      if (filters.brand_group) params.append('brand_group', filters.brand_group);
+      if (filters.team) params.append('team', filters.team);
       if (filters.channel_category_2) params.append('channel_category_2', filters.channel_category_2);
       if (filters.channel_category_3) params.append('channel_category_3', filters.channel_category_3);
       if (filters.channel_name) params.append('channel_name', filters.channel_name);
@@ -271,6 +295,42 @@ export default function RevenuePage() {
 
       {/* 필터 영역 */}
       <div className="grid gap-4 md:grid-cols-6">
+        <div>
+          <label className="text-sm font-medium mb-1 block">브랜드</label>
+          <Select
+            value={filters.brand_group || ALL_VALUE}
+            onValueChange={(value) => handleFilterChange('brand_group', value)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="브랜드 선택" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_VALUE}>전체</SelectItem>
+              {filterOptions.brand_group
+                .filter(option => option !== '기타')
+                .map((option) => (
+                <SelectItem key={option} value={option}>{option}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <label className="text-sm font-medium mb-1 block">팀</label>
+          <Select
+            value={filters.team || ALL_VALUE}
+            onValueChange={(value) => handleFilterChange('team', value)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="팀 선택" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_VALUE}>전체</SelectItem>
+              {filterOptions.team.map((option) => (
+                <SelectItem key={option} value={option}>{option}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         <div>
           <label className="text-sm font-medium mb-1 block">구분</label>
           <Select
@@ -505,7 +565,12 @@ export default function RevenuePage() {
                       height={30}
                     />
                     <Tooltip 
-                      formatter={(value: number) => formatCurrency(Number(value))}
+                      content={
+                        <CustomTooltip 
+                          formatter={formatCurrency}
+                          indicator="dot"
+                        />
+                      }
                       labelFormatter={(date: string) => format(new Date(date), 'yyyy-MM-dd')}
                     />
                     <Bar dataKey="revenue" name="실제 매출" fill="hsl(var(--chart-1))" radius={5} />
@@ -566,8 +631,14 @@ export default function RevenuePage() {
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                      {/*<Legend />*/}
+                      <Tooltip 
+                        content={
+                          <CustomTooltip 
+                            formatter={formatCurrency}
+                            indicator="dot"
+                          />
+                        }
+                      />
                     </PieChart>
                   )}
                 </div>
@@ -605,8 +676,14 @@ export default function RevenuePage() {
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                      {/*<Legend />*/}
+                      <Tooltip 
+                        content={
+                          <CustomTooltip 
+                            formatter={formatCurrency}
+                            indicator="dot"
+                          />
+                        }
+                      />
                     </PieChart>
                   )}
                 </div>
@@ -644,8 +721,14 @@ export default function RevenuePage() {
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                      {/*<Legend />*/}
+                      <Tooltip 
+                        content={
+                          <CustomTooltip 
+                            formatter={formatCurrency}
+                            indicator="dot"
+                          />
+                        }
+                      />
                     </PieChart>
                   )}
                 </div>
@@ -683,8 +766,14 @@ export default function RevenuePage() {
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                      {/*<Legend />*/}
+                      <Tooltip 
+                        content={
+                          <CustomTooltip 
+                            formatter={formatCurrency}
+                            indicator="dot"
+                          />
+                        }
+                      />
                     </PieChart>
                   )}
                 </div>
@@ -739,7 +828,12 @@ export default function RevenuePage() {
                       <YAxis />
                       <CartesianGrid strokeDasharray="3 3" />
                       <Tooltip 
-                        formatter={(value) => formatCurrency(Number(value))}
+                        content={
+                          <CustomTooltip 
+                            formatter={formatCurrency}
+                            indicator="line"
+                          />
+                        }
                         labelFormatter={(date) => format(new Date(date), 'yyyy-MM-dd')}
                       />
                       <Legend />
