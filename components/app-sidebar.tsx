@@ -39,11 +39,11 @@ const dashboard = [
       items: [
         {
           title: "판매현황",
-          url: "/page/dashboard",
+          url: "/page/dashboard/sales",
         },
         {
           title: "매출현황",
-          url: "#",
+          url: "/page/dashboard/revenue",
         },
         {
           title: "트렌드현황",
