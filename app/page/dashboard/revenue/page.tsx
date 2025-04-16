@@ -18,7 +18,12 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
-  ResponsiveContainer
+  ResponsiveContainer,
+  Label,
+  PolarGrid,
+  PolarRadiusAxis,
+  RadialBar,
+  RadialBarChart,
 } from "recharts"
 import { ChartContainer } from "@/components/ui/chart"
 import { format } from 'date-fns'
@@ -505,14 +510,64 @@ export default function RevenuePage() {
           <div className="grid gap-4 md:grid-cols-3">
             <Card>
               <CardHeader className="pb-2">
-                <CardDescription>총 매출</CardDescription>
-                <CardTitle className="text-2xl">{formatCurrency(chartData?.summary.totalRevenue || 0)}</CardTitle>
+                <div className="flex flex justify-between">
+                  <div className="flex flex-col">
+                    <CardDescription>총 매출</CardDescription>
+                    <CardTitle className="text-2xl">{formatCurrency(chartData?.summary.totalRevenue || 0)}</CardTitle>
+                    
+                    <p className="text-xs text-muted-foreground pt-3">
+                      목표 달성률: {formatPercent(chartData?.summary.achievementRate || 0)}
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    
+                    <div className="w-24 h-24">
+                    <RadialBarChart
+                      width={96}
+                      height={96}
+                      data={[
+                        {
+                          achievement: chartData?.summary.achievementRate || 0,
+                          fill: "hsl(var(--chart-1))"
+                        }
+                      ]}
+                      startAngle={90}  // 12시 방향에서 시작 (90도)
+                      endAngle={chartData?.summary.achievementRate ? (90 - (chartData.summary.achievementRate * 3.6)) : 90}  // 시계방향으로 진행
+                      innerRadius={30}
+                      outerRadius={48}
+                      barSize={10}
+                    >
+                      <PolarGrid gridType="circle"radialLines={false}stroke="none"className="first:fill-muted last:fill-background"polarRadius={[35, 25]}/>
+                      <RadialBar background dataKey="achievement" cornerRadius={5} fill="hsl(var(--chart-1))"/>
+                      <PolarRadiusAxis type="number" domain={[0, 100]} tick={false} tickLine={false} axisLine={false}>
+                        {/*<Label
+                          content={({ viewBox }) => {
+                            if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                              return (
+                                <text
+                                  x={viewBox.cx}
+                                  y={viewBox.cy}
+                                  textAnchor="middle"
+                                  dominantBaseline="middle"
+                                >
+                                  <tspan
+                                    x={viewBox.cx}
+                                    y={viewBox.cy}
+                                    className="text-lg font-bold fill-foreground"
+                                  >
+                                    {Math.round(chartData?.summary.achievementRate || 0)}%
+                                  </tspan>
+                                </text>
+                              )
+                            }
+                          }}
+                        />*/}
+                      </PolarRadiusAxis>
+                    </RadialBarChart>
+                    </div>
+                  </div>
+                </div>
               </CardHeader>
-              <CardContent>
-                <p className="text-xs text-muted-foreground">
-                  목표 달성률: {formatPercent(chartData?.summary.achievementRate || 0)}
-                </p>
-              </CardContent>
             </Card>
             <Card>
               <CardHeader className="pb-2">
