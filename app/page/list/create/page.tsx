@@ -2350,10 +2350,10 @@ export default function CartPage() {
                                 />
                               </TableHead>
                               <TableHead className="text-center w-[50px]">번호</TableHead>
-                              <TableHead className="text-center w-[80px]">이지어드민</TableHead>
+                              <TableHead className="text-center w-[100px]">이지어드민</TableHead>
                               <TableHead className="text-center w-[80px]">채널코드</TableHead>
                               <TableHead className="text-center w-[70px]">이미지</TableHead>
-                              <TableHead className="text-left w-[200px]">상품명</TableHead>
+                              <TableHead className="text-center w-[200px]">상품명</TableHead>
                               <TableHead className="text-center w-[80px]">판매가</TableHead> 
                               <TableHead className="text-center w-[80px]">즉시할인</TableHead>
                               <TableHead className="text-center w-[80px]">쿠폰1</TableHead>
@@ -2361,12 +2361,12 @@ export default function CartPage() {
                               <TableHead className="text-center w-[80px]">쿠폰3</TableHead>
                               <TableHead className="text-center w-[80px]">최종할인</TableHead>
                               <TableHead className="text-center w-[90px]">할인부담</TableHead>
-                              <TableHead className="text-center w-[80px]">조정원가</TableHead>
+                              <TableHead className="text-center w-[80px]">원가율</TableHead>
                               <TableHead className="text-center w-[100px]">예상수수료</TableHead>
                               <TableHead className="text-center w-[80px]">물류비</TableHead>
                               <TableHead className="text-center w-[100px]">예상순이익</TableHead>
                               <TableHead className="text-center w-[100px]">정산예정금</TableHead>
-                              <TableHead className="text-center w-[80px]">원가율</TableHead>
+                              <TableHead className="text-center w-[80px]">조정원가</TableHead>
                               <TableHead className="text-center w-[80px]">재고</TableHead>
                               <TableHead className="text-center w-[70px]">드랍</TableHead>
                               <TableHead className="text-center w-[80px]">공급처</TableHead>
@@ -2505,8 +2505,12 @@ export default function CartPage() {
                                 <DraggableCell className="text-center">{/* 할인부담액 */}
                                   <div>{product.discount_burden_amount ? formatNumber(product.discount_burden_amount, selectedChannelInfo) : '-'}</div>
                                 </DraggableCell>
-                                <DraggableCell className="text-center">{/* 조정원가 */}
-                                  <div>{calculateAdjustedCost(product) ? formatNumber(calculateAdjustedCost(product), selectedChannelInfo) : '-'}</div>
+                                <DraggableCell className="text-center">{/* 원가율 */}
+                                  <div>
+                                    {selectedChannelInfo && product.org_price 
+                                      ? `${calculateCostRatio(product, selectedChannelInfo)}%`
+                                      : '-'}
+                                  </div>
                                 </DraggableCell>
                                 <DraggableCell className="text-center">{/* 예상수수료 */}
                                   <div>
@@ -2542,12 +2546,8 @@ export default function CartPage() {
                                 <DraggableCell className="text-center">{/* 예상정산액 */}
                                   <div>{formatNumber(calculateSettlementAmount(product), selectedChannelInfo)}</div>
                                 </DraggableCell>
-                                <DraggableCell className="text-center">{/* 원가율 */}
-                                  <div>
-                                    {selectedChannelInfo && product.org_price 
-                                      ? `${calculateCostRatio(product, selectedChannelInfo)}%`
-                                      : '-'}
-                                  </div>
+                                <DraggableCell className="text-center">{/* 조정원가 */}
+                                  <div>{calculateAdjustedCost(product) ? formatNumber(calculateAdjustedCost(product), selectedChannelInfo) : '-'}</div>
                                 </DraggableCell>
                                 <DraggableCell className="text-center">{/* 재고 */}
                                   <div>
