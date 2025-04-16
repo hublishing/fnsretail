@@ -141,7 +141,8 @@ async function fetchChartData(url: string, access_token: string, filters: any) {
     summary: {
       totalRevenue: summaryData.totalRevenue,
       totalCost: summaryData.totalCost,
-      achievementRate: calculateAchievementRate(summaryData.totalRevenue, summaryData.targetDayAvg)
+      achievementRate: calculateAchievementRate(summaryData.totalRevenue, summaryData.totalTargetDay),
+      dateCount: summaryData.dateCount
     }
   };
 }
@@ -152,7 +153,8 @@ async function fetchSummaryData(url: string, access_token: string, whereClause: 
     SELECT 
       SUM(sum_final_calculated_amount) AS total_revenue,
       SUM(sum_org_amount) AS total_cost,
-      COALESCE(AVG(target_day), 0) AS target_day_avg
+      SUM(target_day) AS total_target_day,
+      COUNT(DISTINCT order_date) AS date_count
     FROM 
       \`${process.env.GOOGLE_CLOUD_PROJECT_ID}.project_m.sales_db\`
     WHERE 
@@ -179,13 +181,14 @@ async function fetchSummaryData(url: string, access_token: string, whereClause: 
   const data = await response.json();
   
   if (!data.rows || data.rows.length === 0) {
-    return { totalRevenue: 0, totalCost: 0, targetDayAvg: 0 };
+    return { totalRevenue: 0, totalCost: 0, totalTargetDay: 0, dateCount: 0 };
   }
   
   return {
     totalRevenue: Number(data.rows[0].f[0].v || 0),
     totalCost: Number(data.rows[0].f[1].v || 0),
-    targetDayAvg: Number(data.rows[0].f[2].v || 0)
+    totalTargetDay: Number(data.rows[0].f[2].v || 0),
+    dateCount: Number(data.rows[0].f[3].v || 0)
   };
 }
 
@@ -241,7 +244,8 @@ async function fetchTrendData(url: string, access_token: string, whereClause: st
       order_date,
       SUM(sum_final_calculated_amount) AS revenue,
       SUM(sum_org_amount) AS cost,
-      SUM(sum_final_calculated_amount - sum_org_amount) AS profit
+      SUM(sum_final_calculated_amount - sum_org_amount) AS profit,
+      SUM(target_day) AS target_day
     FROM 
       \`${process.env.GOOGLE_CLOUD_PROJECT_ID}.project_m.sales_db\`
     WHERE 
@@ -277,14 +281,17 @@ async function fetchTrendData(url: string, access_token: string, whereClause: st
     order_date: row.f[0].v,
     revenue: Number(row.f[1].v || 0),
     cost: Number(row.f[2].v || 0),
-    profit: Number(row.f[3].v || 0)
+    profit: Number(row.f[3].v || 0),
+    target_day: Number(row.f[4].v || 0)
   }));
 }
 
 // 목표 대비 달성률 계산 함수 추가
-function calculateAchievementRate(totalRevenue: number, targetDayAvg: number) {
-  if (!targetDayAvg || targetDayAvg === 0) return 0;
-  return (totalRevenue / targetDayAvg) * 100;
+function calculateAchievementRate(totalRevenue: number, totalTargetDay: number) {
+  if (!totalTargetDay || totalTargetDay === 0) return 0;
+  
+  // 달성률 = (총 매출액 / 총 목표액) * 100
+  return (totalRevenue / totalTargetDay) * 100;
 }
 
 // 필터 옵션 조회 함수

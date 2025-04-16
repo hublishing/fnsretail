@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   AreaChart,
@@ -61,11 +61,13 @@ interface ChartData {
     revenue: number;
     cost: number;
     profit: number;
+    target_day: number;
   }>;
   summary: {
     totalRevenue: number;
     totalCost: number;
     achievementRate: number;
+    dateCount: number;
   };
 }
 
@@ -92,15 +94,24 @@ export default function RevenuePage() {
     channel: [],
     manager: []
   });
+  
+  // 현재 달의 1일부터 오늘까지를 기본 날짜 범위로 설정
+  const getDefaultDateRange = (): DateRange => {
+    const today = new Date();
+    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    
+    return {
+      from: firstDayOfMonth,
+      to: today
+    };
+  };
+  
   const [filters, setFilters] = useState<Filters>({
     channel_category_2: null,
     channel_category_3: null,
     channel_name: null,
     manager: null,
-    dateRange: {
-      from: new Date(new Date().setMonth(new Date().getMonth() - 3)),
-      to: new Date()
-    }
+    dateRange: getDefaultDateRange()
   });
 
   // 필터 변경 핸들러
@@ -188,6 +199,9 @@ export default function RevenuePage() {
       const data = await response.json();
       setChartData(data.chartData);
       setFilterOptions(data.filterOptions);
+      
+      // 디버깅: 트렌드 데이터 확인
+      console.log('트렌드 데이터:', data.chartData.trendData);
     } catch (err) {
       console.error('데이터 로드 오류:', err);
       setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.');
@@ -240,8 +254,8 @@ export default function RevenuePage() {
         from.setDate(today.getDate() - 7);
         break;
       case 'month':
-        // 최근 한 달
-        from.setMonth(today.getMonth() - 1);
+        // 이번달 (1일부터 오늘까지)
+        from = new Date(today.getFullYear(), today.getMonth(), 1);
         break;
     }
     
@@ -387,7 +401,7 @@ export default function RevenuePage() {
                 className="flex-1 text-xs" 
                 onClick={() => handleQuickDateSelect('month')}
               >
-                한달
+                이번달
               </Button>
             </div>
           </div>
@@ -463,7 +477,61 @@ export default function RevenuePage() {
               </CardContent>
             </Card>
           </div>
- 
+
+          {/* 일별 매출 바차트 추가 */}
+          <Card>
+            <CardHeader>
+              <CardTitle>일별 매출</CardTitle>
+              <CardDescription>
+                {filters.dateRange?.from && filters.dateRange?.to 
+                  ? `${format(filters.dateRange.from, 'yyyy-MM-dd')} ~ ${format(filters.dateRange.to, 'yyyy-MM-dd')}`
+                  : '선택된 기간'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-0 pb-2">
+              <div style={{ width: '100%', height: '350px' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart 
+                    data={chartData?.trendData || []}
+                    margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis
+                      dataKey="order_date"
+                      tickLine={false}
+                      tickMargin={5}
+                      axisLine={false}
+                      tickFormatter={(date: string) => format(new Date(date), 'MM-dd')}
+                      height={30}
+                    />
+                    <Tooltip 
+                      formatter={(value: number) => formatCurrency(Number(value))}
+                      labelFormatter={(date: string) => format(new Date(date), 'yyyy-MM-dd')}
+                    />
+                    <Bar dataKey="revenue" name="실제 매출" fill="hsl(var(--chart-1))" radius={5} />
+                    <Bar dataKey="target_day" name="목표 매출" fill="hsl(var(--chart-2))" radius={5} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+            <CardFooter className="pt-0 pb-4 text-xs text-muted-foreground flex items-center justify-between">
+              <div>실제 매출과 목표 매출 비교</div>
+              {chartData?.trendData && chartData.trendData.length >= 2 && (
+                <div className="font-medium">
+                  {(() => {
+                    const latest = chartData.trendData[chartData.trendData.length - 1];
+                    const latestRevenue = latest.revenue;
+                    const latestTarget = latest.target_day;
+                    
+                    if (latestTarget === 0) return "목표 정보 없음";
+                    
+                    const achievementRate = (latestRevenue / latestTarget) * 100;
+                    return `최근 일자 달성률: ${achievementRate.toFixed(1)}%`;
+                  })()}
+                </div>
+              )}
+            </CardFooter>
+          </Card>
 
           {/* 파이 차트 영역 */}
           <div className="grid gap-4 md:grid-cols-2">
