@@ -63,7 +63,7 @@ export interface TabState {
 interface DiscountModalProps {
   showDiscountModal: boolean
   setShowDiscountModal: (show: boolean) => void
-  onApplyDiscount: (products: Product[]) => void
+  onApplyDiscount: (products: Product[], couponType: 'coupon1' | 'coupon2' | 'coupon3') => void
   products: Product[]
   selectedProducts: string[]
   onClose: () => void
@@ -337,17 +337,11 @@ export function DiscountModal({
           switch (type) {
             case 'coupon1':
               updatedProduct.coupon_price_1 = newPrice;
-              updatedProduct.coupon_price_2 = null;  // 강제로 null 설정
-              updatedProduct.coupon_price_3 = null;
               break;
             case 'coupon2':
-              updatedProduct.coupon_price_1 = null;
               updatedProduct.coupon_price_2 = newPrice;
-              updatedProduct.coupon_price_3 = null;
               break;
             case 'coupon3':
-              updatedProduct.coupon_price_1 = null;
-              updatedProduct.coupon_price_2 = null;
               updatedProduct.coupon_price_3 = newPrice;
               break;
           }
@@ -431,7 +425,7 @@ export function DiscountModal({
       console.log('=== handleApplyDiscount 완료 ===');
       console.log('업데이트된 상품 목록:', updatedProducts);
       
-      onApplyDiscount(updatedProducts);
+      onApplyDiscount(updatedProducts, type);
       setShowDiscountModal(false);
       toast({
         description: <div className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5" /> 할인이 적용되었습니다.</div>,
@@ -1036,7 +1030,9 @@ export function DiscountModal({
                   )}
               </div> 
               <div className="mt-4 flex justify-end">
-                <Button onClick={() => handleApplyDiscount('coupon1', getCurrentTabState())}>쿠폰1 적용</Button>
+                <Button onClick={() => {
+                  handleApplyDiscount('coupon1', getCurrentTabState());
+                }}>쿠폰1 적용</Button>
               </div>
             </TabsContent>
             {/* ===== 쿠폰1 탭 끝 ===== */}
@@ -1183,8 +1179,8 @@ export function DiscountModal({
                           value={formatNumber(getCurrentTabState().discountValue)}
                           onChange={(e) => handleNumberChange('tab2', 'discountValue', e.target.value)}
                           className="w-full h-10"
-                      placeholder="할인금액 입력"
-                    />
+                        placeholder="할인금액 입력"
+                      />
                         <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">원</span>
                       </div>
                     </div>
@@ -1216,7 +1212,7 @@ export function DiscountModal({
                             type="text"
                             value={formatNumber(getCurrentTabState().discountValue)}
                             onChange={(e) => handleNumberChange('tab2', 'discountValue', e.target.value)}
-                            className="w-full h-10"
+                          className="w-full h-10"
                         placeholder="할인율 입력"
                       />
                           <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
@@ -1240,9 +1236,9 @@ export function DiscountModal({
                               <SelectItem value="0.1">0.1</SelectItem>
                               <SelectItem value="1">1</SelectItem>
                             </SelectContent>
-                          </Select> 
+                          </Select>
 
-                              {getCurrentTabState().decimalPoint !== 'none' && (
+                                  {getCurrentTabState().decimalPoint !== 'none' && (
                           <Select
                             value={getCurrentTabState().roundType}
                             onValueChange={(value: 'floor' | 'ceil' | 'round') => handleTabStateChange('tab2', 'roundType', value)}
@@ -1285,11 +1281,11 @@ export function DiscountModal({
                       <div className="flex flex-col gap-2">
                         <Label className="w-full text-muted-foreground">자사부담</Label>
                         <div className="relative">
-                      <Input
-                            type="text"
-                            value={formatNumber(getCurrentTabState().selfRatio)}
-                            onChange={(e) => handleNumberChange('tab2', 'selfRatio', e.target.value)}
-                            className="w-full h-10"
+                          <Input
+                          type="text"
+                          value={formatNumber(getCurrentTabState().selfRatio)}
+                          onChange={(e) => handleNumberChange('tab2', 'selfRatio', e.target.value)}
+                          className="w-full h-10"
                         placeholder="%"
                       />
                           <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
@@ -1300,7 +1296,9 @@ export function DiscountModal({
                 )}
               </div> 
               <div className="mt-4 flex justify-end">
-                <Button onClick={() => handleApplyDiscount('coupon2', getCurrentTabState())}>쿠폰2 적용</Button>
+                <Button onClick={() => {
+                  handleApplyDiscount('coupon2', getCurrentTabState());
+                }}>쿠폰2 적용</Button>
               </div>
             </TabsContent>
             {/* ===== 쿠폰2 탭 끝 ===== */}
@@ -1447,8 +1445,8 @@ export function DiscountModal({
                           value={formatNumber(getCurrentTabState().discountValue)}
                           onChange={(e) => handleNumberChange('tab3', 'discountValue', e.target.value)}
                           className="w-full h-10"
-                      placeholder="할인금액 입력"
-                    />
+                        placeholder="할인금액 입력"
+                      />
                         <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">원</span>
                       </div>
                     </div>
@@ -1480,7 +1478,7 @@ export function DiscountModal({
                             type="text"
                             value={formatNumber(getCurrentTabState().discountValue)}
                             onChange={(e) => handleNumberChange('tab3', 'discountValue', e.target.value)}
-                            className="w-full h-10"
+                          className="w-full h-10"
                         placeholder="할인율 입력"
                       />
                           <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
@@ -1504,9 +1502,9 @@ export function DiscountModal({
                               <SelectItem value="0.1">0.1</SelectItem>
                               <SelectItem value="1">1</SelectItem>
                             </SelectContent>
-                          </Select> 
+                          </Select>
 
-                              {getCurrentTabState().decimalPoint !== 'none' && (
+                                  {getCurrentTabState().decimalPoint !== 'none' && (
                           <Select
                             value={getCurrentTabState().roundType}
                             onValueChange={(value: 'floor' | 'ceil' | 'round') => handleTabStateChange('tab3', 'roundType', value)}
@@ -1549,11 +1547,11 @@ export function DiscountModal({
                       <div className="flex flex-col gap-2">
                         <Label className="w-full text-muted-foreground">자사부담</Label>
                         <div className="relative">
-                      <Input
-                            type="text"
-                            value={formatNumber(getCurrentTabState().selfRatio)}
-                            onChange={(e) => handleNumberChange('tab3', 'selfRatio', e.target.value)}
-                            className="w-full h-10"
+                          <Input
+                          type="text"
+                          value={formatNumber(getCurrentTabState().selfRatio)}
+                          onChange={(e) => handleNumberChange('tab3', 'selfRatio', e.target.value)}
+                          className="w-full h-10"
                         placeholder="%"
                       />
                           <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
@@ -1564,7 +1562,9 @@ export function DiscountModal({
                 )}
               </div> 
               <div className="mt-4 flex justify-end">
-                <Button onClick={() => handleApplyDiscount('coupon3', getCurrentTabState())}>쿠폰3 적용</Button>
+                <Button onClick={() => {
+                  handleApplyDiscount('coupon3', getCurrentTabState());
+                }}>쿠폰3 적용</Button>
               </div>
             </TabsContent>
             {/* ===== 쿠폰3 탭 끝 ===== */}
