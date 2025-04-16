@@ -120,7 +120,8 @@ const INITIAL_FILTERS = {
   channel_category_3: 'all',
   order_date_from: '',
   order_date_to: '',
-  sort_by_qty: 'desc'
+  sort_by_qty: 'desc',
+  brand: 'all'
 };
 
 // 정렬 함수 추가
@@ -199,7 +200,8 @@ export default function DynamicTable() {
     code30: new Set<string>(),  // 주문 국가
     channel_name: new Set<string>(),  // 채널명
     channel_category_2: new Set<string>(),  // 구분
-    channel_category_3: new Set<string>()  // 분류
+    channel_category_3: new Set<string>(),  // 분류
+    brand: new Set<string>()  // 브랜드
   })
 
   const router = useRouter()
@@ -396,7 +398,8 @@ export default function DynamicTable() {
           code30: new Set(result.code30 || []),
           channel_name: new Set(result.channel_name || []),
           channel_category_2: new Set(result.channel_category_2 || []),
-          channel_category_3: new Set(result.channel_category_3 || [])
+          channel_category_3: new Set(result.channel_category_3 || []),
+          brand: new Set(result.brand || [])
         });
       } catch (err) {
         console.error('필터 옵션 로딩 오류:', err);
@@ -832,6 +835,21 @@ export default function DynamicTable() {
           
           <div className="flex items-center gap-4 pb-4">
           <div className="text-sm text-gray-500">분류선택</div>
+          <Select
+            value={filters.brand}
+            onValueChange={(value) => handleFilterChange('brand', value)}
+          >
+            <SelectTrigger className={`w-[100px] ${filters.brand !== 'all' ? 'bg-blue-50 border-blue-200' : ''}`}>
+              <SelectValue placeholder="브랜드" />
+            </SelectTrigger>
+            <SelectContent className="min-w-[100px]">
+              <SelectItem value="all">브랜드</SelectItem>
+              {Array.from(dynamicFilterOptions.brand).map((option) => (
+                <SelectItem key={option} value={option}>{option}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          
           <Select
             value={filters.category_3}
             onValueChange={(value) => handleFilterChange('category_3', value)}

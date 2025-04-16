@@ -13,6 +13,7 @@ let cachedResults: {
   channel_name: string[],
   channel_category_2: string[],
   channel_category_3: string[],
+  brand: string[],
   lastUpdated: number 
 } | null = null;
 
@@ -34,12 +35,23 @@ export async function GET() {
       SELECT DISTINCT 
         supply_name,
         extra_column2,
-        exclusive2
+        exclusive2,
+        brand
       FROM \`third-current-410914.project_m.product_db\`
       WHERE 
         supply_name IS NOT NULL AND supply_name != '' AND
         extra_column2 IS NOT NULL AND extra_column2 != '' AND
         exclusive2 IS NOT NULL AND exclusive2 != ''
+    `;
+
+    // 브랜드 필터 옵션을 위한 별도 쿼리 추가
+    const brandFiltersQuery = `
+      SELECT DISTINCT 
+        brand
+      FROM \`third-current-410914.project_m.product_db\`
+      WHERE 
+        brand IS NOT NULL AND 
+        brand != ''
     `;
 
     // 주문 필터 옵션 쿼리 - 단순화된 쿼리로 변경
@@ -180,6 +192,25 @@ export async function GET() {
       throw new Error(`BigQuery API 요청 실패: ${JSON.stringify(productData)}`);
     }
 
+    // 브랜드 필터 옵션 요청 추가
+    const brandResponse = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        query: brandFiltersQuery,
+        useLegacySql: false,
+      }),
+    });
+
+    const brandData = await brandResponse.json();
+
+    if (!brandResponse.ok) {
+      throw new Error(`BigQuery API 요청 실패: ${JSON.stringify(brandData)}`);
+    }
+
     // 주문 필터 옵션 요청
     const orderResponse = await fetch(url, {
       method: 'POST',
@@ -207,12 +238,14 @@ export async function GET() {
     const channel_name = new Set<string>();
     const channel_category_2 = new Set<string>();
     const channel_category_3 = new Set<string>();
+    const brand = new Set<string>();
 
     // 제품 필터 옵션 추출
     productData.rows?.forEach((row: any) => {
       const supplyName = row.f[0].v;
       const extraColumn2 = row.f[1].v;
       const exclusive = row.f[2].v;
+      const brandName = row.f[3].v;
       
       if (supplyName && supplyName !== 'NaN' && supplyName !== 'nan' && supplyName !== 'undefined' && supplyName !== 'null') {
         supply_name.add(supplyName);
@@ -222,6 +255,18 @@ export async function GET() {
       }
       if (exclusive && exclusive !== 'NaN' && exclusive !== 'nan' && exclusive !== 'undefined' && exclusive !== 'null') {
         exclusive2.add(exclusive);
+      }
+      if (brandName && brandName !== 'NaN' && brandName !== 'nan' && brandName !== 'undefined' && brandName !== 'null') {
+        brand.add(brandName);
+      }
+    });
+
+    // 브랜드 필터 옵션 추출
+    brandData.rows?.forEach((row: any) => {
+      const brandName = row.f[0].v;
+      
+      if (brandName && brandName !== 'NaN' && brandName !== 'nan' && brandName !== 'undefined' && brandName !== 'null') {
+        brand.add(brandName);
       }
     });
 
@@ -252,6 +297,7 @@ export async function GET() {
       channel_name: Array.from(channel_name),
       channel_category_2: Array.from(channel_category_2),
       channel_category_3: Array.from(channel_category_3),
+      brand: Array.from(brand),
       lastUpdated: Date.now()
     };
 

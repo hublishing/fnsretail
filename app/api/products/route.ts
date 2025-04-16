@@ -11,6 +11,7 @@ export async function GET(request: Request) {
   const drop_yn = searchParams.get('drop_yn');
   const supply_name = searchParams.get('supply_name');
   const exclusive2 = searchParams.get('exclusive2');
+  const brand = searchParams.get('brand');
   
   // 주문 데이터 필터링 파라미터
   const order_date_from = searchParams.get('order_date_from');
@@ -29,6 +30,7 @@ export async function GET(request: Request) {
     drop_yn,
     supply_name,
     exclusive2,
+    brand,
     order_date_from,
     order_date_to,
     code30,
@@ -40,7 +42,7 @@ export async function GET(request: Request) {
 
   // 검색어나 필터 중 하나라도 있어야 검색 실행
   const hasSearchTerm = searchTerm.trim().length > 0;
-  const hasFilter = [extra_column2, category_3, drop_yn, supply_name, exclusive2, 
+  const hasFilter = [extra_column2, category_3, drop_yn, supply_name, exclusive2, brand,
                      order_date_from, order_date_to, code30, channel_name, 
                      channel_category_2, channel_category_3].some(filter => filter && filter !== 'all');
 
@@ -83,6 +85,9 @@ export async function GET(request: Request) {
     }
     if (exclusive2 && exclusive2 !== 'all') {
       productConditions.push(`exclusive2 = '${exclusive2}'`);
+    }
+    if (brand && brand !== 'all') {
+      productConditions.push(`brand = '${brand}'`);
     }
 
     // 주문 데이터 필터 조건 추가
