@@ -12,6 +12,11 @@ export async function GET(request: Request) {
   const supply_name = searchParams.get('supply_name');
   const exclusive2 = searchParams.get('exclusive2');
   const brand = searchParams.get('brand');
+  let channel_product_id = searchParams.get('channel_product_id');
+  const orderBy = searchParams.get('orderBy') || 'date';
+  const orderDirection = searchParams.get('orderDirection') || 'desc';
+  const page = parseInt(searchParams.get('page') || '1');
+  const pageSize = parseInt(searchParams.get('pageSize') || '10');
   
   // 주문 데이터 필터링 파라미터
   const order_date_from = searchParams.get('order_date_from');
@@ -31,20 +36,39 @@ export async function GET(request: Request) {
     supply_name,
     exclusive2,
     brand,
+    channel_product_id,
     order_date_from,
     order_date_to,
     code30,
     channel_name,
     channel_category_2,
     channel_category_3,
-    sort_by_qty
+    sort_by_qty,
+    orderBy,
+    orderDirection,
+    page,
+    pageSize
   });
+
+  // Validate orderBy
+  const validOrderByFields = ['date', 'product_id', 'category_2', 'price', 'product_name'];
+  if (!validOrderByFields.includes(orderBy)) {
+    throw new Error('Invalid orderBy parameter');
+  }
+  
+  // Validate orderDirection
+  if (orderDirection !== 'desc' && orderDirection !== 'asc') {
+    throw new Error('Invalid orderDirection parameter');
+  }
+  
+  // Calculate offset
+  const offset = (page - 1) * pageSize;
 
   // 검색어나 필터 중 하나라도 있어야 검색 실행
   const hasSearchTerm = searchTerm.trim().length > 0;
   const hasFilter = [extra_column2, category_3, drop_yn, supply_name, exclusive2, brand,
                      order_date_from, order_date_to, code30, channel_name, 
-                     channel_category_2, channel_category_3].some(filter => filter && filter !== 'all');
+                     channel_category_2, channel_category_3, channel_product_id].some(filter => filter && filter !== 'all');
 
   if (!hasSearchTerm && !hasFilter) {
     return NextResponse.json([]);
@@ -62,6 +86,13 @@ export async function GET(request: Request) {
     if (searchTerm) {
       if (searchType === 'name') {
         productConditions.push(`LOWER(name) LIKE LOWER('%${searchTerm}%')`);
+      } else if (searchType === 'channel_product_id') {
+        const channelProductIds = searchTerm.split(',').map(id => id.trim()).filter(Boolean);
+        if (channelProductIds.length > 0) {
+          // channel_product_id는 이미 SubProducts CTE에 적용하므로 여기서는 별도 조건을 추가하지 않음
+          searchParams.set('channel_product_id', channelProductIds.join(','));
+          channel_product_id = channelProductIds.join(',');
+        }
       } else {
         const productIds = searchTerm.split(',').map(id => id.trim()).filter(Boolean);
         if (productIds.length > 0) {
@@ -127,6 +158,12 @@ export async function GET(request: Request) {
         ${channel_category_2 && channel_category_2 !== 'all' ? `AND channel_category_2 = '${channel_category_2}'` : ''}
         ${channel_category_3 && channel_category_3 !== 'all' ? `AND channel_category_3 = '${channel_category_3}'` : ''}
       ),
+      SubProducts AS (
+        SELECT DISTINCT product_id
+        FROM \`${process.env.GOOGLE_CLOUD_PROJECT_ID}.project_m.product_sub_db\`
+        WHERE 1=1
+        ${channel_product_id ? `AND channel_product_id IN ('${channel_product_id.split(',').join("','")}')` : ''}
+      ),
       FilteredProducts AS (
         SELECT *
         FROM \`third-current-410914.project_m.product_db\` p
@@ -135,6 +172,7 @@ export async function GET(request: Request) {
         ${(channel_name !== 'all' || channel_category_2 !== 'all' || channel_category_3 !== 'all') 
           ? 'AND p.product_id IN (SELECT product_id FROM ChannelProducts)' 
           : ''}
+        ${channel_product_id ? 'AND p.product_id IN (SELECT product_id FROM SubProducts)' : ''}
       ),
       FilteredOrders AS (
         SELECT *

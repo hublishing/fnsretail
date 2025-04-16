@@ -105,7 +105,7 @@ interface Column {
   sortable?: boolean;
 }
 
-type SearchType = 'name' | 'product_id';
+type SearchType = 'name' | 'product_id' | 'channel_product_id';
 
 // 필터 초기 상태를 상수로 정의
 const INITIAL_FILTERS = {
@@ -578,6 +578,7 @@ export default function DynamicTable() {
   const getPlaceholder = () => {
     return searchType === 'name' 
       ? "상품명을 입력하세요" 
+      : searchType === 'channel_product_id' ? "채널상품코드를 입력하세요 (여러 개인 경우 쉼표로 구분)"
       : "상품코드를 입력하세요 (여러 개인 경우 쉼표로 구분)"
   }
 
@@ -814,7 +815,8 @@ export default function DynamicTable() {
               </SelectTrigger>
               <SelectContent className="min-w-[100px]">
                 <SelectItem value="name">상품명</SelectItem>
-                <SelectItem value="product_id">상품코드</SelectItem>
+                <SelectItem value="product_id">이지어드민 상품코드</SelectItem>
+                <SelectItem value="channel_product_id">채널 상품코드</SelectItem>
               </SelectContent>
             </Select>
             <div className="relative flex-1">
