@@ -457,11 +457,6 @@ async function fetchDistinctValues(
     }
   });
   
-  // '기타' 값 제외 (brand_group 필드에 대해서만)
-  if (columnName === 'brand_group') {
-    whereConditions.push(`${columnName} != '기타'`);
-  }
-  
   const whereClause = whereConditions.join(' AND ');
   
   const query = `

@@ -267,9 +267,9 @@ export default function RevenuePage() {
   };
   
   // 빠른 날짜 선택 핸들러
-  const handleQuickDateSelect = (type: 'yesterday' | 'week' | 'month') => {
+  const handleQuickDateSelect = (type: 'yesterday' | 'week' | 'month' | 'lastMonth') => {
     const today = new Date();
-    const to = new Date();
+    let to = new Date();
     let from = new Date();
     
     switch (type) {
@@ -285,6 +285,11 @@ export default function RevenuePage() {
       case 'month':
         // 이번달 (1일부터 오늘까지)
         from = new Date(today.getFullYear(), today.getMonth(), 1);
+        break;
+      case 'lastMonth':
+        // 저번달 (저번달 1일부터 말일까지)
+        from = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        to = new Date(today.getFullYear(), today.getMonth(), 0);
         break;
     }
     
@@ -468,6 +473,14 @@ export default function RevenuePage() {
               >
                 이번달
               </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex-1 text-xs" 
+                onClick={() => handleQuickDateSelect('lastMonth')}
+              >
+                저번달
+              </Button>
             </div>
           </div>
         </div>
@@ -516,7 +529,7 @@ export default function RevenuePage() {
                     <CardTitle className="text-2xl">{formatCurrency(chartData?.summary.totalRevenue || 0)}</CardTitle>
                     
                     <p className="text-xs text-muted-foreground pt-3">
-                      목표 달성률: {formatPercent(chartData?.summary.achievementRate || 0)}
+                      목표 금액: {formatCurrency(chartData?.trendData?.reduce((sum, item) => sum + (item.target_day || 0), 0) || 0)}
                     </p>
                   </div>
                   <div className="flex items-center justify-between">
@@ -540,7 +553,7 @@ export default function RevenuePage() {
                       <PolarGrid gridType="circle"radialLines={false}stroke="none"className="first:fill-muted last:fill-background"polarRadius={[35, 25]}/>
                       <RadialBar background dataKey="achievement" cornerRadius={5} fill="hsl(var(--chart-1))"/>
                       <PolarRadiusAxis type="number" domain={[0, 100]} tick={false} tickLine={false} axisLine={false}>
-                        {/*<Label
+                        <Label
                           content={({ viewBox }) => {
                             if (viewBox && "cx" in viewBox && "cy" in viewBox) {
                               return (
@@ -553,7 +566,7 @@ export default function RevenuePage() {
                                   <tspan
                                     x={viewBox.cx}
                                     y={viewBox.cy}
-                                    className="text-lg font-bold fill-foreground"
+                                    className="text-xs text-muted-foreground"
                                   >
                                     {Math.round(chartData?.summary.achievementRate || 0)}%
                                   </tspan>
@@ -561,7 +574,7 @@ export default function RevenuePage() {
                               )
                             }
                           }}
-                        />*/}
+                        />
                       </PolarRadiusAxis>
                     </RadialBarChart>
                     </div>
@@ -616,6 +629,7 @@ export default function RevenuePage() {
                       tickLine={false}
                       tickMargin={5}
                       axisLine={false}
+                      tick={{ fontSize: 11 }}
                       tickFormatter={(date: string) => format(new Date(date), 'MM-dd')}
                       height={30}
                     />
