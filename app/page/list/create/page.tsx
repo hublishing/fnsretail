@@ -2255,7 +2255,7 @@ export default function CartPage() {
                   onClick={() => setShowImmediateDiscountModal(true)}
                   className="border-0 hover:bg-transparent hover:text-primary"
                 >
-                  기간할인
+                  즉시할인
                 </Button>
                 <Button
                   variant="outline"
