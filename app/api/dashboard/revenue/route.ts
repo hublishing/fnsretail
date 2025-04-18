@@ -162,7 +162,9 @@ async function fetchChartData(url: string, access_token: string, filters: any) {
       totalGrossAmount: summaryData.totalGrossAmount,
       growthRate: summaryData.growthRate,
       totalQuantity: summaryData.totalQuantity,
-      quantityGrowthRate: summaryData.quantityGrowthRate
+      quantityGrowthRate: summaryData.quantityGrowthRate,
+      previousRevenue: summaryData.previousRevenue,
+      previousQuantity: summaryData.previousQuantity
     }
   };
 }
@@ -216,6 +218,7 @@ async function fetchSummaryData(url: string, access_token: string, whereClause: 
     ),
     previous_period AS (
       SELECT
+        SUM(sum_final_calculated_amount) AS total_revenue,
         SUM(sum_gross_amount) AS total_gross_amount,
         SUM(sum_qty) AS total_quantity
       FROM 
@@ -231,7 +234,8 @@ async function fetchSummaryData(url: string, access_token: string, whereClause: 
       cp.total_gross_amount,
       pp.total_gross_amount AS previous_gross_amount,
       cp.total_quantity,
-      pp.total_quantity AS previous_quantity
+      pp.total_quantity AS previous_quantity,
+      pp.total_revenue AS previous_revenue
     FROM 
       current_period cp
     CROSS JOIN 
@@ -267,7 +271,8 @@ async function fetchSummaryData(url: string, access_token: string, whereClause: 
     totalGrossAmount: data.rows?.[0]?.f?.[4]?.v,
     previousGrossAmount: data.rows?.[0]?.f?.[5]?.v,
     totalQuantity: data.rows?.[0]?.f?.[6]?.v,
-    previousQuantity: data.rows?.[0]?.f?.[7]?.v
+    previousQuantity: data.rows?.[0]?.f?.[7]?.v,
+    previousRevenue: data.rows?.[0]?.f?.[8]?.v
   });
   
   if (!data.rows || data.rows.length === 0) {
@@ -279,7 +284,8 @@ async function fetchSummaryData(url: string, access_token: string, whereClause: 
       totalGrossAmount: 0,
       previousGrossAmount: 0,
       totalQuantity: 0,
-      previousQuantity: 0
+      previousQuantity: 0,
+      previousRevenue: 0
     };
   }
   
@@ -291,6 +297,7 @@ async function fetchSummaryData(url: string, access_token: string, whereClause: 
   const previousGrossAmount = Number(data.rows[0].f[5].v || 0);
   const totalQuantity = Number(data.rows[0].f[6].v || 0);
   const previousQuantity = Number(data.rows[0].f[7].v || 0);
+  const previousRevenue = Number(data.rows[0].f[8].v || 0);
 
   const growthRate = previousGrossAmount === 0 ? 0 : 
     ((totalGrossAmount - previousGrossAmount) / previousGrossAmount) * 100;
@@ -306,7 +313,9 @@ async function fetchSummaryData(url: string, access_token: string, whereClause: 
     totalGrossAmount,
     growthRate,
     totalQuantity,
-    quantityGrowthRate
+    quantityGrowthRate,
+    previousRevenue,
+    previousQuantity
   };
 }
 

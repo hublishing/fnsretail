@@ -80,6 +80,8 @@ interface ChartData {
     growthRate: number;
     totalQuantity: number;
     quantityGrowthRate: number;
+    previousRevenue: number;
+    previousQuantity: number;
   };
 }
 
@@ -625,6 +627,36 @@ export default function RevenuePage() {
                           <TrendingDown className="w-4 h-4 inline-block mr-1" />
                         )}
                         {chartData.summary.quantityGrowthRate.toFixed(1)}%
+                      </>
+                    )}
+                  </span>
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>판매단가</CardDescription>
+                <CardTitle className="text-2xl">
+                  {chartData?.summary.totalQuantity && chartData.summary.totalQuantity > 0 
+                    ? formatCurrency(chartData.summary.totalRevenue / chartData.summary.totalQuantity)
+                    : formatCurrency(0)}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-xs text-muted-foreground">
+                  <span className={chartData?.summary.totalQuantity && chartData.summary.previousQuantity && 
+                    (chartData.summary.totalRevenue / chartData.summary.totalQuantity) >= 
+                    (chartData.summary.previousRevenue / chartData.summary.previousQuantity) ? "text-green-500" : "text-red-500"}>
+                    {chartData?.summary.totalQuantity && chartData.summary.previousQuantity && (
+                      <>
+                        {((chartData.summary.totalRevenue / chartData.summary.totalQuantity) >= 
+                          (chartData.summary.previousRevenue / chartData.summary.previousQuantity)) ? (
+                          <TrendingUp className="w-4 h-4 inline-block mr-1" />
+                        ) : (
+                          <TrendingDown className="w-4 h-4 inline-block mr-1" />
+                        )}
+                        {(((chartData.summary.totalRevenue / chartData.summary.totalQuantity) / 
+                          (chartData.summary.previousRevenue / chartData.summary.previousQuantity) - 1) * 100).toFixed(1)}%
                       </>
                     )}
                   </span>
