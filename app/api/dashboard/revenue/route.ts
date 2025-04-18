@@ -200,14 +200,7 @@ async function fetchSummaryData(url: string, access_token: string, whereClause: 
   const previousWhereClause = whereClause
     .replace(startDate, previousStartDate.toISOString().split('T')[0])
     .replace(endDate, previousEndDate.toISOString().split('T')[0]);
-
-  console.log('날짜 조건:', {
-    current: { startDate, endDate },
-    previous: { 
-      startDate: previousStartDate.toISOString().split('T')[0],
-      endDate: previousEndDate.toISOString().split('T')[0]
-    }
-  });
+ 
 
   const query = `
     WITH current_period AS (
@@ -254,8 +247,7 @@ async function fetchSummaryData(url: string, access_token: string, whereClause: 
     CROSS JOIN 
       previous_period pp
   `;
-
-  console.log('요약 데이터 쿼리:', query);
+ 
 
   const response = await fetch(url, {
     method: 'POST',
@@ -275,23 +267,7 @@ async function fetchSummaryData(url: string, access_token: string, whereClause: 
   }
 
   const data = await response.json();
-  
-  console.log('요약 데이터 응답 상세:', {
-    totalRevenue: data.rows?.[0]?.f?.[0]?.v,
-    totalCost: data.rows?.[0]?.f?.[1]?.v,
-    totalTargetDay: data.rows?.[0]?.f?.[2]?.v,
-    totalTargetCost: data.rows?.[0]?.f?.[3]?.v,
-    dateCount: data.rows?.[0]?.f?.[4]?.v,
-    totalGrossAmount: data.rows?.[0]?.f?.[5]?.v,
-    previousGrossAmount: data.rows?.[0]?.f?.[6]?.v,
-    totalQuantity: data.rows?.[0]?.f?.[7]?.v,
-    previousQuantity: data.rows?.[0]?.f?.[8]?.v,
-    previousRevenue: data.rows?.[0]?.f?.[9]?.v,
-    previousCost: data.rows?.[0]?.f?.[10]?.v,
-    estimatedMonthlyRevenue: data.rows?.[0]?.f?.[11]?.v,
-    estimatedMonthlyTarget: data.rows?.[0]?.f?.[2]?.v
-  });
-  
+    
   if (!data.rows || data.rows.length === 0) {
     return { 
       totalRevenue: 0, 
@@ -321,18 +297,7 @@ async function fetchSummaryData(url: string, access_token: string, whereClause: 
   const estimatedMonthlyRevenue = Math.round(Number(data.rows[0].f[11].v || 0));
   const estimatedMonthlyAchievementRate = totalTargetDay === 0 ? 0 : 
     (estimatedMonthlyRevenue / totalTargetDay) * 100;
-
-  console.log('마감예상액 계산 상세:', {
-    estimatedMonthlyRevenue,
-    totalTargetDay,
-    estimatedMonthlyAchievementRate,
-    formula: `${estimatedMonthlyRevenue} / ${totalTargetDay} * 100 = ${estimatedMonthlyAchievementRate}`,
-    rawData: {
-      sum_final_calculated_amount: data.rows[0].f[0].v,
-      date_count: data.rows[0].f[4].v,
-      target_day: data.rows[0].f[2].v
-    }
-  });
+ 
 
   const growthRate = previousGrossAmount === 0 ? 0 : 
     ((totalGrossAmount - previousGrossAmount) / previousGrossAmount) * 100;
@@ -343,18 +308,7 @@ async function fetchSummaryData(url: string, access_token: string, whereClause: 
   const costRate = totalRevenue === 0 ? 0 : (totalCost / totalRevenue) * 100;
   const targetCostRate = totalTargetDay === 0 ? 0 : (totalTargetCost / totalTargetDay) * 100;
   const costComparisonRate = targetCostRate === 0 ? 0 : (costRate - targetCostRate);
-
-  console.log('원가율 계산 상세:', {
-    totalCost,
-    totalRevenue,
-    totalTargetCost,
-    totalTargetDay,
-    costRate,
-    targetCostRate,
-    costComparisonRate,
-    costRateFormula: `${totalCost} / ${totalRevenue} * 100 = ${costRate}`,
-    targetCostRateFormula: `${totalTargetCost} / ${totalTargetDay} * 100 = ${targetCostRate}`
-  });
+ 
 
   return {
     totalRevenue,
@@ -424,7 +378,14 @@ async function fetchPieChartData(url: string, access_token: string, whereClause:
 
 // 트렌드 데이터 조회
 async function fetchTrendData(url: string, access_token: string, whereClause: string) {
-  const query = `
+  // whereClause에서 startDate 추출
+  const dateMatch = whereClause.match(/order_date >= '(.+?)'/);
+  if (!dateMatch) {
+    throw new Error('시작 날짜를 찾을 수 없습니다.');
+  }
+  const startDate = dateMatch[1];
+
+  const dailyQuery = `
     SELECT 
       order_date,
       SUM(sum_final_calculated_amount) AS revenue,
@@ -441,34 +402,95 @@ async function fetchTrendData(url: string, access_token: string, whereClause: st
       order_date
   `;
 
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${access_token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      query,
-      useLegacySql: false,
-    }),
-  });
+  const monthlyQuery = `
+    WITH selected_year AS (
+      SELECT EXTRACT(YEAR FROM DATE('${startDate}')) as year
+    ),
+    all_months AS (
+      SELECT FORMAT_DATE('%Y-%m', DATE_ADD(DATE(FORMAT_DATE('%Y-01-01', DATE('${startDate}'))), 
+             INTERVAL n MONTH)) as month
+      FROM UNNEST(GENERATE_ARRAY(0, 11)) as n
+    ),
+    monthly_data AS (
+      SELECT 
+        FORMAT_DATE('%Y-%m', order_date) AS month,
+        SUM(sum_final_calculated_amount) AS revenue,
+        SUM(sum_org_amount) AS cost,
+        SUM(sum_final_calculated_amount - sum_org_amount) AS profit,
+        SUM(target_day) AS target_day
+      FROM 
+        \`${process.env.GOOGLE_CLOUD_PROJECT_ID}.project_m.sales_db\`
+      WHERE 
+        EXTRACT(YEAR FROM order_date) = (SELECT year FROM selected_year)
+        AND ${whereClause.replace(/order_date >= '[^']+' AND order_date <= '[^']+'/, '1=1')}
+      GROUP BY 
+        month
+    )
+    SELECT 
+      am.month,
+      COALESCE(md.revenue, 0) as revenue,
+      COALESCE(md.cost, 0) as cost,
+      COALESCE(md.profit, 0) as profit,
+      COALESCE(md.target_day, 0) as target_day
+    FROM all_months am
+    LEFT JOIN monthly_data md ON am.month = md.month
+    ORDER BY 
+      am.month
+  `;
 
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(`BigQuery API 요청 실패: ${JSON.stringify(errorData)}`);
+  try {
+    const [dailyResponse, monthlyResponse] = await Promise.all([
+      fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          query: dailyQuery,
+          useLegacySql: false,
+        }),
+      }),
+      fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          query: monthlyQuery,
+          useLegacySql: false,
+        }),
+      }),
+    ]);
+
+    const dailyData = await dailyResponse.json();
+    const monthlyData = await monthlyResponse.json();
+ 
+
+    // 응답 데이터 처리
+    const processRows = (rows: any[], isMonthly: boolean = false) => {
+      if (!rows) return [];
+      return rows.map((row: any) => ({
+        [isMonthly ? 'month' : 'order_date']: row.f[0].v,
+        revenue: Number(row.f[1].v || 0),
+        cost: Number(row.f[2].v || 0),
+        profit: Number(row.f[3].v || 0),
+        target_day: Number(row.f[4].v || 0)
+      }));
+    };
+
+    return {
+      daily: processRows(dailyData.rows || []),
+      monthly: processRows(monthlyData.rows || [], true)
+    };
+  } catch (error) {
+    console.error('트렌드 데이터 조회 중 오류 발생:', error);
+    return {
+      daily: [],
+      monthly: []
+    };
   }
-
-  const data = await response.json();
-  
-  if (!data.rows) return [];
-  
-  return data.rows.map((row: any) => ({
-    order_date: row.f[0].v,
-    revenue: Number(row.f[1].v || 0),
-    cost: Number(row.f[2].v || 0),
-    profit: Number(row.f[3].v || 0),
-    target_day: Number(row.f[4].v || 0)
-  }));
 }
 
 // 목표 대비 달성률 계산 함수 추가

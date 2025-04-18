@@ -64,13 +64,22 @@ interface ChartData {
     channel: Array<{ name: string; value: number; type: string }>;
     manager: Array<{ name: string; value: number; type: string }>;
   };
-  trendData: Array<{
-    order_date: string;
-    revenue: number;
-    cost: number;
-    profit: number;
-    target_day: number;
-  }>;
+  trendData: {
+    daily: Array<{
+      order_date: string;
+      revenue: number;
+      cost: number;
+      profit: number;
+      target_day: number;
+    }>;
+    monthly: Array<{
+      month: string;
+      revenue: number;
+      cost: number;
+      profit: number;
+      target_day: number;
+    }>;
+  };
   summary: {
     totalRevenue: number;
     totalCost: number;
@@ -87,8 +96,8 @@ interface ChartData {
     targetCostRate: number;
     costComparisonRate: number;
     estimatedMonthlyRevenue: number;
-    estimatedMonthlyAchievementRate: number;
     estimatedMonthlyTarget: number;
+    estimatedMonthlyAchievementRate: number;
   };
 }
 
@@ -425,7 +434,7 @@ export default function RevenuePage() {
                 <Button
                   variant={"outline"}
                   className={cn(
-                    "w-full justify-start text-left font-normal",
+                    "w-full justify-start text-left font-normal h-9",
                     !filters.dateRange && "text-muted-foreground"
                   )}
                 >
@@ -559,7 +568,7 @@ export default function RevenuePage() {
                     <CardTitle className="text-2xl">{formatCurrency(chartData?.summary.totalRevenue || 0)}</CardTitle>
                     
                     <p className="text-xs text-muted-foreground pt-3">
-                      목표 금액: {formatCurrency(chartData?.trendData?.reduce((sum, item) => sum + (item.target_day || 0), 0) || 0)}
+                      목표 금액: {formatCurrency(chartData?.trendData?.daily?.reduce((sum, item) => sum + (item.target_day || 0), 0) || 0)}
                     </p>
                   </div>
                   <div className="flex items-center justify-between">
@@ -784,51 +793,96 @@ export default function RevenuePage() {
           {/* 일별 매출 바차트 추가 */}
           <Card>
             <CardHeader>
-              <CardTitle>일별 매출</CardTitle>
-              <CardDescription>
-                {filters.dateRange?.from && filters.dateRange?.to 
-                  ? `${format(filters.dateRange.from, 'yyyy-MM-dd')} ~ ${format(filters.dateRange.to, 'yyyy-MM-dd')}`
-                  : '선택된 기간'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-0 pb-2">
-              <div style={{ width: '100%', height: '350px' }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart 
-                    data={chartData?.trendData || []}
-                    margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis
-                      dataKey="order_date"
-                      tickLine={false}
-                      tickMargin={5}
-                      axisLine={false}
-                      tick={{ fontSize: 11 }}
-                      tickFormatter={(date: string) => format(new Date(date), 'MM-dd')}
-                      height={30}
-                    />
-                    <Tooltip 
-                      content={
-                        <CustomTooltip 
-                          formatter={formatCurrency}
-                          indicator="dot"
-                        />
-                      }
-                      labelFormatter={(date: string) => format(new Date(date), 'yyyy-MM-dd')}
-                    />
-                    <Bar dataKey="revenue" name="실제 매출" fill="hsl(var(--chart-1))" radius={5} />
-                    <Bar dataKey="target_day" name="목표 매출" fill="hsl(var(--chart-2))" radius={5} />
-                  </BarChart>
-                </ResponsiveContainer>
+              <div className="">
+                <div>
+                  <CardTitle>매출 추이</CardTitle>
+                  <CardDescription>
+                    {filters.dateRange?.from && filters.dateRange?.to 
+                      ? `${format(filters.dateRange.from, 'yyyy-MM-dd')} ~ ${format(filters.dateRange.to, 'yyyy-MM-dd')}`
+                      : '선택된 기간'}
+                  </CardDescription>
+                </div>
+                <Tabs defaultValue="daily" className="w-full">
+                  <TabsList className="grid w-[200px] grid-cols-2 mt-2">
+                    <TabsTrigger value="daily">일별</TabsTrigger>
+                    <TabsTrigger value="monthly">월별</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="daily">
+                    <div style={{ width: '100%', height: '350px' }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart 
+                          data={chartData?.trendData.daily || []}
+                          margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                          <XAxis
+                            dataKey="order_date"
+                            tickLine={false}
+                            tickMargin={5}
+                            axisLine={false}
+                            tick={{ fontSize: 11 }}
+                            tickFormatter={(date: string) => format(new Date(date), 'MM-dd')}
+                            height={30}
+                          />
+                          <Tooltip 
+                            content={
+                              <CustomTooltip 
+                                formatter={formatCurrency}
+                                indicator="dot"
+                              />
+                            }
+                            labelFormatter={(date: string) => format(new Date(date), 'yyyy-MM-dd')}
+                          />
+                          <Bar dataKey="revenue" name="실제 매출" fill="hsl(var(--chart-1))" radius={5} />
+                          <Bar dataKey="target_day" name="목표 매출" fill="hsl(var(--chart-2))" radius={5} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </TabsContent>
+                  <TabsContent value="monthly">
+                    <div style={{ width: '100%', height: '350px' }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart 
+                          data={chartData?.trendData.monthly || []}
+                          margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                          <XAxis
+                            dataKey="month"
+                            tickLine={false}
+                            tickMargin={5}
+                            axisLine={false}
+                            tick={{ fontSize: 11 }}
+                            height={30}
+                            tickFormatter={(month: string) => {
+                              if (!month) return '';
+                              const monthNumber = parseInt(month.split('-')[1]);
+                              return isNaN(monthNumber) ? '' : `${monthNumber}월`;
+                            }}
+                          />
+                          <Tooltip 
+                            content={
+                              <CustomTooltip 
+                                formatter={formatCurrency}
+                                indicator="dot"
+                              />
+                            }
+                          />
+                          <Bar dataKey="revenue" name="실제 매출" fill="hsl(var(--chart-1))" radius={5} />
+                          <Bar dataKey="target_day" name="목표 매출" fill="hsl(var(--chart-2))" radius={5} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </TabsContent>
+                </Tabs>
               </div>
-            </CardContent>
+            </CardHeader>
             <CardFooter className="pt-0 pb-4 text-xs text-muted-foreground flex items-center justify-between">
               <div>실제 매출과 목표 매출 비교</div>
-              {chartData?.trendData && chartData.trendData.length >= 2 && (
+              {chartData?.trendData.daily && chartData.trendData.daily.length >= 2 && (
                 <div className="font-medium">
                   {(() => {
-                    const latest = chartData.trendData[chartData.trendData.length - 1];
+                    const latest = chartData.trendData.daily[chartData.trendData.daily.length - 1];
                     const latestRevenue = latest.revenue;
                     const latestTarget = latest.target_day;
                     
@@ -917,51 +971,6 @@ export default function RevenuePage() {
                         label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                       >
                         {chartData?.pieCharts.category3.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip 
-                        content={
-                          <CustomTooltip 
-                            formatter={formatCurrency}
-                            indicator="dot"
-                          />
-                        }
-                      />
-                    </PieChart>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* 채널별 차트 */}
-            <Card>
-              <CardHeader>
-                <CardTitle>채널별 매출 비중</CardTitle>
-                <CardDescription>
-                  채널(channel_name)별 매출 분포
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[300px] flex items-center justify-center">
-                  {chartData?.pieCharts.channel.length === 0 ? (
-                    <div className="text-center text-muted-foreground">
-                      데이터가 없습니다
-                    </div>
-                  ) : (
-                    <PieChart width={400} height={300}>
-                      <Pie
-                        data={chartData?.pieCharts.channel}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={true}
-                        outerRadius={100}
-                        fill="#8884d8"
-                        dataKey="value"
-                        nameKey="name"
-                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                      >
-                        {chartData?.pieCharts.channel.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
