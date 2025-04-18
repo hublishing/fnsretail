@@ -38,12 +38,12 @@ const dashboard = [
       isActive: false,
       items: [
         {
-          title: "판매현황",
-          url: "/page/dashboard/sales",
-        },
-        {
           title: "매출현황",
           url: "/page/dashboard/revenue",
+        },
+        {
+          title: "판매현황",
+          url: "/page/dashboard/sales",
         },
         {
           title: "트렌드현황",
