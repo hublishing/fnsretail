@@ -164,7 +164,11 @@ async function fetchChartData(url: string, access_token: string, filters: any) {
       totalQuantity: summaryData.totalQuantity,
       quantityGrowthRate: summaryData.quantityGrowthRate,
       previousRevenue: summaryData.previousRevenue,
-      previousQuantity: summaryData.previousQuantity
+      previousQuantity: summaryData.previousQuantity,
+      previousCost: summaryData.previousCost,
+      costRate: summaryData.costRate,
+      targetCostRate: summaryData.targetCostRate,
+      costComparisonRate: summaryData.costComparisonRate
     }
   };
 }
@@ -208,6 +212,7 @@ async function fetchSummaryData(url: string, access_token: string, whereClause: 
         SUM(sum_final_calculated_amount) AS total_revenue,
         SUM(sum_org_amount) AS total_cost,
         SUM(target_day) AS total_target_day,
+        SUM(target_orgprice) AS total_target_cost,
         COUNT(DISTINCT order_date) AS date_count,
         SUM(sum_gross_amount) AS total_gross_amount,
         SUM(sum_qty) AS total_quantity
@@ -219,6 +224,7 @@ async function fetchSummaryData(url: string, access_token: string, whereClause: 
     previous_period AS (
       SELECT
         SUM(sum_final_calculated_amount) AS total_revenue,
+        SUM(sum_org_amount) AS total_cost,
         SUM(sum_gross_amount) AS total_gross_amount,
         SUM(sum_qty) AS total_quantity
       FROM 
@@ -230,12 +236,14 @@ async function fetchSummaryData(url: string, access_token: string, whereClause: 
       cp.total_revenue,
       cp.total_cost,
       cp.total_target_day,
+      cp.total_target_cost,
       cp.date_count,
       cp.total_gross_amount,
       pp.total_gross_amount AS previous_gross_amount,
       cp.total_quantity,
       pp.total_quantity AS previous_quantity,
-      pp.total_revenue AS previous_revenue
+      pp.total_revenue AS previous_revenue,
+      pp.total_cost AS previous_cost
     FROM 
       current_period cp
     CROSS JOIN 
@@ -267,12 +275,14 @@ async function fetchSummaryData(url: string, access_token: string, whereClause: 
     totalRevenue: data.rows?.[0]?.f?.[0]?.v,
     totalCost: data.rows?.[0]?.f?.[1]?.v,
     totalTargetDay: data.rows?.[0]?.f?.[2]?.v,
-    dateCount: data.rows?.[0]?.f?.[3]?.v,
-    totalGrossAmount: data.rows?.[0]?.f?.[4]?.v,
-    previousGrossAmount: data.rows?.[0]?.f?.[5]?.v,
-    totalQuantity: data.rows?.[0]?.f?.[6]?.v,
-    previousQuantity: data.rows?.[0]?.f?.[7]?.v,
-    previousRevenue: data.rows?.[0]?.f?.[8]?.v
+    totalTargetCost: data.rows?.[0]?.f?.[3]?.v,
+    dateCount: data.rows?.[0]?.f?.[4]?.v,
+    totalGrossAmount: data.rows?.[0]?.f?.[5]?.v,
+    previousGrossAmount: data.rows?.[0]?.f?.[6]?.v,
+    totalQuantity: data.rows?.[0]?.f?.[7]?.v,
+    previousQuantity: data.rows?.[0]?.f?.[8]?.v,
+    previousRevenue: data.rows?.[0]?.f?.[9]?.v,
+    previousCost: data.rows?.[0]?.f?.[10]?.v
   });
   
   if (!data.rows || data.rows.length === 0) {
@@ -285,25 +295,44 @@ async function fetchSummaryData(url: string, access_token: string, whereClause: 
       previousGrossAmount: 0,
       totalQuantity: 0,
       previousQuantity: 0,
-      previousRevenue: 0
+      previousRevenue: 0,
+      previousCost: 0
     };
   }
   
-  const totalRevenue = Number(data.rows[0].f[0].v || 0);
-  const totalCost = Number(data.rows[0].f[1].v || 0);
-  const totalTargetDay = Number(data.rows[0].f[2].v || 0);
-  const dateCount = Number(data.rows[0].f[3].v || 0);
-  const totalGrossAmount = Number(data.rows[0].f[4].v || 0);
-  const previousGrossAmount = Number(data.rows[0].f[5].v || 0);
-  const totalQuantity = Number(data.rows[0].f[6].v || 0);
-  const previousQuantity = Number(data.rows[0].f[7].v || 0);
-  const previousRevenue = Number(data.rows[0].f[8].v || 0);
+  const totalRevenue = Math.round(Number(data.rows[0].f[0].v || 0));
+  const totalCost = Math.round(Number(data.rows[0].f[1].v || 0));
+  const totalTargetDay = Math.round(Number(data.rows[0].f[2].v || 0));
+  const totalTargetCost = Math.round(Number(data.rows[0].f[3].v || 0));
+  const dateCount = Math.round(Number(data.rows[0].f[4].v || 0));
+  const totalGrossAmount = Math.round(Number(data.rows[0].f[5].v || 0));
+  const previousGrossAmount = Math.round(Number(data.rows[0].f[6].v || 0));
+  const totalQuantity = Math.round(Number(data.rows[0].f[7].v || 0));
+  const previousQuantity = Math.round(Number(data.rows[0].f[8].v || 0));
+  const previousRevenue = Math.round(Number(data.rows[0].f[9].v || 0));
+  const previousCost = Math.round(Number(data.rows[0].f[10].v || 0));
 
   const growthRate = previousGrossAmount === 0 ? 0 : 
     ((totalGrossAmount - previousGrossAmount) / previousGrossAmount) * 100;
     
   const quantityGrowthRate = previousQuantity === 0 ? 0 :
     ((totalQuantity - previousQuantity) / previousQuantity) * 100;
+
+  const costRate = totalRevenue === 0 ? 0 : (totalCost / totalRevenue) * 100;
+  const targetCostRate = totalTargetDay === 0 ? 0 : (totalTargetCost / totalTargetDay) * 100;
+  const costComparisonRate = targetCostRate === 0 ? 0 : (costRate - targetCostRate);
+
+  console.log('원가율 계산 상세:', {
+    totalCost,
+    totalRevenue,
+    totalTargetCost,
+    totalTargetDay,
+    costRate,
+    targetCostRate,
+    costComparisonRate,
+    costRateFormula: `${totalCost} / ${totalRevenue} * 100 = ${costRate}`,
+    targetCostRateFormula: `${totalTargetCost} / ${totalTargetDay} * 100 = ${targetCostRate}`
+  });
 
   return {
     totalRevenue,
@@ -315,7 +344,11 @@ async function fetchSummaryData(url: string, access_token: string, whereClause: 
     totalQuantity,
     quantityGrowthRate,
     previousRevenue,
-    previousQuantity
+    previousQuantity,
+    previousCost,
+    costRate,
+    targetCostRate,
+    costComparisonRate
   };
 }
 

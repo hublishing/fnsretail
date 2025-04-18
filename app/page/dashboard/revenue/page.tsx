@@ -82,6 +82,10 @@ interface ChartData {
     quantityGrowthRate: number;
     previousRevenue: number;
     previousQuantity: number;
+    previousCost: number;
+    costRate: number;
+    targetCostRate: number;
+    costComparisonRate: number;
   };
 }
 
@@ -605,7 +609,7 @@ export default function RevenuePage() {
                 </div>
               </CardHeader>
             </Card>
-            <div className="flex gap-4">
+            <div className="flex gap-4 md:col-span-2">
               <Card className="flex-1">
                 <CardHeader className="pb-2">
                   <CardDescription>판매수량</CardDescription>
@@ -658,18 +662,59 @@ export default function RevenuePage() {
                   </p>
                 </CardContent>
               </Card>
+              <Card className="flex-1">
+                <CardHeader className="pb-2">
+                  <CardDescription>총 원가</CardDescription>
+                  <CardTitle className="text-2xl">
+                    {(() => {
+                      const costRate = chartData?.summary?.costRate || 0;
+                      console.log('원가율 데이터:', {
+                        costRate,
+                        summary: chartData?.summary
+                      });
+                      return `${costRate.toFixed(1)}%`;
+                    })()}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-xs text-muted-foreground">
+                    {(() => {
+                      if (!chartData?.summary) {
+                        console.log('summary가 없음');
+                        return null;
+                      }
+                      
+                      const { costRate, targetCostRate, costComparisonRate } = chartData.summary;
+                      
+                      console.log('원가율 비교 데이터:', {
+                        costRate,
+                        targetCostRate,
+                        costComparisonRate,
+                        formattedCostRate: `${costRate.toFixed(1)}%`,
+                        formattedTargetCostRate: `${targetCostRate.toFixed(1)}%`,
+                        formattedComparisonRate: `${costComparisonRate.toFixed(1)}%`
+                      });
+                      
+                      if (costRate === undefined || targetCostRate === undefined || costComparisonRate === undefined) {
+                        console.log('원가율 데이터가 불완전함');
+                        return null;
+                      }
+                      
+                      return (
+                        <span className={costComparisonRate >= 0 ? "text-green-500" : "text-red-500"}>
+                          {costComparisonRate <= 0 ? (
+                            <TrendingDown className="w-4 h-4 inline-block mr-1" />
+                          ) : (
+                            <TrendingUp className="w-4 h-4 inline-block mr-1" />
+                          )}
+                          {costComparisonRate <= 0 ? Math.abs(costComparisonRate).toFixed(2) : costComparisonRate.toFixed(2)}%
+                        </span>
+                      );
+                    })()}
+                  </p>
+                </CardContent>
+              </Card>
             </div>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription>총 원가</CardDescription>
-                <CardTitle className="text-2xl">{formatCurrency(chartData?.summary.totalCost || 0)}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-xs text-muted-foreground">
-                  원가율: {formatPercent((chartData?.summary.totalCost || 0) / (chartData?.summary.totalRevenue || 1) * 100)}
-                </p>
-              </CardContent>
-            </Card>
             <Card>
               <CardHeader className="pb-2">
                 <CardDescription>총 이익</CardDescription>
