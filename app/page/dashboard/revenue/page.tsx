@@ -568,7 +568,9 @@ export default function RevenuePage() {
                     <CardTitle className="text-2xl">{formatCurrency(chartData?.summary.totalRevenue || 0)}</CardTitle>
                     
                     <p className="text-xs text-muted-foreground pt-3">
-                      목표 금액: {formatCurrency(chartData?.trendData?.daily?.reduce((sum, item) => sum + (item.target_day || 0), 0) || 0)}
+                      평균 매출액: {formatCurrency(chartData?.trendData?.daily?.length ? 
+                        chartData.trendData.daily.reduce((sum, item) => sum + (item.revenue || 0), 0) / chartData.trendData.daily.length 
+                        : 0)}
                     </p>
                   </div>
                   <div className="flex items-center justify-between">
