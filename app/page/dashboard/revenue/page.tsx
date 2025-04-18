@@ -169,7 +169,6 @@ export default function RevenuePage() {
       // 필터 옵션 새로 불러오기
       await loadFilterOptions(newFilters);
     } catch (error) {
-      console.error('필터 변경 오류:', error);
       setError(error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.');
     }
   };
@@ -198,7 +197,6 @@ export default function RevenuePage() {
       const data = await response.json();
       setFilterOptions(data.filterOptions);
     } catch (err) {
-      console.error('필터 옵션 로드 오류:', err);
     }
   };
 
@@ -235,11 +233,7 @@ export default function RevenuePage() {
       setChartData(data.chartData);
       setFilterOptions(data.filterOptions);
       
-      // 디버깅: 트렌드 데이터 확인
-      console.log('트렌드 데이터:', data.chartData.trendData);
-      console.log('판매수량:', data.chartData.summary.totalQuantity);
     } catch (err) {
-      console.error('데이터 로드 오류:', err);
       setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.');
     } finally {
       setLoading(false);
@@ -611,58 +605,60 @@ export default function RevenuePage() {
                 </div>
               </CardHeader>
             </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription>판매수량</CardDescription>
-                <CardTitle className="text-2xl">{chartData?.summary.totalQuantity?.toLocaleString() || 0}개</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-xs text-muted-foreground">
-                  <span className={chartData?.summary.quantityGrowthRate && chartData.summary.quantityGrowthRate >= 0 ? "text-green-500" : "text-red-500"}>
-                    {chartData?.summary.quantityGrowthRate && (
-                      <>
-                        {chartData.summary.quantityGrowthRate >= 0 ? (
-                          <TrendingUp className="w-4 h-4 inline-block mr-1" />
-                        ) : (
-                          <TrendingDown className="w-4 h-4 inline-block mr-1" />
-                        )}
-                        {chartData.summary.quantityGrowthRate.toFixed(1)}%
-                      </>
-                    )}
-                  </span>
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription>판매단가</CardDescription>
-                <CardTitle className="text-2xl">
-                  {chartData?.summary.totalQuantity && chartData.summary.totalQuantity > 0 
-                    ? formatCurrency(chartData.summary.totalRevenue / chartData.summary.totalQuantity)
-                    : formatCurrency(0)}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-xs text-muted-foreground">
-                  <span className={chartData?.summary.totalQuantity && chartData.summary.previousQuantity && 
-                    (chartData.summary.totalRevenue / chartData.summary.totalQuantity) >= 
-                    (chartData.summary.previousRevenue / chartData.summary.previousQuantity) ? "text-green-500" : "text-red-500"}>
-                    {chartData?.summary.totalQuantity && chartData.summary.previousQuantity && (
-                      <>
-                        {((chartData.summary.totalRevenue / chartData.summary.totalQuantity) >= 
-                          (chartData.summary.previousRevenue / chartData.summary.previousQuantity)) ? (
-                          <TrendingUp className="w-4 h-4 inline-block mr-1" />
-                        ) : (
-                          <TrendingDown className="w-4 h-4 inline-block mr-1" />
-                        )}
-                        {(((chartData.summary.totalRevenue / chartData.summary.totalQuantity) / 
-                          (chartData.summary.previousRevenue / chartData.summary.previousQuantity) - 1) * 100).toFixed(1)}%
-                      </>
-                    )}
-                  </span>
-                </p>
-              </CardContent>
-            </Card>
+            <div className="flex gap-4">
+              <Card className="flex-1">
+                <CardHeader className="pb-2">
+                  <CardDescription>판매수량</CardDescription>
+                  <CardTitle className="text-2xl">{chartData?.summary.totalQuantity?.toLocaleString() || 0}개</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-xs text-muted-foreground">
+                    <span className={chartData?.summary.quantityGrowthRate && chartData.summary.quantityGrowthRate >= 0 ? "text-green-500" : "text-red-500"}>
+                      {chartData?.summary.quantityGrowthRate && (
+                        <>
+                          {chartData.summary.quantityGrowthRate >= 0 ? (
+                            <TrendingUp className="w-4 h-4 inline-block mr-1" />
+                          ) : (
+                            <TrendingDown className="w-4 h-4 inline-block mr-1" />
+                          )}
+                          {chartData.summary.quantityGrowthRate.toFixed(1)}%
+                        </>
+                      )}
+                    </span>
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="flex-1">
+                <CardHeader className="pb-2">
+                  <CardDescription>판매단가</CardDescription>
+                  <CardTitle className="text-2xl">
+                    {chartData?.summary.totalQuantity && chartData.summary.totalQuantity > 0 
+                      ? formatCurrency(chartData.summary.totalRevenue / chartData.summary.totalQuantity)
+                      : formatCurrency(0)}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-xs text-muted-foreground">
+                    <span className={chartData?.summary.totalQuantity && chartData.summary.previousQuantity && 
+                      (chartData.summary.totalRevenue / chartData.summary.totalQuantity) >= 
+                      (chartData.summary.previousRevenue / chartData.summary.previousQuantity) ? "text-green-500" : "text-red-500"}>
+                      {chartData?.summary.totalQuantity && chartData.summary.previousQuantity && (
+                        <>
+                          {((chartData.summary.totalRevenue / chartData.summary.totalQuantity) >= 
+                            (chartData.summary.previousRevenue / chartData.summary.previousQuantity)) ? (
+                            <TrendingUp className="w-4 h-4 inline-block mr-1" />
+                          ) : (
+                            <TrendingDown className="w-4 h-4 inline-block mr-1" />
+                          )}
+                          {(((chartData.summary.totalRevenue / chartData.summary.totalQuantity) / 
+                            (chartData.summary.previousRevenue / chartData.summary.previousQuantity) - 1) * 100).toFixed(1)}%
+                        </>
+                      )}
+                    </span>
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
             <Card>
               <CardHeader className="pb-2">
                 <CardDescription>총 원가</CardDescription>
