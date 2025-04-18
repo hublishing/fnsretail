@@ -28,7 +28,7 @@ import {
 import { ChartContainer } from "@/components/ui/chart"
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
-import { Calendar as CalendarIcon } from "lucide-react"
+import { Calendar as CalendarIcon, TrendingUp, TrendingDown } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
@@ -76,6 +76,8 @@ interface ChartData {
     totalCost: number;
     achievementRate: number;
     dateCount: number;
+    totalGrossAmount: number;
+    growthRate: number;
   };
 }
 
@@ -520,7 +522,29 @@ export default function RevenuePage() {
         // 데이터 표시
         <>
           {/* 개요 카드 */}
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>총 거래액</CardDescription>
+                <CardTitle className="text-2xl">{formatCurrency(chartData?.summary.totalGrossAmount || 0)}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-xs text-muted-foreground">
+                  <span className={chartData?.summary.growthRate && chartData.summary.growthRate >= 0 ? "text-green-500" : "text-red-500"}>
+                    {chartData?.summary.growthRate && (
+                      <>
+                        {chartData.summary.growthRate >= 0 ? (
+                          <TrendingUp className="w-4 h-4 inline-block mr-1" />
+                        ) : (
+                          <TrendingDown className="w-4 h-4 inline-block mr-1" />
+                        )}
+                        {chartData.summary.growthRate.toFixed(1)}%
+                      </>
+                    )}
+                  </span>
+                </p>
+              </CardContent>
+            </Card>
             <Card>
               <CardHeader className="pb-2">
                 <div className="flex flex justify-between">
@@ -803,118 +827,6 @@ export default function RevenuePage() {
                 </div>
               </CardContent>
             </Card>
-
-            {/* 담당자별 차트 */}
-            <Card>
-              <CardHeader>
-                <CardTitle>담당자별 매출 비중</CardTitle>
-                <CardDescription>
-                  담당자(manager)별 매출 분포
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[300px] flex items-center justify-center">
-                  {chartData?.pieCharts.manager.length === 0 ? (
-                    <div className="text-center text-muted-foreground">
-                      데이터가 없습니다
-                    </div>
-                  ) : (
-                    <PieChart width={400} height={300}>
-                      <Pie
-                        data={chartData?.pieCharts.manager}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={true}
-                        outerRadius={100}
-                        fill="#8884d8"
-                        dataKey="value"
-                        nameKey="name"
-                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                      >
-                        {chartData?.pieCharts.manager.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip 
-                        content={
-                          <CustomTooltip 
-                            formatter={formatCurrency}
-                            indicator="dot"
-                          />
-                        }
-                      />
-                    </PieChart>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* 매출 추이 */}
-            <Card>
-              <CardHeader>
-                <CardTitle>매출 및 이익 추이</CardTitle>
-                <CardDescription>
-                  기간별 매출, 원가, 이익 추이
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[400px]">
-                  <ChartContainer 
-                    config={{
-                      매출: {
-                        label: "매출",
-                        color: "#0ea5e9"
-                      },
-                      원가: {
-                        label: "원가",
-                        color: "#f43f5e"
-                      },
-                      이익: {
-                        label: "이익",
-                        color: "#10b981"
-                      }
-                    }}
-                    >
-                      <AreaChart data={chartData?.trendData || []}>
-                        <defs>
-                          <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.8}/>
-                            <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0}/>
-                          </linearGradient>
-                          <linearGradient id="colorCost" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.8}/>
-                            <stop offset="95%" stopColor="#f43f5e" stopOpacity={0}/>
-                          </linearGradient>
-                          <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
-                            <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                          </linearGradient>
-                      </defs>
-                      <XAxis 
-                        dataKey="order_date" 
-                        tickFormatter={(date) => format(new Date(date), 'MM-dd')}
-                      />
-                      <YAxis />
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <Tooltip 
-                        content={
-                          <CustomTooltip 
-                            formatter={formatCurrency}
-                            indicator="line"
-                          />
-                        }
-                        labelFormatter={(date) => format(new Date(date), 'yyyy-MM-dd')}
-                      />
-                      <Legend />
-                      <Area type="monotone" dataKey="revenue" name="매출" stroke="#0ea5e9" fillOpacity={1} fill="url(#colorRevenue)" />
-                      <Area type="monotone" dataKey="cost" name="원가" stroke="#f43f5e" fillOpacity={1} fill="url(#colorCost)" />
-                      <Area type="monotone" dataKey="profit" name="이익" stroke="#10b981" fillOpacity={1} fill="url(#colorProfit)" />
-                    </AreaChart>
-                  </ChartContainer>
-                </div>
-              </CardContent>
-            </Card>
-
           </div>
         </>
       )}

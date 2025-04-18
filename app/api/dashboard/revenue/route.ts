@@ -158,24 +158,81 @@ async function fetchChartData(url: string, access_token: string, filters: any) {
       totalRevenue: summaryData.totalRevenue,
       totalCost: summaryData.totalCost,
       achievementRate: calculateAchievementRate(summaryData.totalRevenue, summaryData.totalTargetDay),
-      dateCount: summaryData.dateCount
+      dateCount: summaryData.dateCount,
+      totalGrossAmount: summaryData.totalGrossAmount,
+      growthRate: summaryData.growthRate
     }
   };
 }
 
 // 요약 데이터 조회
 async function fetchSummaryData(url: string, access_token: string, whereClause: string) {
+  // 날짜 조건 추출
+  const dateMatch = whereClause.match(/order_date >= '(.+?)' AND order_date <= '(.+?)'/);
+  if (!dateMatch) {
+    throw new Error('날짜 조건을 찾을 수 없습니다.');
+  }
+  
+  const [_, startDate, endDate] = dateMatch;
+  
+  // 이전 기간의 시작일과 종료일 계산
+  const startDateObj = new Date(startDate);
+  const endDateObj = new Date(endDate);
+  const dateDiff = Math.ceil((endDateObj.getTime() - startDateObj.getTime()) / (1000 * 60 * 60 * 24));
+  
+  const previousStartDate = new Date(startDateObj);
+  previousStartDate.setDate(previousStartDate.getDate() - dateDiff - 1);
+  
+  const previousEndDate = new Date(startDateObj);
+  previousEndDate.setDate(previousEndDate.getDate() - 1);
+  
+  const previousWhereClause = whereClause
+    .replace(startDate, previousStartDate.toISOString().split('T')[0])
+    .replace(endDate, previousEndDate.toISOString().split('T')[0]);
+
+  console.log('날짜 조건:', {
+    current: { startDate, endDate },
+    previous: { 
+      startDate: previousStartDate.toISOString().split('T')[0],
+      endDate: previousEndDate.toISOString().split('T')[0]
+    }
+  });
+
   const query = `
+    WITH current_period AS (
+      SELECT 
+        SUM(sum_final_calculated_amount) AS total_revenue,
+        SUM(sum_org_amount) AS total_cost,
+        SUM(target_day) AS total_target_day,
+        COUNT(DISTINCT order_date) AS date_count,
+        SUM(sum_gross_amount) AS total_gross_amount
+      FROM 
+        \`${process.env.GOOGLE_CLOUD_PROJECT_ID}.project_m.sales_db\`
+      WHERE 
+        ${whereClause}
+    ),
+    previous_period AS (
+      SELECT 
+        SUM(sum_gross_amount) AS total_gross_amount
+      FROM 
+        \`${process.env.GOOGLE_CLOUD_PROJECT_ID}.project_m.sales_db\`
+      WHERE 
+        ${previousWhereClause}
+    )
     SELECT 
-      SUM(sum_final_calculated_amount) AS total_revenue,
-      SUM(sum_org_amount) AS total_cost,
-      SUM(target_day) AS total_target_day,
-      COUNT(DISTINCT order_date) AS date_count
+      cp.total_revenue,
+      cp.total_cost,
+      cp.total_target_day,
+      cp.date_count,
+      cp.total_gross_amount,
+      pp.total_gross_amount AS previous_gross_amount
     FROM 
-      \`${process.env.GOOGLE_CLOUD_PROJECT_ID}.project_m.sales_db\`
-    WHERE 
-      ${whereClause}
+      current_period cp
+    CROSS JOIN 
+      previous_period pp
   `;
+
+  console.log('요약 데이터 쿼리:', query);
 
   const response = await fetch(url, {
     method: 'POST',
@@ -196,15 +253,37 @@ async function fetchSummaryData(url: string, access_token: string, whereClause: 
 
   const data = await response.json();
   
+  console.log('요약 데이터 응답:', data);
+  
   if (!data.rows || data.rows.length === 0) {
-    return { totalRevenue: 0, totalCost: 0, totalTargetDay: 0, dateCount: 0 };
+    return { 
+      totalRevenue: 0, 
+      totalCost: 0, 
+      totalTargetDay: 0, 
+      dateCount: 0,
+      totalGrossAmount: 0,
+      previousGrossAmount: 0
+    };
   }
+  
+  const totalGrossAmount = Number(data.rows[0].f[4].v || 0);
+  const previousGrossAmount = Number(data.rows[0].f[5].v || 0);
+  const growthRate = previousGrossAmount === 0 ? 0 : 
+    ((totalGrossAmount - previousGrossAmount) / previousGrossAmount) * 100;
+  
+  console.log('계산된 값:', {
+    totalGrossAmount,
+    previousGrossAmount,
+    growthRate
+  });
   
   return {
     totalRevenue: Number(data.rows[0].f[0].v || 0),
     totalCost: Number(data.rows[0].f[1].v || 0),
     totalTargetDay: Number(data.rows[0].f[2].v || 0),
-    dateCount: Number(data.rows[0].f[3].v || 0)
+    dateCount: Number(data.rows[0].f[3].v || 0),
+    totalGrossAmount,
+    growthRate
   };
 }
 
