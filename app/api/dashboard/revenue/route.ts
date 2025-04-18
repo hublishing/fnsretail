@@ -168,7 +168,10 @@ async function fetchChartData(url: string, access_token: string, filters: any) {
       previousCost: summaryData.previousCost,
       costRate: summaryData.costRate,
       targetCostRate: summaryData.targetCostRate,
-      costComparisonRate: summaryData.costComparisonRate
+      costComparisonRate: summaryData.costComparisonRate,
+      estimatedMonthlyRevenue: summaryData.estimatedMonthlyRevenue,
+      estimatedMonthlyTarget: summaryData.estimatedMonthlyTarget,
+      estimatedMonthlyAchievementRate: summaryData.estimatedMonthlyAchievementRate
     }
   };
 }
@@ -215,7 +218,8 @@ async function fetchSummaryData(url: string, access_token: string, whereClause: 
         SUM(target_orgprice) AS total_target_cost,
         COUNT(DISTINCT order_date) AS date_count,
         SUM(sum_gross_amount) AS total_gross_amount,
-        SUM(sum_qty) AS total_quantity
+        SUM(sum_qty) AS total_quantity,
+        (SUM(sum_final_calculated_amount) / COUNT(DISTINCT order_date)) * 28 AS estimated_monthly_revenue
       FROM 
         \`${process.env.GOOGLE_CLOUD_PROJECT_ID}.project_m.sales_db\`
       WHERE 
@@ -243,7 +247,8 @@ async function fetchSummaryData(url: string, access_token: string, whereClause: 
       cp.total_quantity,
       pp.total_quantity AS previous_quantity,
       pp.total_revenue AS previous_revenue,
-      pp.total_cost AS previous_cost
+      pp.total_cost AS previous_cost,
+      cp.estimated_monthly_revenue
     FROM 
       current_period cp
     CROSS JOIN 
@@ -282,7 +287,9 @@ async function fetchSummaryData(url: string, access_token: string, whereClause: 
     totalQuantity: data.rows?.[0]?.f?.[7]?.v,
     previousQuantity: data.rows?.[0]?.f?.[8]?.v,
     previousRevenue: data.rows?.[0]?.f?.[9]?.v,
-    previousCost: data.rows?.[0]?.f?.[10]?.v
+    previousCost: data.rows?.[0]?.f?.[10]?.v,
+    estimatedMonthlyRevenue: data.rows?.[0]?.f?.[11]?.v,
+    estimatedMonthlyTarget: data.rows?.[0]?.f?.[2]?.v
   });
   
   if (!data.rows || data.rows.length === 0) {
@@ -311,6 +318,21 @@ async function fetchSummaryData(url: string, access_token: string, whereClause: 
   const previousQuantity = Math.round(Number(data.rows[0].f[8].v || 0));
   const previousRevenue = Math.round(Number(data.rows[0].f[9].v || 0));
   const previousCost = Math.round(Number(data.rows[0].f[10].v || 0));
+  const estimatedMonthlyRevenue = Math.round(Number(data.rows[0].f[11].v || 0));
+  const estimatedMonthlyAchievementRate = totalTargetDay === 0 ? 0 : 
+    (estimatedMonthlyRevenue / totalTargetDay) * 100;
+
+  console.log('마감예상액 계산 상세:', {
+    estimatedMonthlyRevenue,
+    totalTargetDay,
+    estimatedMonthlyAchievementRate,
+    formula: `${estimatedMonthlyRevenue} / ${totalTargetDay} * 100 = ${estimatedMonthlyAchievementRate}`,
+    rawData: {
+      sum_final_calculated_amount: data.rows[0].f[0].v,
+      date_count: data.rows[0].f[4].v,
+      target_day: data.rows[0].f[2].v
+    }
+  });
 
   const growthRate = previousGrossAmount === 0 ? 0 : 
     ((totalGrossAmount - previousGrossAmount) / previousGrossAmount) * 100;
@@ -348,7 +370,10 @@ async function fetchSummaryData(url: string, access_token: string, whereClause: 
     previousCost,
     costRate,
     targetCostRate,
-    costComparisonRate
+    costComparisonRate,
+    estimatedMonthlyRevenue,
+    estimatedMonthlyTarget: totalTargetDay,
+    estimatedMonthlyAchievementRate
   };
 }
 

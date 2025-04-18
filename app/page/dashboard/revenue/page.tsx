@@ -86,6 +86,9 @@ interface ChartData {
     costRate: number;
     targetCostRate: number;
     costComparisonRate: number;
+    estimatedMonthlyRevenue: number;
+    estimatedMonthlyAchievementRate: number;
+    estimatedMonthlyTarget: number;
   };
 }
 
@@ -528,7 +531,7 @@ export default function RevenuePage() {
           <div className="grid gap-4 md:grid-cols-5">
             <Card>
               <CardHeader className="pb-2">
-                <CardDescription>총 거래액</CardDescription>
+                <CardDescription>거래액</CardDescription>
                 <CardTitle className="text-2xl">{formatCurrency(chartData?.summary.totalGrossAmount || 0)}</CardTitle>
               </CardHeader>
               <CardContent>
@@ -552,7 +555,7 @@ export default function RevenuePage() {
               <CardHeader className="pb-2">
                 <div className="flex flex justify-between">
                   <div className="flex flex-col">
-                    <CardDescription>총 매출</CardDescription>
+                    <CardDescription>매출액</CardDescription>
                     <CardTitle className="text-2xl">{formatCurrency(chartData?.summary.totalRevenue || 0)}</CardTitle>
                     
                     <p className="text-xs text-muted-foreground pt-3">
@@ -604,6 +607,66 @@ export default function RevenuePage() {
                         />
                       </PolarRadiusAxis>
                     </RadialBarChart>
+                    </div>
+                  </div>
+                </div>
+              </CardHeader>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <div className="flex flex justify-between">
+                  <div className="flex flex-col">
+                    <CardDescription>마감예상액</CardDescription>
+                    <CardTitle className="text-2xl">{formatCurrency(chartData?.summary.estimatedMonthlyRevenue || 0)}</CardTitle>
+                    
+                    <p className="text-xs text-muted-foreground pt-3">
+                      목표 금액: {formatCurrency(chartData?.summary.estimatedMonthlyTarget || 0)}
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="w-24 h-24">
+                      <RadialBarChart
+                        width={96}
+                        height={96}
+                        data={[
+                          {
+                            achievement: chartData?.summary.estimatedMonthlyAchievementRate || 0,
+                            fill: "hsl(var(--chart-1))"
+                          }
+                        ]}
+                        startAngle={90}
+                        endAngle={chartData?.summary.estimatedMonthlyAchievementRate ? (90 - (chartData.summary.estimatedMonthlyAchievementRate * 3.6)) : 90}
+                        innerRadius={30}
+                        outerRadius={48}
+                        barSize={10}
+                      >
+                        <PolarGrid gridType="circle" radialLines={false} stroke="none" className="first:fill-muted last:fill-background" polarRadius={[35, 25]}/>
+                        <RadialBar background dataKey="achievement" cornerRadius={5} fill="hsl(var(--chart-1))"/>
+                        <PolarRadiusAxis type="number" domain={[0, 100]} tick={false} tickLine={false} axisLine={false}>
+                          <Label
+                            content={({ viewBox }) => {
+                              if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                                return (
+                                  <text
+                                    x={viewBox.cx}
+                                    y={viewBox.cy}
+                                    textAnchor="middle"
+                                    dominantBaseline="middle"
+                                  >
+                                    <tspan
+                                      x={viewBox.cx}
+                                      y={viewBox.cy}
+                                      className="text-xs text-muted-foreground"
+                                    >
+                                      {Math.round(chartData?.summary.estimatedMonthlyAchievementRate || 0)}%
+                                    </tspan>
+                                  </text>
+                                )
+                              }
+                            }}
+                          />
+                        </PolarRadiusAxis>
+                      </RadialBarChart>
                     </div>
                   </div>
                 </div>
@@ -664,7 +727,7 @@ export default function RevenuePage() {
               </Card>
               <Card className="flex-1">
                 <CardHeader className="pb-2">
-                  <CardDescription>총 원가</CardDescription>
+                  <CardDescription>원가</CardDescription>
                   <CardTitle className="text-2xl">
                     {(() => {
                       const costRate = chartData?.summary?.costRate || 0;
@@ -714,18 +777,8 @@ export default function RevenuePage() {
                   </p>
                 </CardContent>
               </Card>
-            </div>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription>총 이익</CardDescription>
-                <CardTitle className="text-2xl">{formatCurrency((chartData?.summary.totalRevenue || 0) - (chartData?.summary.totalCost || 0))}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-xs text-muted-foreground">
-                  이익률: {formatPercent(((chartData?.summary.totalRevenue || 0) - (chartData?.summary.totalCost || 0)) / (chartData?.summary.totalRevenue || 1) * 100)}
-                </p>
-              </CardContent>
-            </Card>
+            </div> 
+            
           </div>
 
           {/* 일별 매출 바차트 추가 */}
