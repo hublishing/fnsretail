@@ -13,7 +13,7 @@ export default function HomePage() {
       try {
         const session = await getSession()
         if (session) {
-          router.push('/page/dashboard/sales')
+          router.push('/page/dashboard/revenue')
         } else {
           router.push('/page/login')
         }

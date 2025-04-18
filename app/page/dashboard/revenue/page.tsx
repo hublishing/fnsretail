@@ -67,11 +67,11 @@ interface ChartData {
   };
   trendData: {
     daily: Array<{
-      order_date: string;
-      revenue: number;
-      cost: number;
-      profit: number;
-      target_day: number;
+    order_date: string;
+    revenue: number;
+    cost: number;
+    profit: number;
+    target_day: number;
       cost_rate?: number;
     }>;
     monthly: Array<{
@@ -787,10 +787,10 @@ export default function RevenuePage() {
                 <div className="flex justify-between">
                   <CardTitle>매출 추이</CardTitle>
                   <CardDescription className="pt-2 text-xs">
-                    {filters.dateRange?.from && filters.dateRange?.to 
-                      ? `${format(filters.dateRange.from, 'yyyy-MM-dd')} ~ ${format(filters.dateRange.to, 'yyyy-MM-dd')}`
-                      : '선택된 기간'}
-                  </CardDescription>
+                {filters.dateRange?.from && filters.dateRange?.to 
+                  ? `${format(filters.dateRange.from, 'yyyy-MM-dd')} ~ ${format(filters.dateRange.to, 'yyyy-MM-dd')}`
+                  : '선택된 기간'}
+              </CardDescription>
                 </div>
                 <Tabs defaultValue="daily" className="w-full">
                   <TabsList className="grid w-[200px] grid-cols-2 mt-4">
