@@ -160,7 +160,9 @@ async function fetchChartData(url: string, access_token: string, filters: any) {
       achievementRate: calculateAchievementRate(summaryData.totalRevenue, summaryData.totalTargetDay),
       dateCount: summaryData.dateCount,
       totalGrossAmount: summaryData.totalGrossAmount,
-      growthRate: summaryData.growthRate
+      growthRate: summaryData.growthRate,
+      totalQuantity: summaryData.totalQuantity,
+      quantityGrowthRate: summaryData.quantityGrowthRate
     }
   };
 }
@@ -200,32 +202,36 @@ async function fetchSummaryData(url: string, access_token: string, whereClause: 
 
   const query = `
     WITH current_period AS (
-      SELECT 
+      SELECT
         SUM(sum_final_calculated_amount) AS total_revenue,
         SUM(sum_org_amount) AS total_cost,
         SUM(target_day) AS total_target_day,
         COUNT(DISTINCT order_date) AS date_count,
-        SUM(sum_gross_amount) AS total_gross_amount
+        SUM(sum_gross_amount) AS total_gross_amount,
+        SUM(sum_qty) AS total_quantity
       FROM 
         \`${process.env.GOOGLE_CLOUD_PROJECT_ID}.project_m.sales_db\`
       WHERE 
         ${whereClause}
     ),
     previous_period AS (
-      SELECT 
-        SUM(sum_gross_amount) AS total_gross_amount
+      SELECT
+        SUM(sum_gross_amount) AS total_gross_amount,
+        SUM(sum_qty) AS total_quantity
       FROM 
         \`${process.env.GOOGLE_CLOUD_PROJECT_ID}.project_m.sales_db\`
       WHERE 
         ${previousWhereClause}
     )
-    SELECT 
+    SELECT
       cp.total_revenue,
       cp.total_cost,
       cp.total_target_day,
       cp.date_count,
       cp.total_gross_amount,
-      pp.total_gross_amount AS previous_gross_amount
+      pp.total_gross_amount AS previous_gross_amount,
+      cp.total_quantity,
+      pp.total_quantity AS previous_quantity
     FROM 
       current_period cp
     CROSS JOIN 
@@ -253,7 +259,16 @@ async function fetchSummaryData(url: string, access_token: string, whereClause: 
 
   const data = await response.json();
   
-  console.log('요약 데이터 응답:', data);
+  console.log('요약 데이터 응답 상세:', {
+    totalRevenue: data.rows?.[0]?.f?.[0]?.v,
+    totalCost: data.rows?.[0]?.f?.[1]?.v,
+    totalTargetDay: data.rows?.[0]?.f?.[2]?.v,
+    dateCount: data.rows?.[0]?.f?.[3]?.v,
+    totalGrossAmount: data.rows?.[0]?.f?.[4]?.v,
+    previousGrossAmount: data.rows?.[0]?.f?.[5]?.v,
+    totalQuantity: data.rows?.[0]?.f?.[6]?.v,
+    previousQuantity: data.rows?.[0]?.f?.[7]?.v
+  });
   
   if (!data.rows || data.rows.length === 0) {
     return { 
@@ -262,28 +277,36 @@ async function fetchSummaryData(url: string, access_token: string, whereClause: 
       totalTargetDay: 0, 
       dateCount: 0,
       totalGrossAmount: 0,
-      previousGrossAmount: 0
+      previousGrossAmount: 0,
+      totalQuantity: 0,
+      previousQuantity: 0
     };
   }
   
+  const totalRevenue = Number(data.rows[0].f[0].v || 0);
+  const totalCost = Number(data.rows[0].f[1].v || 0);
+  const totalTargetDay = Number(data.rows[0].f[2].v || 0);
+  const dateCount = Number(data.rows[0].f[3].v || 0);
   const totalGrossAmount = Number(data.rows[0].f[4].v || 0);
   const previousGrossAmount = Number(data.rows[0].f[5].v || 0);
+  const totalQuantity = Number(data.rows[0].f[6].v || 0);
+  const previousQuantity = Number(data.rows[0].f[7].v || 0);
+
   const growthRate = previousGrossAmount === 0 ? 0 : 
     ((totalGrossAmount - previousGrossAmount) / previousGrossAmount) * 100;
-  
-  console.log('계산된 값:', {
-    totalGrossAmount,
-    previousGrossAmount,
-    growthRate
-  });
-  
+    
+  const quantityGrowthRate = previousQuantity === 0 ? 0 :
+    ((totalQuantity - previousQuantity) / previousQuantity) * 100;
+
   return {
-    totalRevenue: Number(data.rows[0].f[0].v || 0),
-    totalCost: Number(data.rows[0].f[1].v || 0),
-    totalTargetDay: Number(data.rows[0].f[2].v || 0),
-    dateCount: Number(data.rows[0].f[3].v || 0),
+    totalRevenue,
+    totalCost,
+    totalTargetDay,
+    dateCount,
     totalGrossAmount,
-    growthRate
+    growthRate,
+    totalQuantity,
+    quantityGrowthRate
   };
 }
 

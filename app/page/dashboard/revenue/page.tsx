@@ -78,6 +78,8 @@ interface ChartData {
     dateCount: number;
     totalGrossAmount: number;
     growthRate: number;
+    totalQuantity: number;
+    quantityGrowthRate: number;
   };
 }
 
@@ -233,6 +235,7 @@ export default function RevenuePage() {
       
       // 디버깅: 트렌드 데이터 확인
       console.log('트렌드 데이터:', data.chartData.trendData);
+      console.log('판매수량:', data.chartData.summary.totalQuantity);
     } catch (err) {
       console.error('데이터 로드 오류:', err);
       setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.');
@@ -522,7 +525,7 @@ export default function RevenuePage() {
         // 데이터 표시
         <>
           {/* 개요 카드 */}
-          <div className="grid gap-4 md:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-5">
             <Card>
               <CardHeader className="pb-2">
                 <CardDescription>총 거래액</CardDescription>
@@ -605,6 +608,28 @@ export default function RevenuePage() {
                   </div>
                 </div>
               </CardHeader>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>판매수량</CardDescription>
+                <CardTitle className="text-2xl">{chartData?.summary.totalQuantity?.toLocaleString() || 0}개</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-xs text-muted-foreground">
+                  <span className={chartData?.summary.quantityGrowthRate && chartData.summary.quantityGrowthRate >= 0 ? "text-green-500" : "text-red-500"}>
+                    {chartData?.summary.quantityGrowthRate && (
+                      <>
+                        {chartData.summary.quantityGrowthRate >= 0 ? (
+                          <TrendingUp className="w-4 h-4 inline-block mr-1" />
+                        ) : (
+                          <TrendingDown className="w-4 h-4 inline-block mr-1" />
+                        )}
+                        {chartData.summary.quantityGrowthRate.toFixed(1)}%
+                      </>
+                    )}
+                  </span>
+                </p>
+              </CardContent>
             </Card>
             <Card>
               <CardHeader className="pb-2">
