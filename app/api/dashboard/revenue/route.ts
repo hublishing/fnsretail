@@ -385,13 +385,20 @@ async function fetchTrendData(url: string, access_token: string, whereClause: st
   }
   const startDate = dateMatch[1];
 
+  logDebug('whereClause', whereClause);
+  logDebug('startDate', startDate);
+
   const dailyQuery = `
     SELECT 
       order_date,
       SUM(sum_final_calculated_amount) AS revenue,
       SUM(sum_org_amount) AS cost,
       SUM(sum_final_calculated_amount - sum_org_amount) AS profit,
-      SUM(target_day) AS target_day
+      SUM(target_day) AS target_day,
+      CASE 
+        WHEN SUM(sum_final_calculated_amount) = 0 THEN 0
+        ELSE (SUM(sum_org_amount) / SUM(sum_final_calculated_amount)) * 100
+      END AS cost_rate
     FROM 
       \`${process.env.GOOGLE_CLOUD_PROJECT_ID}.project_m.sales_db\`
     WHERE 
@@ -401,6 +408,8 @@ async function fetchTrendData(url: string, access_token: string, whereClause: st
     ORDER BY 
       order_date
   `;
+
+  logDebug('dailyQuery', dailyQuery);
 
   const monthlyQuery = `
     WITH selected_year AS (
@@ -412,12 +421,16 @@ async function fetchTrendData(url: string, access_token: string, whereClause: st
       FROM UNNEST(GENERATE_ARRAY(0, 11)) as n
     ),
     monthly_data AS (
-      SELECT 
+      SELECT
         FORMAT_DATE('%Y-%m', order_date) AS month,
         SUM(sum_final_calculated_amount) AS revenue,
         SUM(sum_org_amount) AS cost,
         SUM(sum_final_calculated_amount - sum_org_amount) AS profit,
-        SUM(target_day) AS target_day
+        SUM(target_day) AS target_day,
+        CASE 
+          WHEN SUM(sum_final_calculated_amount) = 0 THEN 0
+          ELSE (SUM(sum_org_amount) / SUM(sum_final_calculated_amount)) * 100
+        END AS cost_rate
       FROM 
         \`${process.env.GOOGLE_CLOUD_PROJECT_ID}.project_m.sales_db\`
       WHERE 
@@ -425,15 +438,30 @@ async function fetchTrendData(url: string, access_token: string, whereClause: st
         AND ${whereClause.replace(/order_date >= '[^']+' AND order_date <= '[^']+'/, '1=1')}
       GROUP BY 
         month
+    ),
+    previous_year_data AS (
+      SELECT
+        FORMAT_DATE('%Y-%m', DATE_ADD(order_date, INTERVAL 1 YEAR)) AS current_month,
+        SUM(sum_final_calculated_amount) AS previous_revenue
+      FROM 
+        \`${process.env.GOOGLE_CLOUD_PROJECT_ID}.project_m.sales_db\`
+      WHERE 
+        EXTRACT(YEAR FROM order_date) = (SELECT year - 1 FROM selected_year)
+        AND ${whereClause.replace(/order_date >= '[^']+' AND order_date <= '[^']+'/, '1=1')}
+      GROUP BY 
+        current_month
     )
     SELECT 
       am.month,
       COALESCE(md.revenue, 0) as revenue,
       COALESCE(md.cost, 0) as cost,
       COALESCE(md.profit, 0) as profit,
-      COALESCE(md.target_day, 0) as target_day
+      COALESCE(md.target_day, 0) as target_day,
+      COALESCE(md.cost_rate, 0) as cost_rate,
+      COALESCE(pyd.previous_revenue, 0) as previous_revenue
     FROM all_months am
     LEFT JOIN monthly_data md ON am.month = md.month
+    LEFT JOIN previous_year_data pyd ON am.month = pyd.current_month
     ORDER BY 
       am.month
   `;
@@ -466,18 +494,32 @@ async function fetchTrendData(url: string, access_token: string, whereClause: st
 
     const dailyData = await dailyResponse.json();
     const monthlyData = await monthlyResponse.json();
- 
+    
+    logDebug('일자별 데이터 응답', {
+      totalRows: dailyData.totalRows,
+      rows: dailyData.rows?.length,
+      data: dailyData.rows
+    });
+    logDebug('월별 데이터 응답', {
+      totalRows: monthlyData.totalRows,
+      rows: monthlyData.rows?.length,
+      data: monthlyData.rows
+    });
 
     // 응답 데이터 처리
     const processRows = (rows: any[], isMonthly: boolean = false) => {
       if (!rows) return [];
-      return rows.map((row: any) => ({
+      const processed = rows.map((row: any) => ({
         [isMonthly ? 'month' : 'order_date']: row.f[0].v,
         revenue: Number(row.f[1].v || 0),
         cost: Number(row.f[2].v || 0),
         profit: Number(row.f[3].v || 0),
-        target_day: Number(row.f[4].v || 0)
+        target_day: Number(row.f[4].v || 0),
+        cost_rate: Number(row.f[5].v || 0),
+        previous_revenue: isMonthly ? Number(row.f[6]?.v || 0) : undefined
       }));
+      logDebug(`${isMonthly ? '월별' : '일자별'} 처리된 데이터`, processed);
+      return processed;
     };
 
     return {

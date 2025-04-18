@@ -33,6 +33,7 @@ export function ChartTooltip({
     fill?: string
     color?: string
     dataKey?: string
+    stroke?: string
   }>
   formatter?: (value: number) => string
 } & React.ComponentProps<"div">) {
@@ -61,7 +62,7 @@ export function ChartTooltip({
       <div className="grid gap-1.5">
         {payload.map((item, index) => {
           // item.fill이 있으면 그것을 사용, 없으면 color, 둘 다 없으면 기본 색상 사용
-          const indicatorColor = item.fill || item.color || `hsl(var(--chart-${index + 1}))`
+          const indicatorColor = item.fill || item.color || item.stroke || `hsl(var(--chart-${index + 1}))`
 
           return (
             <div
@@ -123,30 +124,31 @@ export function CustomTooltip({
   payload, 
   label,
   formatter,
+  indicator = "dot",
   ...props
 }: {
   active?: boolean
   payload?: any[]
   label?: string
   formatter?: (value: number) => string
+  indicator?: "line" | "dot" | "dashed"
 } & Omit<React.ComponentProps<typeof ChartTooltip>, 'payload' | 'label'>) {
-  if (!active || !payload || !payload.length) {
+  if (!active || !payload?.length) {
     return null
   }
 
-  // Recharts의 payload 형식을 ChartTooltip에 맞게 변환
   const formattedPayload = payload.map(item => ({
-    name: item.name || item.dataKey,
-    value: item.value,
+    ...item,
+    value: item.name === '원가율' ? `${item.value.toFixed(1)}%` : formatter?.(item.value) || item.value.toLocaleString(),
     fill: item.fill || item.color || item.stroke,
-    dataKey: item.dataKey
+    indicator
   }))
 
   return (
     <ChartTooltip
       label={label}
       payload={formattedPayload}
-      formatter={formatter}
+      indicator={indicator}
       {...props}
     />
   )

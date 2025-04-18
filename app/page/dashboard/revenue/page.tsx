@@ -24,6 +24,7 @@ import {
   PolarRadiusAxis,
   RadialBar,
   RadialBarChart,
+  ComposedChart,
 } from "recharts"
 import { ChartContainer } from "@/components/ui/chart"
 import { format } from 'date-fns'
@@ -71,6 +72,7 @@ interface ChartData {
       cost: number;
       profit: number;
       target_day: number;
+      cost_rate?: number;
     }>;
     monthly: Array<{
       month: string;
@@ -78,6 +80,7 @@ interface ChartData {
       cost: number;
       profit: number;
       target_day: number;
+      cost_rate?: number;
     }>;
   };
   summary: {
@@ -688,9 +691,9 @@ export default function RevenuePage() {
                 <CardHeader className="pb-2">
                   <CardDescription>판매수량</CardDescription>
                   <CardTitle className="text-2xl">{chartData?.summary.totalQuantity?.toLocaleString() || 0}개</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-xs text-muted-foreground">
+              </CardHeader>
+              <CardContent>
+                <p className="text-xs text-muted-foreground">
                     <span className={chartData?.summary.quantityGrowthRate && chartData.summary.quantityGrowthRate >= 0 ? "text-green-500" : "text-red-500"}>
                       {chartData?.summary.quantityGrowthRate && (
                         <>
@@ -703,20 +706,20 @@ export default function RevenuePage() {
                         </>
                       )}
                     </span>
-                  </p>
-                </CardContent>
-              </Card>
+                </p>
+              </CardContent>
+            </Card>
               <Card className="flex-1">
-                <CardHeader className="pb-2">
+              <CardHeader className="pb-2">
                   <CardDescription>판매단가</CardDescription>
                   <CardTitle className="text-2xl">
                     {chartData?.summary.totalQuantity && chartData.summary.totalQuantity > 0 
                       ? formatCurrency(chartData.summary.totalRevenue / chartData.summary.totalQuantity)
                       : formatCurrency(0)}
                   </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-xs text-muted-foreground">
+              </CardHeader>
+              <CardContent>
+                <p className="text-xs text-muted-foreground">
                     <span className={chartData?.summary.totalQuantity && chartData.summary.previousQuantity && 
                       (chartData.summary.totalRevenue / chartData.summary.totalQuantity) >= 
                       (chartData.summary.previousRevenue / chartData.summary.previousQuantity) ? "text-green-500" : "text-red-500"}>
@@ -741,11 +744,7 @@ export default function RevenuePage() {
                   <CardDescription>원가</CardDescription>
                   <CardTitle className="text-2xl">
                     {(() => {
-                      const costRate = chartData?.summary?.costRate || 0;
-                      console.log('원가율 데이터:', {
-                        costRate,
-                        summary: chartData?.summary
-                      });
+                      const costRate = chartData?.summary?.costRate || 0; 
                       return `${costRate.toFixed(1)}%`;
                     })()}
                   </CardTitle>
@@ -753,24 +752,13 @@ export default function RevenuePage() {
                 <CardContent>
                   <p className="text-xs text-muted-foreground">
                     {(() => {
-                      if (!chartData?.summary) {
-                        console.log('summary가 없음');
+                      if (!chartData?.summary) { 
                         return null;
                       }
                       
-                      const { costRate, targetCostRate, costComparisonRate } = chartData.summary;
+                      const { costRate, targetCostRate, costComparisonRate } = chartData.summary; 
                       
-                      console.log('원가율 비교 데이터:', {
-                        costRate,
-                        targetCostRate,
-                        costComparisonRate,
-                        formattedCostRate: `${costRate.toFixed(1)}%`,
-                        formattedTargetCostRate: `${targetCostRate.toFixed(1)}%`,
-                        formattedComparisonRate: `${costComparisonRate.toFixed(1)}%`
-                      });
-                      
-                      if (costRate === undefined || targetCostRate === undefined || costComparisonRate === undefined) {
-                        console.log('원가율 데이터가 불완전함');
+                      if (costRate === undefined || targetCostRate === undefined || costComparisonRate === undefined) { 
                         return null;
                       }
                       
@@ -785,9 +773,9 @@ export default function RevenuePage() {
                         </span>
                       );
                     })()}
-                  </p>
-                </CardContent>
-              </Card>
+                </p>
+              </CardContent>
+            </Card>
             </div> 
             
           </div>
@@ -796,57 +784,89 @@ export default function RevenuePage() {
           <Card>
             <CardHeader>
               <div className="">
-                <div>
+                <div className="flex justify-between">
                   <CardTitle>매출 추이</CardTitle>
-                  <CardDescription>
+                  <CardDescription className="pt-2 text-xs">
                     {filters.dateRange?.from && filters.dateRange?.to 
                       ? `${format(filters.dateRange.from, 'yyyy-MM-dd')} ~ ${format(filters.dateRange.to, 'yyyy-MM-dd')}`
                       : '선택된 기간'}
                   </CardDescription>
                 </div>
                 <Tabs defaultValue="daily" className="w-full">
-                  <TabsList className="grid w-[200px] grid-cols-2 mt-2">
+                  <TabsList className="grid w-[200px] grid-cols-2 mt-4">
                     <TabsTrigger value="daily">일별</TabsTrigger>
                     <TabsTrigger value="monthly">월별</TabsTrigger>
                   </TabsList>
                   <TabsContent value="daily">
-                    <div style={{ width: '100%', height: '350px' }}>
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart 
-                          data={chartData?.trendData.daily || []}
-                          margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
-                        >
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                          <XAxis
-                            dataKey="order_date"
-                            tickLine={false}
-                            tickMargin={5}
-                            axisLine={false}
-                            tick={{ fontSize: 11 }}
-                            tickFormatter={(date: string) => format(new Date(date), 'MM-dd')}
-                            height={30}
-                          />
-                          <Tooltip 
-                            content={
-                              <CustomTooltip 
-                                formatter={formatCurrency}
-                                indicator="dot"
-                              />
+              <div style={{ width: '100%', height: '350px' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart
+                    data={chartData?.trendData.daily || []}
+                    margin={{ top: 10, right: 0, left: 0, bottom: 0 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis
+                      dataKey="order_date"
+                      tickLine={false}
+                      tickMargin={5}
+                      axisLine={false}
+                      tick={{ fontSize: 11 }}
+                      tickFormatter={(date: string) => format(new Date(date), 'MM-dd')}
+                      height={30}
+                    />
+                    <YAxis
+                      tickLine={false}
+                      axisLine={false}
+                      tick={{ fontSize: 0 }}
+                      width={0}
+                    />
+                    <YAxis
+                      yAxisId="right"
+                      orientation="right"
+                      tickLine={false}
+                      axisLine={false}
+                      tick={{ fontSize: 0 }}
+                      domain={[0, 100]}
+                      width={0}
+                    />
+                    <Tooltip 
+                      content={
+                        <CustomTooltip 
+                          formatter={(value: number) => {
+                            const name = (value as any).name;
+                            if (name === '원가율') {
+                              return `${value.toFixed(1)}%`;
                             }
-                            labelFormatter={(date: string) => format(new Date(date), 'yyyy-MM-dd')}
-                          />
-                          <Bar dataKey="revenue" name="실제 매출" fill="hsl(var(--chart-1))" radius={5} />
-                          <Bar dataKey="target_day" name="목표 매출" fill="hsl(var(--chart-2))" radius={5} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
+                            return formatCurrency(value);
+                          }}
+                          indicator="dot"
+                        />
+                      }
+                      labelFormatter={(date: string) => format(new Date(date), 'yyyy-MM-dd')}
+                    />
+                    <Bar dataKey="revenue" name="실제 매출" fill="hsl(var(--chart-1))" radius={5} />
+                    <Bar dataKey="target_day" name="목표 매출" fill="hsl(var(--chart-2))" radius={5} />
+                    <Line 
+                      type="monotone"
+                      dataKey="cost_rate"
+                      name="원가율"
+                      stroke="hsl(var(--chart-8))"
+                      strokeWidth={2}
+                      dot={{ r: 2, fill: "hsl(var(--chart-8))"}}
+                      activeDot={{ r: 4, fill: "hsl(var(--chart-8))"}}
+                      yAxisId="right"
+                      connectNulls={true}
+                    />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
                   </TabsContent>
                   <TabsContent value="monthly">
                     <div style={{ width: '100%', height: '350px' }}>
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart 
+                        <ComposedChart 
                           data={chartData?.trendData.monthly || []}
-                          margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                          margin={{ top: 10, right: 0, left: 0, bottom: 0 }}
                         >
                           <CartesianGrid strokeDasharray="3 3" vertical={false} />
                           <XAxis
@@ -862,17 +882,35 @@ export default function RevenuePage() {
                               return isNaN(monthNumber) ? '' : `${monthNumber}월`;
                             }}
                           />
+                          <YAxis
+                            tickLine={false}
+                            axisLine={false}
+                            tick={{ fontSize: 0 }}
+                            width={0}
+                          /> 
                           <Tooltip 
                             content={
                               <CustomTooltip 
-                                formatter={formatCurrency}
+                                formatter={(value: number) => { 
+                                  return formatCurrency(value);
+                                }}
                                 indicator="dot"
                               />
                             }
                           />
                           <Bar dataKey="revenue" name="실제 매출" fill="hsl(var(--chart-1))" radius={5} />
-                          <Bar dataKey="target_day" name="목표 매출" fill="hsl(var(--chart-2))" radius={5} />
-                        </BarChart>
+                          <Bar dataKey="target_day" name="목표 매출" fill="hsl(var(--chart-2))" radius={5} /> 
+                          <Line 
+                            type="monotone"
+                            dataKey="previous_revenue"
+                            name="전년 동월 매출"
+                            stroke="hsl(var(--chart-8))"
+                            strokeWidth={2}
+                            dot={{ r: 2, fill: "hsl(var(--chart-8))"}}
+                            activeDot={{ r: 4, fill: "hsl(var(--chart-8))"}}
+                            connectNulls={true}
+                          />
+                        </ComposedChart>
                       </ResponsiveContainer>
                     </div>
                   </TabsContent>
@@ -934,7 +972,13 @@ export default function RevenuePage() {
                       <Tooltip 
                         content={
                           <CustomTooltip 
-                            formatter={formatCurrency}
+                            formatter={(value: number) => {
+                              const name = (value as any).name;
+                              if (name === '원가율') {
+                                return `${value.toFixed(1)}%`;
+                              }
+                              return formatCurrency(value);
+                            }}
                             indicator="dot"
                           />
                         }
@@ -979,7 +1023,13 @@ export default function RevenuePage() {
                       <Tooltip 
                         content={
                           <CustomTooltip 
-                            formatter={formatCurrency}
+                            formatter={(value: number) => {
+                              const name = (value as any).name;
+                              if (name === '원가율') {
+                                return `${value.toFixed(1)}%`;
+                              }
+                              return formatCurrency(value);
+                            }}
                             indicator="dot"
                           />
                         }
