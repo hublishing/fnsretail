@@ -1256,7 +1256,7 @@ export default function RevenuePage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="min-w-[120px]">채널</TableHead>
+                      <TableHead className="min-w-[100px]">채널</TableHead>
                       <TableHead 
                         className="cursor-pointer hover:bg-gray-100 text-center min-w-[100px]"
                         onClick={() => handleSort('revenue')}
