@@ -903,7 +903,7 @@ export default function RevenuePage() {
                           <Line 
                             type="monotone"
                             dataKey="previous_revenue"
-                            name="전년 동월 매출"
+                            name="전년 매출"
                             stroke="hsl(var(--chart-8))"
                             strokeWidth={2}
                             dot={{ r: 2, fill: "hsl(var(--chart-8))"}}
@@ -937,10 +937,10 @@ export default function RevenuePage() {
           </Card>
 
           {/* 파이 차트 영역 */}
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-4">
             {/* 구분별 차트 */}
             <Card className="flex flex-col">
-              <CardHeader className="items-center pb-0">
+              <CardHeader className="pb-0">
                 <CardTitle>구분별 매출 비중</CardTitle>
                 <CardDescription>구분(channel_category_2)별 매출 분포</CardDescription>
               </CardHeader>
@@ -1003,7 +1003,7 @@ export default function RevenuePage() {
 
             {/* 분류별 차트 */}
             <Card className="flex flex-col">
-              <CardHeader className="items-center pb-0">
+              <CardHeader className="pb-0">
                 <CardTitle>분류별 매출 비중</CardTitle>
                 <CardDescription>분류(channel_category_3)별 매출 분포</CardDescription>
               </CardHeader>
@@ -1050,6 +1050,112 @@ export default function RevenuePage() {
                 </div>
                 <div className="leading-none text-muted-foreground">
                   선택된 기간의 분류별 매출 분포
+                </div>
+              </CardFooter>
+            </Card>
+
+            {/* 채널별 차트 */}
+            <Card className="flex flex-col">
+              <CardHeader className="pb-0">
+                <CardTitle>채널별 매출 비중</CardTitle>
+                <CardDescription>채널(channel_name)별 매출 분포</CardDescription>
+              </CardHeader>
+              <CardContent className="flex-1 pb-0">
+                <div className="h-[300px] flex items-center justify-center">
+                  {chartData?.pieCharts.channel.length === 0 ? (
+                    <div className="text-center text-muted-foreground">
+                      데이터가 없습니다
+                    </div>
+                  ) : (
+                    <PieChart width={400} height={300}>
+                      <Pie
+                        data={chartData?.pieCharts.channel}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={true}
+                        outerRadius={100}
+                        innerRadius={60}
+                        fill="#8884d8"
+                        dataKey="value"
+                        nameKey="name"
+                      >
+                        {chartData?.pieCharts.channel.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        content={
+                          <CustomTooltip 
+                            formatter={(value: number) => {
+                              return formatCurrency(value);
+                            }}
+                            indicator="dot"
+                          />
+                        }
+                      />
+                    </PieChart>
+                  )}
+                </div>
+              </CardContent>
+              <CardFooter className="flex-col gap-2 text-sm">
+                <div className="flex items-center gap-2 font-medium leading-none">
+                  총 매출액: {formatCurrency(chartData?.summary.totalRevenue || 0)}
+                </div>
+                <div className="leading-none text-muted-foreground">
+                  선택된 기간의 채널별 매출 분포
+                </div>
+              </CardFooter>
+            </Card>
+
+            {/* 담당자별 차트 */}
+            <Card className="flex flex-col">
+              <CardHeader className="pb-0">
+                <CardTitle>담당자별 매출 비중</CardTitle>
+                <CardDescription>담당자(manager)별 매출 분포</CardDescription>
+              </CardHeader>
+              <CardContent className="flex-1 pb-0">
+                <div className="h-[300px] flex items-center justify-center">
+                  {chartData?.pieCharts.manager.length === 0 ? (
+                    <div className="text-center text-muted-foreground">
+                      데이터가 없습니다
+                    </div>
+                  ) : (
+                    <PieChart width={400} height={300}>
+                      <Pie
+                        data={chartData?.pieCharts.manager}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={true}
+                        outerRadius={100}
+                        innerRadius={60}
+                        fill="#8884d8"
+                        dataKey="value"
+                        nameKey="name"
+                      >
+                        {chartData?.pieCharts.manager.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        content={
+                          <CustomTooltip 
+                            formatter={(value: number) => {
+                              return formatCurrency(value);
+                            }}
+                            indicator="dot"
+                          />
+                        }
+                      />
+                    </PieChart>
+                  )}
+                </div>
+              </CardContent>
+              <CardFooter className="flex-col gap-2 text-sm">
+                <div className="flex items-center gap-2 font-medium leading-none">
+                  총 매출액: {formatCurrency(chartData?.summary.totalRevenue || 0)}
+                </div>
+                <div className="leading-none text-muted-foreground">
+                  선택된 기간의 담당자별 매출 분포
                 </div>
               </CardFooter>
             </Card>
