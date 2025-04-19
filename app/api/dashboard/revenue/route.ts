@@ -119,6 +119,7 @@ export async function GET(request: NextRequest) {
         FROM \`${process.env.GOOGLE_CLOUD_PROJECT_ID}.project_m.sales_db\`
         WHERE order_date BETWEEN '${startDate}' AND '${endDate}'
           AND channel_name IS NOT NULL
+          AND channel_name != 'nan'
           ${brandGroupFilter}
           ${teamFilter}
           ${category2Filter}

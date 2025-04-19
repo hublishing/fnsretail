@@ -389,14 +389,14 @@ export default function RevenuePage() {
       </div>
 
       {/* 필터 영역 */}
-      <div className="grid gap-4 md:grid-cols-6">
+      <div className="grid gap-4 md:grid-cols-9">
         <div>
           <label className="text-sm font-medium mb-1 block">브랜드</label>
           <Select
             value={filters.brand_group || ALL_VALUE}
             onValueChange={(value) => handleFilterChange('brand_group', value)}
           >
-            <SelectTrigger>
+            <SelectTrigger className="h-9">
               <SelectValue placeholder="브랜드 선택" />
             </SelectTrigger>
             <SelectContent>
@@ -415,7 +415,7 @@ export default function RevenuePage() {
             value={filters.team || ALL_VALUE}
             onValueChange={(value) => handleFilterChange('team', value)}
           >
-            <SelectTrigger>
+            <SelectTrigger className="h-9">
               <SelectValue placeholder="팀 선택" />
             </SelectTrigger>
             <SelectContent>
@@ -432,7 +432,7 @@ export default function RevenuePage() {
             value={filters.channel_category_2 || ALL_VALUE}
             onValueChange={(value) => handleFilterChange('channel_category_2', value)}
           >
-            <SelectTrigger>
+            <SelectTrigger className="h-9">
               <SelectValue placeholder="구분 선택" />
             </SelectTrigger>
             <SelectContent>
@@ -449,7 +449,7 @@ export default function RevenuePage() {
             value={filters.channel_category_3 || ALL_VALUE}
             onValueChange={(value) => handleFilterChange('channel_category_3', value)}
           >
-            <SelectTrigger>
+            <SelectTrigger className="h-9">
               <SelectValue placeholder="분류 선택" />
             </SelectTrigger>
             <SelectContent>
@@ -466,7 +466,7 @@ export default function RevenuePage() {
             value={filters.channel_name || ALL_VALUE}
             onValueChange={(value) => handleFilterChange('channel_name', value)}
           >
-            <SelectTrigger>
+            <SelectTrigger className="h-9">
               <SelectValue placeholder="채널 선택" />
             </SelectTrigger>
             <SelectContent>
@@ -483,7 +483,7 @@ export default function RevenuePage() {
             value={filters.manager || ALL_VALUE}
             onValueChange={(value) => handleFilterChange('manager', value)}
           >
-            <SelectTrigger>
+            <SelectTrigger className="h-9">
               <SelectValue placeholder="담당자 선택" />
             </SelectTrigger>
             <SelectContent>
@@ -494,7 +494,7 @@ export default function RevenuePage() {
             </SelectContent>
           </Select>
         </div>
-        <div>
+        <div className="col-span-3">
           <label className="text-sm font-medium mb-1 block">기간</label>
           <div className="flex gap-2">
             <Popover>
