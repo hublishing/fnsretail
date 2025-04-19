@@ -125,6 +125,8 @@ export function CustomTooltip({
   label,
   formatter,
   indicator = "dot",
+  showAchievement = false,
+  showYoY = false,
   ...props
 }: {
   active?: boolean
@@ -132,17 +134,62 @@ export function CustomTooltip({
   label?: string
   formatter?: (value: number) => string
   indicator?: "line" | "dot" | "dashed"
+  showAchievement?: boolean
+  showYoY?: boolean
 } & Omit<React.ComponentProps<typeof ChartTooltip>, 'payload' | 'label'>) {
   if (!active || !payload?.length) {
     return null
   }
 
-  const formattedPayload = payload.map(item => ({
-    ...item,
-    value: item.name === '원가율' ? `${item.value.toFixed(1)}%` : formatter?.(item.value) || item.value.toLocaleString(),
-    fill: item.payload?.fill || item.payload?.color || item.payload?.stroke || `hsl(var(--chart-${item.dataKey === 'revenue' ? 1 : item.dataKey === 'target_day' ? 2 : 8}))`,
-    indicator
-  }))
+  const formattedPayload = payload.map(item => {
+    const value = item.name === '원가율' ? `${item.value.toFixed(1)}%` : formatter?.(item.value) || item.value.toLocaleString();
+    const fill = item.payload?.fill || item.payload?.color || item.payload?.stroke || `hsl(var(--chart-${item.dataKey === 'revenue' ? 1 : item.dataKey === 'target_day' ? 2 : 8}))`;
+    
+    return {
+      ...item,
+      value,
+      fill,
+      indicator
+    };
+  });
+
+  // 달성률 계산 및 추가 (showAchievement가 true일 때만)
+  if (showAchievement) {
+    const revenue = payload.find(item => item.name === '실제 매출')?.value || 0;
+    const target = payload.find(item => item.name === '목표 매출')?.value || 0;
+    const achievementRate = target > 0 ? Math.round((revenue / target) * 100) : 0;
+
+    formattedPayload.push({
+      name: '달성률',
+      value: `${achievementRate}%`,
+      fill: achievementRate >= 100 ? 'hsl(var(--chart-6))' : 'hsl(var(--chart-7))',
+      type: 'achievement'
+    });
+  }
+
+  // YoY 계산 및 추가 (showYoY가 true일 때만)
+  if (showYoY) {
+    const revenue = payload.find(item => item.name === '실제 매출')?.value || 0;
+    const previousRevenue = payload.find(item => item.name === '전년 매출')?.value || 0;
+    
+    // 전년대비 계산
+    const previousComparison = previousRevenue > 0 ? Math.round((revenue / previousRevenue) * 100) : 0;
+    formattedPayload.push({
+      name: '전년대비',
+      value: `${previousComparison}%`,
+      fill: previousComparison >= 100 ? 'hsl(var(--chart-6))' : 'hsl(var(--chart-7))',
+      type: 'previousComparison'
+    });
+
+    // YoY 계산
+    const yoy = previousRevenue > 0 ? Math.round(((revenue / previousRevenue) - 1) * 100) : 0;
+    formattedPayload.push({
+      name: 'YoY',
+      value: `${yoy}%`,
+      fill: yoy >= 0 ? 'hsl(var(--chart-6))' : 'hsl(var(--chart-7))',
+      type: 'yoy'
+    });
+  }
 
   return (
     <ChartTooltip

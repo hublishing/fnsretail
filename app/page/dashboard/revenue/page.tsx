@@ -841,6 +841,7 @@ export default function RevenuePage() {
                             return formatCurrency(value);
                           }}
                           indicator="dot"
+                          showAchievement={true}
                         />
                       }
                       labelFormatter={(date: string) => format(new Date(date), 'yyyy-MM-dd')}
@@ -895,6 +896,8 @@ export default function RevenuePage() {
                                 formatter={(value: number) => { 
                                   return formatCurrency(value);
                                 }}
+                                showAchievement={true}
+                                showYoY={true}
                               />
                             }
                           />
