@@ -181,7 +181,7 @@ export function AppSidebar() {
                               </SidebarMenuButton>
                             </CollapsibleTrigger>
                             <CollapsibleContent>
-                              <SidebarMenu className="border-sidebar-border mx-3.5 flex min-w-0 translate-x-px flex-col gap-1 border-l px-2.5 py-0.5 group-data-[collapsible=icon]:hidden">
+                              <SidebarMenu className="w-[--radix-popper-anchor-width] border-sidebar-border mx-3.5 flex min-w-0 translate-x-px flex-col gap-1 border-l px-2.5 py-0.5 group-data-[collapsible=icon]:hidden">
                                 {item.items?.map((subItem) => (
                                   <SidebarMenuItem key={subItem.title}>
                                     <SidebarMenuButton asChild>
@@ -221,7 +221,7 @@ export function AppSidebar() {
                               </SidebarMenuButton>
                             </CollapsibleTrigger>
                             <CollapsibleContent>
-                              <SidebarMenu className="border-sidebar-border mx-3.5 flex min-w-0 translate-x-px flex-col gap-1 border-l px-2.5 py-0.5 group-data-[collapsible=icon]:hidden">
+                              <SidebarMenu className="w-[--radix-popper-anchor-width] border-sidebar-border mx-3.5 flex min-w-0 translate-x-px flex-col gap-1 border-l px-2.5 py-0.5 group-data-[collapsible=icon]:hidden">
                                 {item.items?.map((subItem) => (
                                   <SidebarMenuItem key={subItem.title}>
                                     <SidebarMenuButton asChild>
@@ -261,7 +261,7 @@ export function AppSidebar() {
                               </SidebarMenuButton>
                             </CollapsibleTrigger>
                             <CollapsibleContent>
-                              <SidebarMenu className="border-sidebar-border mx-3.5 flex min-w-0 translate-x-px flex-col gap-1 border-l px-2.5 py-0.5 group-data-[collapsible=icon]:hidden">
+                              <SidebarMenu className="w-[--radix-popper-anchor-width] border-sidebar-border mx-3.5 flex min-w-0 translate-x-px flex-col gap-1 border-l px-2.5 py-0.5 group-data-[collapsible=icon]:hidden">
                                 {item.items?.map((subItem) => (
                                   <SidebarMenuItem key={subItem.title}>
                                     <SidebarMenuButton asChild>
