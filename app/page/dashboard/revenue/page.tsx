@@ -402,7 +402,7 @@ export default function RevenuePage() {
             value={filters.brand_group || ALL_VALUE}
             onValueChange={(value) => handleFilterChange('brand_group', value)}
           >
-            <SelectTrigger className="h-9">
+            <SelectTrigger className="h-9 bg-white">
               <SelectValue placeholder="브랜드 선택" />
             </SelectTrigger>
             <SelectContent>
@@ -421,7 +421,7 @@ export default function RevenuePage() {
             value={filters.team || ALL_VALUE}
             onValueChange={(value) => handleFilterChange('team', value)}
           >
-            <SelectTrigger className="h-9">
+            <SelectTrigger className="h-9 bg-white">
               <SelectValue placeholder="팀 선택" />
             </SelectTrigger>
             <SelectContent>
@@ -438,7 +438,7 @@ export default function RevenuePage() {
             value={filters.channel_category_2 || ALL_VALUE}
             onValueChange={(value) => handleFilterChange('channel_category_2', value)}
           >
-            <SelectTrigger className="h-9">
+            <SelectTrigger className="h-9 bg-white">
               <SelectValue placeholder="구분 선택" />
             </SelectTrigger>
             <SelectContent>
@@ -455,7 +455,7 @@ export default function RevenuePage() {
             value={filters.channel_category_3 || ALL_VALUE}
             onValueChange={(value) => handleFilterChange('channel_category_3', value)}
           >
-            <SelectTrigger className="h-9">
+            <SelectTrigger className="h-9 bg-white">
               <SelectValue placeholder="분류 선택" />
             </SelectTrigger>
             <SelectContent>
@@ -472,7 +472,7 @@ export default function RevenuePage() {
             value={filters.channel_name || ALL_VALUE}
             onValueChange={(value) => handleFilterChange('channel_name', value)}
           >
-            <SelectTrigger className="h-9">
+            <SelectTrigger className="h-9 bg-white">
               <SelectValue placeholder="채널 선택" />
             </SelectTrigger>
             <SelectContent>
@@ -489,7 +489,7 @@ export default function RevenuePage() {
             value={filters.manager || ALL_VALUE}
             onValueChange={(value) => handleFilterChange('manager', value)}
           >
-            <SelectTrigger className="h-9">
+            <SelectTrigger className="h-9 bg-white">
               <SelectValue placeholder="담당자 선택" />
             </SelectTrigger>
             <SelectContent>
@@ -1270,7 +1270,7 @@ export default function RevenuePage() {
                         목표금액 {sortConfig?.key === 'target' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                       </TableHead>
                       <TableHead 
-                        className="cursor-pointer hover:bg-gray-100 text-center min-w-[80px]"
+                        className="cursor-pointer hover:bg-gray-100 text-center min-w-[80px] hidden sm:table-cell"
                         onClick={() => handleSort('achievement_rate')}
                       >
                         달성률 {sortConfig?.key === 'achievement_rate' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
