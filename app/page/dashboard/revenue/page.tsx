@@ -41,7 +41,8 @@ import {
 import { DateRange } from 'react-day-picker'
 import { cn } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
-import { CustomTooltip } from "@/components/ui/chart-tooltip"
+import { CustomTooltip } from "@/components/ui/chart-tooltip" 
+import { ChartTooltip } from "@/components/ui/chart-tooltip"
 
 // 파이 차트 색상
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#663399', '#FF6347', '#4682B4', '#DA70D6', '#32CD32'];
@@ -565,7 +566,7 @@ export default function RevenuePage() {
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <div className="flex flex justify-between">
+                <div className="flex justify-between">
                   <div className="flex flex-col">
                     <CardDescription>매출액</CardDescription>
                     <CardTitle className="text-2xl">{formatCurrency(chartData?.summary.totalRevenue || 0)}</CardTitle>
@@ -628,7 +629,7 @@ export default function RevenuePage() {
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <div className="flex flex justify-between">
+                <div className="flex justify-between">
                   <div className="flex flex-col">
                     <CardDescription>마감예상액</CardDescription>
                     <CardTitle className="text-2xl">{formatCurrency(chartData?.summary.estimatedMonthlyRevenue || 0)}</CardTitle>
@@ -894,7 +895,6 @@ export default function RevenuePage() {
                                 formatter={(value: number) => { 
                                   return formatCurrency(value);
                                 }}
-                                indicator="dot"
                               />
                             }
                           />
@@ -939,14 +939,12 @@ export default function RevenuePage() {
           {/* 파이 차트 영역 */}
           <div className="grid gap-4 md:grid-cols-2">
             {/* 구분별 차트 */}
-            <Card>
-              <CardHeader>
+            <Card className="flex flex-col">
+              <CardHeader className="items-center pb-0">
                 <CardTitle>구분별 매출 비중</CardTitle>
-                <CardDescription>
-                  구분(channel_category_2)별 매출 분포
-                </CardDescription>
+                <CardDescription>구분(channel_category_2)별 매출 분포</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="flex-1 pb-0">
                 <div className="h-[300px] flex items-center justify-center">
                   {chartData?.pieCharts.category2.length === 0 ? (
                     <div className="text-center text-muted-foreground">
@@ -960,26 +958,32 @@ export default function RevenuePage() {
                         cy="50%"
                         labelLine={true}
                         outerRadius={100}
+                        innerRadius={60}
                         fill="#8884d8"
                         dataKey="value"
                         nameKey="name"
-                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                       >
                         {chartData?.pieCharts.category2.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
                       <Tooltip 
+                        contentStyle={{
+                          backgroundColor: 'white',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '0.5rem',
+                          padding: '1rem'
+                        }}
                         content={
                           <CustomTooltip 
+                            indicator="dot"
                             formatter={(value: number) => {
-                              const name = (value as any).name;
-                              if (name === '원가율') {
-                                return `${value.toFixed(1)}%`;
-                              }
                               return formatCurrency(value);
                             }}
-                            indicator="dot"
+                            payload={chartData?.pieCharts.category2.map((entry, index) => ({
+                              ...entry,
+                              fill: COLORS[index % COLORS.length]
+                            }))}
                           />
                         }
                       />
@@ -987,17 +991,23 @@ export default function RevenuePage() {
                   )}
                 </div>
               </CardContent>
+              <CardFooter className="flex-col gap-2 text-sm">
+                <div className="flex items-center gap-2 font-medium leading-none">
+                  총 매출액: {formatCurrency(chartData?.summary.totalRevenue || 0)}
+                </div>
+                <div className="leading-none text-muted-foreground">
+                  선택된 기간의 구분별 매출 분포
+                </div>
+              </CardFooter>
             </Card>
 
             {/* 분류별 차트 */}
-            <Card>
-              <CardHeader>
+            <Card className="flex flex-col">
+              <CardHeader className="items-center pb-0">
                 <CardTitle>분류별 매출 비중</CardTitle>
-                <CardDescription>
-                  분류(channel_category_3)별 매출 분포
-                </CardDescription>
+                <CardDescription>분류(channel_category_3)별 매출 분포</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="flex-1 pb-0">
                 <div className="h-[300px] flex items-center justify-center">
                   {chartData?.pieCharts.category3.length === 0 ? (
                     <div className="text-center text-muted-foreground">
@@ -1011,10 +1021,10 @@ export default function RevenuePage() {
                         cy="50%"
                         labelLine={true}
                         outerRadius={100}
+                        innerRadius={60}
                         fill="#8884d8"
                         dataKey="value"
                         nameKey="name"
-                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                       >
                         {chartData?.pieCharts.category3.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -1024,10 +1034,6 @@ export default function RevenuePage() {
                         content={
                           <CustomTooltip 
                             formatter={(value: number) => {
-                              const name = (value as any).name;
-                              if (name === '원가율') {
-                                return `${value.toFixed(1)}%`;
-                              }
                               return formatCurrency(value);
                             }}
                             indicator="dot"
@@ -1038,6 +1044,14 @@ export default function RevenuePage() {
                   )}
                 </div>
               </CardContent>
+              <CardFooter className="flex-col gap-2 text-sm">
+                <div className="flex items-center gap-2 font-medium leading-none">
+                  총 매출액: {formatCurrency(chartData?.summary.totalRevenue || 0)}
+                </div>
+                <div className="leading-none text-muted-foreground">
+                  선택된 기간의 분류별 매출 분포
+                </div>
+              </CardFooter>
             </Card>
           </div>
         </>

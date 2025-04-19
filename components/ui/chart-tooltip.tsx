@@ -140,7 +140,7 @@ export function CustomTooltip({
   const formattedPayload = payload.map(item => ({
     ...item,
     value: item.name === '원가율' ? `${item.value.toFixed(1)}%` : formatter?.(item.value) || item.value.toLocaleString(),
-    fill: item.fill || item.color || item.stroke,
+    fill: item.payload?.fill || item.payload?.color || item.payload?.stroke || `hsl(var(--chart-${item.dataKey === 'revenue' ? 1 : item.dataKey === 'target_day' ? 2 : 8}))`,
     indicator
   }))
 
