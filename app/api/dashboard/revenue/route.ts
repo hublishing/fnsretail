@@ -22,6 +22,7 @@ interface ChannelDetail {
   estimated_revenue: number;
   estimated_target: number;
   days_count: number;
+  manager: string;
   [key: string]: string | number; // 인덱스 시그니처 추가
 }
 
@@ -113,7 +114,8 @@ export async function GET(request: NextRequest) {
           SUM(sum_qty) as quantity,
           SUM(sum_org_amount) as cost,
           COUNT(DISTINCT order_date) as days_count,
-          SUM(target_day) as target
+          SUM(target_day) as target,
+          MAX(manager) as manager
         FROM \`${process.env.GOOGLE_CLOUD_PROJECT_ID}.project_m.sales_db\`
         WHERE order_date BETWEEN '${startDate}' AND '${endDate}'
           AND channel_name IS NOT NULL
@@ -151,7 +153,8 @@ export async function GET(request: NextRequest) {
           ELSE 0
         END as estimated_revenue,
         COALESCE(target, 0) as estimated_target,
-        days_count
+        days_count,
+        COALESCE(manager, '미지정') as manager
       FROM daily_stats
       WHERE channel_name IS NOT NULL
       ORDER BY revenue DESC
@@ -188,7 +191,8 @@ export async function GET(request: NextRequest) {
         estimated_achievement_rate: Number(row.f[7].v || 0),
         estimated_revenue: Number(row.f[8].v || 0),
         estimated_target: Number(row.f[9].v || 0),
-        days_count: Number(row.f[10].v || 0)
+        days_count: Number(row.f[10].v || 0),
+        manager: row.f[11].v || '미지정'
       };
 
       logDebug('채널 상세 데이터 계산', {

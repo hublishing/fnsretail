@@ -16,7 +16,7 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
+  Tooltip as RechartsTooltip,
   Legend,
   ResponsiveContainer,
   Label,
@@ -51,6 +51,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import {
+  TooltipProvider,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 // 파이 차트 색상
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#663399', '#FF6347', '#4682B4', '#DA70D6', '#32CD32'];
@@ -355,9 +361,9 @@ export default function RevenuePage() {
   };
 
   const handleSort = (key: string) => {
-    let direction: 'asc' | 'desc' = 'asc';
-    if (sortConfig?.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc';
+    let direction: 'asc' | 'desc' = 'desc';
+    if (sortConfig?.key === key && sortConfig.direction === 'desc') {
+      direction = 'asc';
     }
     setSortConfig({ key, direction });
   };
@@ -888,7 +894,7 @@ export default function RevenuePage() {
                       domain={[0, 100]}
                       width={0}
                     />
-                    <Tooltip 
+                    <RechartsTooltip 
                       content={
                         <CustomTooltip 
                           formatter={(value: number) => {
@@ -948,7 +954,7 @@ export default function RevenuePage() {
                             tick={{ fontSize: 0 }}
                             width={0}
                           /> 
-                          <Tooltip 
+                          <RechartsTooltip 
                             content={
                               <CustomTooltip 
                                 formatter={(value: number) => { 
@@ -1028,7 +1034,7 @@ export default function RevenuePage() {
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip 
+                      <RechartsTooltip 
                         contentStyle={{
                           backgroundColor: 'white',
                           border: '1px solid #e5e7eb',
@@ -1091,7 +1097,7 @@ export default function RevenuePage() {
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip 
+                      <RechartsTooltip 
                         content={
                           <CustomTooltip 
                             formatter={(value: number) => {
@@ -1144,7 +1150,7 @@ export default function RevenuePage() {
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip 
+                      <RechartsTooltip 
                         content={
                           <CustomTooltip 
                             formatter={(value: number) => {
@@ -1197,7 +1203,7 @@ export default function RevenuePage() {
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip 
+                      <RechartsTooltip 
                         content={
                           <CustomTooltip 
                             formatter={(value: number) => {
@@ -1298,7 +1304,18 @@ export default function RevenuePage() {
 
                     return (
                       <TableRow key={channel.channel_name}>
-                        <TableCell>{channel.channel_name}</TableCell>
+                        <TableCell>
+                          <TooltipProvider delayDuration={0}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span>{channel.channel_name}</span>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <div className="flex text-xs text-muted-foreground">담당자<p className="text-foreground ml-2">{channel.manager || '미지정'}</p></div>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </TableCell>
                         <TableCell className="text-center">{formatCurrency(channel.revenue)}</TableCell>
                         <TableCell className="text-center">{formatCurrency(channel.target)}</TableCell>
                         <TableCell className={`text-center ${achievementRate >= 100 ? 'text-green-500' : 'text-red-500'}`}>
