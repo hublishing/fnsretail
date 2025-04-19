@@ -156,6 +156,12 @@ interface ChannelDetail {
 }
 
 export default function RevenuePage() {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // 상태 관리
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -507,7 +513,7 @@ export default function RevenuePage() {
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {filters.dateRange?.from ? (
+                  {mounted && filters.dateRange?.from ? (
                     filters.dateRange.to ? (
                       <>
                         {format(filters.dateRange.from, 'PPP', { locale: ko })} -{" "}
