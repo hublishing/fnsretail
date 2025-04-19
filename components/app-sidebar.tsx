@@ -45,10 +45,6 @@ const dashboard = [
           title: "판매현황",
           url: "/page/dashboard/sales",
         },
-        {
-          title: "트렌드현황",
-          url: "#",
-        },
       ],
     },
 ]
