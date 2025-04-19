@@ -580,7 +580,7 @@ export default function RevenuePage() {
       {loading ? (
         // 로딩 상태
         <div className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-5">
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-5">
             {[1, 2, 3].map((i) => (
               <Card key={i}>
                 <CardHeader className="pb-2">
@@ -592,7 +592,7 @@ export default function RevenuePage() {
                 </CardContent>
               </Card>
             ))}
-            <div className="md:col-span-2 w-full flex gap-4 justify-between">
+            <div className="col-span-1 flex-col md:flex-row md:col-span-2 w-full flex gap-4 justify-between">
               {[1, 2, 3].map((i) => (
                 <Card key={i}>
                   <CardHeader className="pb-2">
