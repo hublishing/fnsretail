@@ -389,20 +389,20 @@ export default function RevenuePage() {
   }, [chartData?.channelDetails, sortConfig]);
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-0 md:p-6 space-y-4 md:space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">매출 대시보드</h1>
+        <h1 className="text-2xl md:text-3xl font-bold">매출 대시보드</h1>
       </div>
 
       {/* 필터 영역 */}
-      <div className="grid gap-4 md:grid-cols-9">
+      <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-6 lg:grid-cols-9">
         <div>
           <label className="text-sm font-medium mb-1 block">브랜드</label>
           <Select
             value={filters.brand_group || ALL_VALUE}
             onValueChange={(value) => handleFilterChange('brand_group', value)}
           >
-            <SelectTrigger className="h-9 bg-white">
+            <SelectTrigger className="h-9">
               <SelectValue placeholder="브랜드 선택" />
             </SelectTrigger>
             <SelectContent>
@@ -421,7 +421,7 @@ export default function RevenuePage() {
             value={filters.team || ALL_VALUE}
             onValueChange={(value) => handleFilterChange('team', value)}
           >
-            <SelectTrigger className="h-9 bg-white">
+            <SelectTrigger className="h-9">
               <SelectValue placeholder="팀 선택" />
             </SelectTrigger>
             <SelectContent>
@@ -438,7 +438,7 @@ export default function RevenuePage() {
             value={filters.channel_category_2 || ALL_VALUE}
             onValueChange={(value) => handleFilterChange('channel_category_2', value)}
           >
-            <SelectTrigger className="h-9 bg-white">
+            <SelectTrigger className="h-9">
               <SelectValue placeholder="구분 선택" />
             </SelectTrigger>
             <SelectContent>
@@ -455,7 +455,7 @@ export default function RevenuePage() {
             value={filters.channel_category_3 || ALL_VALUE}
             onValueChange={(value) => handleFilterChange('channel_category_3', value)}
           >
-            <SelectTrigger className="h-9 bg-white">
+            <SelectTrigger className="h-9">
               <SelectValue placeholder="분류 선택" />
             </SelectTrigger>
             <SelectContent>
@@ -472,7 +472,7 @@ export default function RevenuePage() {
             value={filters.channel_name || ALL_VALUE}
             onValueChange={(value) => handleFilterChange('channel_name', value)}
           >
-            <SelectTrigger className="h-9 bg-white">
+            <SelectTrigger className="h-9">
               <SelectValue placeholder="채널 선택" />
             </SelectTrigger>
             <SelectContent>
@@ -489,7 +489,7 @@ export default function RevenuePage() {
             value={filters.manager || ALL_VALUE}
             onValueChange={(value) => handleFilterChange('manager', value)}
           >
-            <SelectTrigger className="h-9 bg-white">
+            <SelectTrigger className="h-9">
               <SelectValue placeholder="담당자 선택" />
             </SelectTrigger>
             <SelectContent>
@@ -500,9 +500,9 @@ export default function RevenuePage() {
             </SelectContent>
           </Select>
         </div>
-        <div className="col-span-3">
+        <div className="col-span-2 sm:col-span-3 md:col-span-4 lg:col-span-3">
           <label className="text-sm font-medium mb-1 block">기간</label>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -534,12 +534,12 @@ export default function RevenuePage() {
                   onSelect={(range) => handleFilterChange('dateRange', range)}
                   initialFocus
                   locale={ko}
-                  numberOfMonths={2}
+                  numberOfMonths={1}
                 />
               </PopoverContent>
             </Popover>
             
-            <div className="flex gap-2">
+            <div className="grid grid-cols-2 sm:flex gap-2">
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -624,7 +624,7 @@ export default function RevenuePage() {
         // 데이터 표시
         <>
           {/* 개요 카드 */}
-          <div className="grid gap-4 md:grid-cols-5">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
             <Card>
               <CardHeader className="pb-2">
                 <CardDescription>거래액</CardDescription>
@@ -774,7 +774,7 @@ export default function RevenuePage() {
               <Card className="flex-1">
                 <CardHeader className="pb-2">
                   <CardDescription>판매수량</CardDescription>
-                  <CardTitle className="text-2xl">{chartData?.summary.totalQuantity?.toLocaleString() || 0}개</CardTitle>
+                  <CardTitle className="text-lg sm:text-2xl">{chartData?.summary.totalQuantity?.toLocaleString() || 0}개</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-xs text-muted-foreground">
@@ -796,7 +796,7 @@ export default function RevenuePage() {
               <Card className="flex-1">
               <CardHeader className="pb-2">
                   <CardDescription>판매단가</CardDescription>
-                  <CardTitle className="text-2xl">
+                  <CardTitle className="text-lg sm:text-2xl">
                     {chartData?.summary.totalQuantity && chartData.summary.totalQuantity > 0 
                       ? formatCurrency(chartData.summary.totalRevenue / chartData.summary.totalQuantity)
                       : formatCurrency(0)}
@@ -826,7 +826,7 @@ export default function RevenuePage() {
               <Card className="flex-1">
                 <CardHeader className="pb-2">
                   <CardDescription>원가</CardDescription>
-                  <CardTitle className="text-2xl">
+                  <CardTitle className="text-lg sm:text-2xl">
                     {(() => {
                       const costRate = chartData?.summary?.costRate || 0; 
                       return `${costRate.toFixed(1)}%`;
@@ -867,141 +867,139 @@ export default function RevenuePage() {
           {/* 일별 매출 바차트 추가 */}
           <Card>
             <CardHeader>
-              <div className="">
-                <div className="flex justify-between">
-                  <CardTitle>매출 추이</CardTitle>
-                  <CardDescription className="pt-2 text-xs">
-                {filters.dateRange?.from && filters.dateRange?.to 
-                  ? `${format(filters.dateRange.from, 'yyyy-MM-dd')} ~ ${format(filters.dateRange.to, 'yyyy-MM-dd')}`
-                  : '선택된 기간'}
-              </CardDescription>
-                </div>
-                <Tabs defaultValue="daily" className="w-full">
-                  <TabsList className="grid w-[200px] grid-cols-2 mt-4">
-                    <TabsTrigger value="daily">일별</TabsTrigger>
-                    <TabsTrigger value="monthly">월별</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="daily">
-              <div style={{ width: '100%', height: '350px' }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart
-                    data={chartData?.trendData.daily || []}
-                    margin={{ top: 10, right: 0, left: 0, bottom: 0 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis
-                      dataKey="order_date"
-                      tickLine={false}
-                      tickMargin={5}
-                      axisLine={false}
-                      tick={{ fontSize: 11 }}
-                      tickFormatter={(date: string) => format(new Date(date), 'MM-dd')}
-                      height={30}
-                    />
-                    <YAxis
-                      tickLine={false}
-                      axisLine={false}
-                      tick={{ fontSize: 0 }}
-                      width={0}
-                    />
-                    <YAxis
-                      yAxisId="right"
-                      orientation="right"
-                      tickLine={false}
-                      axisLine={false}
-                      tick={{ fontSize: 0 }}
-                      domain={[0, 100]}
-                      width={0}
-                    />
-                    <RechartsTooltip 
-                      content={
-                        <CustomTooltip 
-                          formatter={(value: number) => {
-                            const name = (value as any).name;
-                            if (name === '원가율') {
-                              return `${value.toFixed(1)}%`;
-                            }
-                            return formatCurrency(value);
-                          }}
-                          indicator="dot"
-                          showAchievement={true}
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                <CardTitle>매출 추이</CardTitle>
+                <CardDescription className="text-xs">
+                  {filters.dateRange?.from && filters.dateRange?.to 
+                    ? `${format(filters.dateRange.from, 'yyyy-MM-dd')} ~ ${format(filters.dateRange.to, 'yyyy-MM-dd')}`
+                    : '선택된 기간'}
+                </CardDescription>
+              </div>
+              <Tabs defaultValue="daily" className="w-full">
+                <TabsList className="grid w-[200px] grid-cols-2 mt-4">
+                  <TabsTrigger value="daily">일별</TabsTrigger>
+                  <TabsTrigger value="monthly">월별</TabsTrigger>
+                </TabsList>
+                <TabsContent value="daily">
+                  <div style={{ width: '100%', height: '350px' }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ComposedChart
+                        data={chartData?.trendData.daily || []}
+                        margin={{ top: 10, right: 0, left: 0, bottom: 0 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                        <XAxis
+                          dataKey="order_date"
+                          tickLine={false}
+                          tickMargin={5}
+                          axisLine={false}
+                          tick={{ fontSize: 11 }}
+                          tickFormatter={(date: string) => format(new Date(date), 'MM-dd')}
+                          height={30}
                         />
-                      }
-                      labelFormatter={(date: string) => format(new Date(date), 'yyyy-MM-dd')}
-                    />
-                    <Bar dataKey="revenue" name="실제 매출" fill="hsl(var(--chart-1))" radius={5} />
-                    <Bar dataKey="target_day" name="목표 매출" fill="hsl(var(--chart-2))" radius={5} />
-                    <Line 
-                      type="monotone"
-                      dataKey="cost_rate"
-                      name="원가율"
-                      stroke="hsl(var(--chart-8))"
-                      strokeWidth={2}
-                      dot={{ r: 2, fill: "hsl(var(--chart-8))"}}
-                      activeDot={{ r: 4, fill: "hsl(var(--chart-8))"}}
-                      yAxisId="right"
-                      connectNulls={true}
-                    />
-                  </ComposedChart>
-                </ResponsiveContainer>
-              </div>
-                  </TabsContent>
-                  <TabsContent value="monthly">
-                    <div style={{ width: '100%', height: '350px' }}>
-                      <ResponsiveContainer width="100%" height="100%">
-                        <ComposedChart 
-                          data={chartData?.trendData.monthly || []}
-                          margin={{ top: 10, right: 0, left: 0, bottom: 0 }}
-                        >
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                          <XAxis
-                            dataKey="month"
-                            tickLine={false}
-                            tickMargin={5}
-                            axisLine={false}
-                            tick={{ fontSize: 11 }}
-                            height={30}
-                            tickFormatter={(month: string) => {
-                              if (!month) return '';
-                              const monthNumber = parseInt(month.split('-')[1]);
-                              return isNaN(monthNumber) ? '' : `${monthNumber}월`;
-                            }}
-                          />
-                          <YAxis
-                            tickLine={false}
-                            axisLine={false}
-                            tick={{ fontSize: 0 }}
-                            width={0}
-                          /> 
-                          <RechartsTooltip 
-                            content={
-                              <CustomTooltip 
-                                formatter={(value: number) => { 
-                                  return formatCurrency(value);
-                                }}
-                                showAchievement={true}
-                                showYoY={true}
-                              />
-                            }
-                          />
-                          <Bar dataKey="revenue" name="실제 매출" fill="hsl(var(--chart-1))" radius={5} />
-                          <Bar dataKey="target_day" name="목표 매출" fill="hsl(var(--chart-2))" radius={5} /> 
-                          <Line 
-                            type="monotone"
-                            dataKey="previous_revenue"
-                            name="전년 매출"
-                            stroke="hsl(var(--chart-8))"
-                            strokeWidth={2}
-                            dot={{ r: 2, fill: "hsl(var(--chart-8))"}}
-                            activeDot={{ r: 4, fill: "hsl(var(--chart-8))"}}
-                            connectNulls={true}
-                          />
-                        </ComposedChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </TabsContent>
-                </Tabs>
-              </div>
+                        <YAxis
+                          tickLine={false}
+                          axisLine={false}
+                          tick={{ fontSize: 0 }}
+                          width={0}
+                        />
+                        <YAxis
+                          yAxisId="right"
+                          orientation="right"
+                          tickLine={false}
+                          axisLine={false}
+                          tick={{ fontSize: 0 }}
+                          domain={[0, 100]}
+                          width={0}
+                        />
+                        <RechartsTooltip 
+                          content={
+                            <CustomTooltip 
+                              formatter={(value: number) => {
+                                const name = (value as any).name;
+                                if (name === '원가율') {
+                                  return `${value.toFixed(1)}%`;
+                                }
+                                return formatCurrency(value);
+                              }}
+                              indicator="dot"
+                              showAchievement={true}
+                            />
+                          }
+                          labelFormatter={(date: string) => format(new Date(date), 'yyyy-MM-dd')}
+                        />
+                        <Bar dataKey="revenue" name="실제 매출" fill="hsl(var(--chart-1))" radius={5} />
+                        <Bar dataKey="target_day" name="목표 매출" fill="hsl(var(--chart-2))" radius={5} />
+                        <Line 
+                          type="monotone"
+                          dataKey="cost_rate"
+                          name="원가율"
+                          stroke="hsl(var(--chart-8))"
+                          strokeWidth={2}
+                          dot={{ r: 2, fill: "hsl(var(--chart-8))"}}
+                          activeDot={{ r: 4, fill: "hsl(var(--chart-8))"}}
+                          yAxisId="right"
+                          connectNulls={true}
+                        />
+                      </ComposedChart>
+                    </ResponsiveContainer>
+                  </div>
+                </TabsContent>
+                <TabsContent value="monthly">
+                  <div style={{ width: '100%', height: '350px' }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ComposedChart 
+                        data={chartData?.trendData.monthly || []}
+                        margin={{ top: 10, right: 0, left: 0, bottom: 0 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                        <XAxis
+                          dataKey="month"
+                          tickLine={false}
+                          tickMargin={5}
+                          axisLine={false}
+                          tick={{ fontSize: 11 }}
+                          height={30}
+                          tickFormatter={(month: string) => {
+                            if (!month) return '';
+                            const monthNumber = parseInt(month.split('-')[1]);
+                            return isNaN(monthNumber) ? '' : `${monthNumber}월`;
+                          }}
+                        />
+                        <YAxis
+                          tickLine={false}
+                          axisLine={false}
+                          tick={{ fontSize: 0 }}
+                          width={0}
+                        /> 
+                        <RechartsTooltip 
+                          content={
+                            <CustomTooltip 
+                              formatter={(value: number) => { 
+                                return formatCurrency(value);
+                              }}
+                              showAchievement={true}
+                              showYoY={true}
+                            />
+                          }
+                        />
+                        <Bar dataKey="revenue" name="실제 매출" fill="hsl(var(--chart-1))" radius={5} />
+                        <Bar dataKey="target_day" name="목표 매출" fill="hsl(var(--chart-2))" radius={5} /> 
+                        <Line 
+                          type="monotone"
+                          dataKey="previous_revenue"
+                          name="전년 매출"
+                          stroke="hsl(var(--chart-8))"
+                          strokeWidth={2}
+                          dot={{ r: 2, fill: "hsl(var(--chart-8))"}}
+                          activeDot={{ r: 4, fill: "hsl(var(--chart-8))"}}
+                          connectNulls={true}
+                        />
+                      </ComposedChart>
+                    </ResponsiveContainer>
+                  </div>
+                </TabsContent>
+              </Tabs>
             </CardHeader>
             <CardFooter className="pt-0 pb-4 text-xs text-muted-foreground flex items-center justify-between">
               <div>실제 매출과 목표 매출 비교</div>
@@ -1023,7 +1021,7 @@ export default function RevenuePage() {
           </Card>
 
           {/* 파이 차트 영역 */}
-          <div className="grid gap-4 md:grid-cols-4">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
             {/* 구분별 차트 */}
             <Card className="flex flex-col">
               <CardHeader className="pb-0">
@@ -1254,105 +1252,107 @@ export default function RevenuePage() {
               <CardDescription>선택된 기간의 채널별 상세 매출 정보</CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>채널</TableHead>
-                    <TableHead 
-                      className="cursor-pointer hover:bg-gray-100 text-center"
-                      onClick={() => handleSort('revenue')}
-                    >
-                      매출액 {sortConfig?.key === 'revenue' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-                    </TableHead>
-                    <TableHead 
-                      className="cursor-pointer hover:bg-gray-100 text-center"
-                      onClick={() => handleSort('target')}
-                    >
-                      목표금액 {sortConfig?.key === 'target' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-                    </TableHead>
-                    <TableHead 
-                      className="cursor-pointer hover:bg-gray-100 text-center"
-                      onClick={() => handleSort('achievement_rate')}
-                    >
-                      달성률 {sortConfig?.key === 'achievement_rate' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-                    </TableHead>
-                    <TableHead 
-                      className="cursor-pointer hover:bg-gray-100 text-center"
-                      onClick={() => handleSort('quantity')}
-                    >
-                      판매수량 {sortConfig?.key === 'quantity' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-                    </TableHead>
-                    <TableHead 
-                      className="cursor-pointer hover:bg-gray-100 text-center"
-                      onClick={() => handleSort('unit_price')}
-                    >
-                      판매단가 {sortConfig?.key === 'unit_price' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-                    </TableHead>
-                    <TableHead 
-                      className="cursor-pointer hover:bg-gray-100 text-center"
-                      onClick={() => handleSort('cost_rate')}
-                    >
-                      원가율 {sortConfig?.key === 'cost_rate' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-                    </TableHead>
-                    <TableHead 
-                      className="cursor-pointer hover:bg-gray-100 text-center"
-                      onClick={() => handleSort('avg_revenue')}
-                    >
-                      평균매출액 {sortConfig?.key === 'avg_revenue' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-                    </TableHead>
-                    <TableHead 
-                      className="cursor-pointer hover:bg-gray-100 text-center"
-                      onClick={() => handleSort('estimated_revenue')}
-                    >
-                      마감예상액 {sortConfig?.key === 'estimated_revenue' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-                    </TableHead>
-                    <TableHead 
-                      className="cursor-pointer hover:bg-gray-100 text-center"
-                      onClick={() => handleSort('estimated_achievement_rate')}
-                    >
-                      예상달성률 {sortConfig?.key === 'estimated_achievement_rate' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sortedData.map((channel) => {
-                    const achievementRate = channel.target > 0 ? Math.round((channel.revenue / channel.target) * 100) : 0;
-                    const unitPrice = channel.quantity > 0 ? Math.round(channel.revenue / channel.quantity) : 0;
-                    const estimatedAchievementRate = channel.estimated_target > 0 ? 
-                      Math.round((channel.estimated_revenue / channel.estimated_target) * 100) : 0;
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="min-w-[120px]">채널</TableHead>
+                      <TableHead 
+                        className="cursor-pointer hover:bg-gray-100 text-center min-w-[100px]"
+                        onClick={() => handleSort('revenue')}
+                      >
+                        매출액 {sortConfig?.key === 'revenue' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                      </TableHead>
+                      <TableHead 
+                        className="cursor-pointer hover:bg-gray-100 text-center min-w-[100px] hidden sm:table-cell"
+                        onClick={() => handleSort('target')}
+                      >
+                        목표금액 {sortConfig?.key === 'target' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                      </TableHead>
+                      <TableHead 
+                        className="cursor-pointer hover:bg-gray-100 text-center min-w-[80px]"
+                        onClick={() => handleSort('achievement_rate')}
+                      >
+                        달성률 {sortConfig?.key === 'achievement_rate' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                      </TableHead>
+                      <TableHead 
+                        className="cursor-pointer hover:bg-gray-100 text-center min-w-[100px] hidden sm:table-cell"
+                        onClick={() => handleSort('quantity')}
+                      >
+                        판매수량 {sortConfig?.key === 'quantity' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                      </TableHead>
+                      <TableHead 
+                        className="cursor-pointer hover:bg-gray-100 text-center min-w-[100px] hidden sm:table-cell"
+                        onClick={() => handleSort('unit_price')}
+                      >
+                        판매단가 {sortConfig?.key === 'unit_price' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                      </TableHead>
+                      <TableHead 
+                        className="cursor-pointer hover:bg-gray-100 text-center min-w-[80px] hidden sm:table-cell"
+                        onClick={() => handleSort('cost_rate')}
+                      >
+                        원가율 {sortConfig?.key === 'cost_rate' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                      </TableHead>
+                      <TableHead 
+                        className="cursor-pointer hover:bg-gray-100 text-center min-w-[100px] hidden sm:table-cell"
+                        onClick={() => handleSort('avg_revenue')}
+                      >
+                        평균매출액 {sortConfig?.key === 'avg_revenue' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                      </TableHead>
+                      <TableHead 
+                        className="cursor-pointer hover:bg-gray-100 text-center min-w-[100px] hidden sm:table-cell"
+                        onClick={() => handleSort('estimated_revenue')}
+                      >
+                        마감예상액 {sortConfig?.key === 'estimated_revenue' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                      </TableHead>
+                      <TableHead 
+                        className="cursor-pointer hover:bg-gray-100 text-center min-w-[100px] hidden sm:table-cell"
+                        onClick={() => handleSort('estimated_achievement_rate')}
+                      >
+                        예상달성률 {sortConfig?.key === 'estimated_achievement_rate' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {sortedData.map((channel) => {
+                      const achievementRate = channel.target > 0 ? Math.round((channel.revenue / channel.target) * 100) : 0;
+                      const unitPrice = channel.quantity > 0 ? Math.round(channel.revenue / channel.quantity) : 0;
+                      const estimatedAchievementRate = channel.estimated_target > 0 ? 
+                        Math.round((channel.estimated_revenue / channel.estimated_target) * 100) : 0;
 
-                    return (
-                      <TableRow key={channel.channel_name}>
-                        <TableCell>
-                          <TooltipProvider delayDuration={0}>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <span>{channel.channel_name}</span>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <div className="flex text-xs text-muted-foreground">담당자<p className="text-foreground ml-2">{channel.manager || '미지정'}</p></div>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </TableCell>
-                        <TableCell className="text-center">{formatCurrency(channel.revenue)}</TableCell>
-                        <TableCell className="text-center">{formatCurrency(channel.target)}</TableCell>
-                        <TableCell className={`text-center ${achievementRate >= 100 ? 'text-green-500' : 'text-red-500'}`}>
-                          {achievementRate}%
-                        </TableCell>
-                        <TableCell className="text-center">{channel.quantity.toLocaleString()}개</TableCell>
-                        <TableCell className="text-center">{formatCurrency(unitPrice)}</TableCell>
-                        <TableCell className="text-center">{channel.cost_rate.toFixed(1)}%</TableCell>
-                        <TableCell className="text-center">{formatCurrency(channel.avg_revenue)}</TableCell>
-                        <TableCell className="text-center">{formatCurrency(channel.estimated_revenue)}</TableCell>
-                        <TableCell className={`text-center ${estimatedAchievementRate >= 100 ? 'text-green-500' : 'text-red-500'}`}>
-                          {estimatedAchievementRate}%
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+                      return (
+                        <TableRow key={channel.channel_name}>
+                          <TableCell className="text-xs sm:text-sm">
+                            <TooltipProvider delayDuration={0}>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span>{channel.channel_name}</span>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <div className="flex text-xs text-muted-foreground">담당자<p className="text-foreground ml-2">{channel.manager || '미지정'}</p></div>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </TableCell>
+                          <TableCell className="text-xs sm:text-sm text-center">{formatCurrency(channel.revenue)}</TableCell>
+                          <TableCell className="text-xs sm:text-sm text-center hidden sm:table-cell">{formatCurrency(channel.target)}</TableCell>
+                          <TableCell className={`text-xs sm:text-sm text-center ${achievementRate >= 100 ? 'text-green-500' : 'text-red-500'}`}>
+                            {achievementRate}%
+                          </TableCell>
+                          <TableCell className="text-xs sm:text-sm text-center hidden sm:table-cell">{channel.quantity.toLocaleString()}개</TableCell>
+                          <TableCell className="text-xs sm:text-sm text-center hidden sm:table-cell">{formatCurrency(unitPrice)}</TableCell>
+                          <TableCell className="text-xs sm:text-sm text-center hidden sm:table-cell">{channel.cost_rate.toFixed(1)}%</TableCell>
+                          <TableCell className="text-xs sm:text-sm text-center hidden sm:table-cell">{formatCurrency(channel.avg_revenue)}</TableCell>
+                          <TableCell className="text-xs sm:text-sm text-center hidden sm:table-cell">{formatCurrency(channel.estimated_revenue)}</TableCell>
+                          <TableCell className={`text-xs sm:text-sm text-center hidden sm:table-cell ${estimatedAchievementRate >= 100 ? 'text-green-500' : 'text-red-500'}`}>
+                            {estimatedAchievementRate}%
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         </>
