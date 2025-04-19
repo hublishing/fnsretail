@@ -774,7 +774,7 @@ export default function RevenuePage() {
               <Card className="flex-1">
                 <CardHeader className="pb-2">
                   <CardDescription>판매수량</CardDescription>
-                  <CardTitle className="text-lg sm:text-2xl">{chartData?.summary.totalQuantity?.toLocaleString() || 0}개</CardTitle>
+                  <CardTitle className="text-base sm:text-2xl">{chartData?.summary.totalQuantity?.toLocaleString() || 0}개</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-xs text-muted-foreground">
@@ -796,7 +796,7 @@ export default function RevenuePage() {
               <Card className="flex-1">
               <CardHeader className="pb-2">
                   <CardDescription>판매단가</CardDescription>
-                  <CardTitle className="text-lg sm:text-2xl">
+                  <CardTitle className="text-base sm:text-2xl">
                     {chartData?.summary.totalQuantity && chartData.summary.totalQuantity > 0 
                       ? formatCurrency(chartData.summary.totalRevenue / chartData.summary.totalQuantity)
                       : formatCurrency(0)}
@@ -826,7 +826,7 @@ export default function RevenuePage() {
               <Card className="flex-1">
                 <CardHeader className="pb-2">
                   <CardDescription>원가</CardDescription>
-                  <CardTitle className="text-lg sm:text-2xl">
+                  <CardTitle className="text-base sm:text-2xl">
                     {(() => {
                       const costRate = chartData?.summary?.costRate || 0; 
                       return `${costRate.toFixed(1)}%`;
