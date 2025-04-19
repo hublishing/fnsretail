@@ -11,6 +11,20 @@ function logDebug(message: string, data?: any) {
   }
 }
 
+// 채널별 상세 데이터를 위한 인터페이스 추가
+interface ChannelDetail {
+  channel_name: string;
+  revenue: number;
+  target: number;
+  quantity: number;
+  cost_rate: number;
+  avg_revenue: number;
+  estimated_revenue: number;
+  estimated_target: number;
+  days_count: number;
+  [key: string]: string | number; // 인덱스 시그니처 추가
+}
+
 export async function GET(request: NextRequest) {
   logDebug('API 호출 시작', { url: request.url });
 
@@ -25,6 +39,7 @@ export async function GET(request: NextRequest) {
   const manager = searchParams.get('manager');
   const startDate = searchParams.get('startDate') || getDefaultStartDate();
   const endDate = searchParams.get('endDate') || getDefaultEndDate();
+  const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM 형식
   
   // 필터 옵션만 요청하는 경우 (계층적 필터링을 위한 파라미터)
   const filterOptionsOnly = searchParams.get('filterOptionsOnly') === 'true';
@@ -77,10 +92,154 @@ export async function GET(request: NextRequest) {
       endDate
     });
 
+    // 필터 조건 생성
+    const createFilterCondition = (field: string, value: string | null) => {
+      return value ? `AND ${field} = '${value}'` : '';
+    };
+
+    const brandGroupFilter = createFilterCondition('brand_group', brand_group);
+    const teamFilter = createFilterCondition('team', team);
+    const category2Filter = createFilterCondition('channel_category_2', channel_category_2);
+    const category3Filter = createFilterCondition('channel_category_3', channel_category_3);
+    const channelFilter = createFilterCondition('channel_name', channel_name);
+    const managerFilter = createFilterCondition('manager', manager);
+
+    // 채널별 상세 데이터 조회
+    const channelDetailsQuery = `
+      WITH daily_stats AS (
+        SELECT 
+          channel_name,
+          SUM(sum_final_calculated_amount) as revenue,
+          SUM(sum_qty) as quantity,
+          SUM(sum_org_amount) as cost,
+          COUNT(DISTINCT order_date) as days_count,
+          SUM(target_day) as target
+        FROM \`${process.env.GOOGLE_CLOUD_PROJECT_ID}.project_m.sales_db\`
+        WHERE order_date BETWEEN '${startDate}' AND '${endDate}'
+          AND channel_name IS NOT NULL
+          ${brandGroupFilter}
+          ${teamFilter}
+          ${category2Filter}
+          ${category3Filter}
+          ${channelFilter}
+          ${managerFilter}
+        GROUP BY channel_name
+      )
+      SELECT 
+        channel_name,
+        COALESCE(revenue, 0) as revenue,
+        COALESCE(target, 0) as target,
+        COALESCE(quantity, 0) as quantity,
+        CASE 
+          WHEN revenue > 0 THEN (COALESCE(cost, 0) / revenue * 100)
+          ELSE 0 
+        END as cost_rate,
+        CASE 
+          WHEN days_count > 0 THEN revenue / days_count
+          ELSE 0 
+        END as avg_revenue,
+        CASE
+          WHEN target > 0 THEN (revenue / target * 100)
+          ELSE 0
+        END as achievement_rate,
+        CASE
+          WHEN target > 0 AND days_count > 0 THEN ((revenue / days_count * 28) / target * 100)
+          ELSE 0
+        END as estimated_achievement_rate,
+        CASE
+          WHEN days_count > 0 THEN (revenue / days_count * 28)
+          ELSE 0
+        END as estimated_revenue,
+        COALESCE(target, 0) as estimated_target,
+        days_count
+      FROM daily_stats
+      WHERE channel_name IS NOT NULL
+      ORDER BY revenue DESC
+    `;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        query: channelDetailsQuery,
+        useLegacySql: false,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(`BigQuery API 요청 실패: ${JSON.stringify(errorData)}`);
+    }
+
+    const data = await response.json();
+    
+    const channelDetails: ChannelDetail[] = data.rows?.map((row: any) => {
+      const channelDetail = {
+        channel_name: row.f[0].v,
+        revenue: Number(row.f[1].v || 0),
+        target: Number(row.f[2].v || 0),
+        quantity: Number(row.f[3].v || 0),
+        cost_rate: Number(row.f[4].v || 0),
+        avg_revenue: Number(row.f[5].v || 0),
+        achievement_rate: Number(row.f[6].v || 0),
+        estimated_achievement_rate: Number(row.f[7].v || 0),
+        estimated_revenue: Number(row.f[8].v || 0),
+        estimated_target: Number(row.f[9].v || 0),
+        days_count: Number(row.f[10].v || 0)
+      };
+
+      logDebug('채널 상세 데이터 계산', {
+        channel: channelDetail.channel_name,
+        revenue: channelDetail.revenue,
+        target: channelDetail.target,
+        days_count: channelDetail.days_count,
+        daily_avg_revenue: channelDetail.avg_revenue,
+        estimated_monthly_revenue: channelDetail.estimated_revenue,
+        estimated_achievement_rate: channelDetail.estimated_achievement_rate,
+        achievement_rate: channelDetail.achievement_rate
+      });
+
+      return channelDetail;
+    }) || [];
+
     logDebug('API 응답 생성 완료');
     
     return NextResponse.json({
-      chartData,
+      chartData: {
+        pieCharts: {
+          category2: chartData.pieCharts.category2,
+          category3: chartData.pieCharts.category3,
+          channel: chartData.pieCharts.channel,
+          manager: chartData.pieCharts.manager
+        },
+        trendData: {
+          daily: chartData.trendData.daily,
+          monthly: chartData.trendData.monthly
+        },
+        summary: {
+          totalRevenue: chartData.summary.totalRevenue,
+          totalCost: chartData.summary.totalCost,
+          achievementRate: chartData.summary.achievementRate,
+          dateCount: chartData.summary.dateCount,
+          totalGrossAmount: chartData.summary.totalGrossAmount,
+          growthRate: chartData.summary.growthRate,
+          totalQuantity: chartData.summary.totalQuantity,
+          quantityGrowthRate: chartData.summary.quantityGrowthRate,
+          previousRevenue: chartData.summary.previousRevenue,
+          previousQuantity: chartData.summary.previousQuantity,
+          previousCost: chartData.summary.previousCost,
+          costRate: chartData.summary.costRate,
+          targetCostRate: chartData.summary.targetCostRate,
+          costComparisonRate: chartData.summary.costComparisonRate,
+          estimatedMonthlyRevenue: chartData.summary.estimatedMonthlyRevenue,
+          estimatedMonthlyTarget: chartData.summary.estimatedMonthlyTarget,
+          estimatedMonthlyAchievementRate: chartData.summary.estimatedMonthlyAchievementRate
+        },
+        channelDetails
+      },
       filterOptions
     });
   } catch (error) {

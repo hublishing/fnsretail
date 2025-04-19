@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
@@ -43,6 +43,14 @@ import { cn } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
 import { CustomTooltip } from "@/components/ui/chart-tooltip" 
 import { ChartTooltip } from "@/components/ui/chart-tooltip"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 
 // 파이 차트 색상
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#663399', '#FF6347', '#4682B4', '#DA70D6', '#32CD32'];
@@ -68,11 +76,11 @@ interface ChartData {
   };
   trendData: {
     daily: Array<{
-    order_date: string;
-    revenue: number;
-    cost: number;
-    profit: number;
-    target_day: number;
+      order_date: string;
+      revenue: number;
+      cost: number;
+      profit: number;
+      target_day: number;
       cost_rate?: number;
     }>;
     monthly: Array<{
@@ -103,6 +111,17 @@ interface ChartData {
     estimatedMonthlyTarget: number;
     estimatedMonthlyAchievementRate: number;
   };
+  channelDetails: Array<{
+    channel_name: string;
+    revenue: number;
+    target: number;
+    quantity: number;
+    cost_rate: number;
+    avg_revenue: number;
+    estimated_revenue: number;
+    estimated_target: number;
+    [key: string]: string | number;
+  }>;
 }
 
 // 필터 옵션 인터페이스
@@ -117,6 +136,18 @@ interface FilterOptions {
 
 // 상수 값 정의
 const ALL_VALUE = "ALL";
+
+interface ChannelDetail {
+  channel_name: string;
+  revenue: number;
+  target: number;
+  quantity: number;
+  cost_rate: number;
+  avg_revenue: number;
+  estimated_revenue: number;
+  estimated_target: number;
+  [key: string]: string | number; // 인덱스 시그니처 추가
+}
 
 export default function RevenuePage() {
   // 상태 관리
@@ -133,6 +164,11 @@ export default function RevenuePage() {
     manager: []
   });
   
+  const [sortConfig, setSortConfig] = useState<{
+    key: string;
+    direction: 'asc' | 'desc';
+  } | null>(null);
+
   // 현재 달의 1일부터 오늘까지를 기본 날짜 범위로 설정
   const getDefaultDateRange = (): DateRange => {
     const today = new Date();
@@ -317,6 +353,28 @@ export default function RevenuePage() {
     const newDateRange = { from, to };
     setFilters(prev => ({ ...prev, dateRange: newDateRange }));
   };
+
+  const handleSort = (key: string) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig?.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const sortedData = useMemo(() => {
+    if (!sortConfig) return chartData?.channelDetails || [];
+    
+    return [...(chartData?.channelDetails || [])].sort((a, b) => {
+      if (a[sortConfig.key] < b[sortConfig.key]) {
+        return sortConfig.direction === 'asc' ? -1 : 1;
+      }
+      if (a[sortConfig.key] > b[sortConfig.key]) {
+        return sortConfig.direction === 'asc' ? 1 : -1;
+      }
+      return 0;
+    });
+  }, [chartData?.channelDetails, sortConfig]);
 
   return (
     <div className="p-6 space-y-6">
@@ -1163,6 +1221,104 @@ export default function RevenuePage() {
               </CardFooter>
             </Card>
           </div>
+
+          {/* 채널별 매출 현황 테이블 */}
+          <Card>
+            <CardHeader>
+              <CardTitle>채널별 매출 현황</CardTitle>
+              <CardDescription>선택된 기간의 채널별 상세 매출 정보</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>채널</TableHead>
+                    <TableHead 
+                      className="cursor-pointer hover:bg-gray-100 text-center"
+                      onClick={() => handleSort('revenue')}
+                    >
+                      매출액 {sortConfig?.key === 'revenue' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                    </TableHead>
+                    <TableHead 
+                      className="cursor-pointer hover:bg-gray-100 text-center"
+                      onClick={() => handleSort('target')}
+                    >
+                      목표금액 {sortConfig?.key === 'target' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                    </TableHead>
+                    <TableHead 
+                      className="cursor-pointer hover:bg-gray-100 text-center"
+                      onClick={() => handleSort('achievement_rate')}
+                    >
+                      달성률 {sortConfig?.key === 'achievement_rate' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                    </TableHead>
+                    <TableHead 
+                      className="cursor-pointer hover:bg-gray-100 text-center"
+                      onClick={() => handleSort('quantity')}
+                    >
+                      판매수량 {sortConfig?.key === 'quantity' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                    </TableHead>
+                    <TableHead 
+                      className="cursor-pointer hover:bg-gray-100 text-center"
+                      onClick={() => handleSort('unit_price')}
+                    >
+                      판매단가 {sortConfig?.key === 'unit_price' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                    </TableHead>
+                    <TableHead 
+                      className="cursor-pointer hover:bg-gray-100 text-center"
+                      onClick={() => handleSort('cost_rate')}
+                    >
+                      원가율 {sortConfig?.key === 'cost_rate' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                    </TableHead>
+                    <TableHead 
+                      className="cursor-pointer hover:bg-gray-100 text-center"
+                      onClick={() => handleSort('avg_revenue')}
+                    >
+                      평균매출액 {sortConfig?.key === 'avg_revenue' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                    </TableHead>
+                    <TableHead 
+                      className="cursor-pointer hover:bg-gray-100 text-center"
+                      onClick={() => handleSort('estimated_revenue')}
+                    >
+                      마감예상액 {sortConfig?.key === 'estimated_revenue' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                    </TableHead>
+                    <TableHead 
+                      className="cursor-pointer hover:bg-gray-100 text-center"
+                      onClick={() => handleSort('estimated_achievement_rate')}
+                    >
+                      예상달성률 {sortConfig?.key === 'estimated_achievement_rate' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {sortedData.map((channel) => {
+                    const achievementRate = channel.target > 0 ? Math.round((channel.revenue / channel.target) * 100) : 0;
+                    const unitPrice = channel.quantity > 0 ? Math.round(channel.revenue / channel.quantity) : 0;
+                    const estimatedAchievementRate = channel.estimated_target > 0 ? 
+                      Math.round((channel.estimated_revenue / channel.estimated_target) * 100) : 0;
+
+                    return (
+                      <TableRow key={channel.channel_name}>
+                        <TableCell>{channel.channel_name}</TableCell>
+                        <TableCell className="text-center">{formatCurrency(channel.revenue)}</TableCell>
+                        <TableCell className="text-center">{formatCurrency(channel.target)}</TableCell>
+                        <TableCell className={`text-center ${achievementRate >= 100 ? 'text-green-500' : 'text-red-500'}`}>
+                          {achievementRate}%
+                        </TableCell>
+                        <TableCell className="text-center">{channel.quantity.toLocaleString()}개</TableCell>
+                        <TableCell className="text-center">{formatCurrency(unitPrice)}</TableCell>
+                        <TableCell className="text-center">{channel.cost_rate.toFixed(1)}%</TableCell>
+                        <TableCell className="text-center">{formatCurrency(channel.avg_revenue)}</TableCell>
+                        <TableCell className="text-center">{formatCurrency(channel.estimated_revenue)}</TableCell>
+                        <TableCell className={`text-center ${estimatedAchievementRate >= 100 ? 'text-green-500' : 'text-red-500'}`}>
+                          {estimatedAchievementRate}%
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         </>
       )}
     </div>
