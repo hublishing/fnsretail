@@ -1270,7 +1270,7 @@ export default function RevenuePage() {
                         목표금액 {sortConfig?.key === 'target' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                       </TableHead>
                       <TableHead 
-                        className="cursor-pointer hover:bg-gray-100 text-center min-w-[80px] hidden sm:table-cell"
+                        className="cursor-pointer hover:bg-gray-100 text-center min-w-[60px]"
                         onClick={() => handleSort('achievement_rate')}
                       >
                         달성률 {sortConfig?.key === 'achievement_rate' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
